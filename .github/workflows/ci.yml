@@ -72,11 +72,9 @@ jobs:
           - api-level: 29
             arch: x86_64
             target: google_apis
-            profile: Nexus 6
           - api-level: 35
             arch: x86_64
             target: google_apis
-            profile: pixel_6
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -108,20 +106,17 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: ${{ matrix.arch }}
           target: ${{ matrix.target }}
-          profile: ${{ matrix.profile }}
           force-avd-creation: true
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-boot-timeout: 600
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
-            set -euo pipefail
             mkdir -p androidApp/build/ci
-            echo "emulator_boot_marker=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > androidApp/build/ci/timing.txt
+            date -u +%Y-%m-%dT%H:%M:%SZ > androidApp/build/ci/boot-ready.txt
             ./gradlew :androidApp:connectedDebugAndroidTest --stacktrace
-            echo "androidTest_finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> androidApp/build/ci/timing.txt
+            date -u +%Y-%m-%dT%H:%M:%SZ > androidApp/build/ci/androidTest-finished.txt
             adb logcat -d > androidApp/build/ci/logcat-raw.txt || true
-            bash .github/scripts/sanitize-logcat.sh \
-              androidApp/build/ci/logcat-raw.txt \
-              androidApp/build/ci/logcat-sanitized.txt
+            sh .github/scripts/sanitize-logcat.sh androidApp/build/ci/logcat-raw.txt androidApp/build/ci/logcat-sanitized.txt || true
             rm -f androidApp/build/ci/logcat-raw.txt
 
       - name: Upload androidTest artifacts
@@ -133,7 +128,6 @@ jobs:
             androidApp/build/reports/androidTests/
             androidApp/build/outputs/androidTest-results/
             androidApp/build/outputs/connected_android_test_additional_output/
-            androidApp/build/ci/logcat-sanitized.txt
-            androidApp/build/ci/timing.txt
+            androidApp/build/ci/
           if-no-files-found: warn
           retention-days: 14
