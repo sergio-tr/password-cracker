@@ -11,12 +11,14 @@ import kotlin.random.Random
  * whose implementation lives in this module.
  */
 class LabChallenge private constructor(
-    val id: ChallengeId,
-    val alphabet: Alphabet,
-    val lengthPolicy: LengthPolicy,
+    val id: LabChallengeId,
+    val policy: LabSecretPolicy,
     val seed: Long?,
     private val secret: String,
 ) {
+    val alphabet: Alphabet get() = policy.alphabet
+    val lengthPolicy: LengthPolicy get() = policy.length
+
     /** Whether ordering is reproducible. Only true when a [seed] was provided. */
     val isDeterministic: Boolean get() = seed != null
 
@@ -26,7 +28,7 @@ class LabChallenge private constructor(
     internal val secretLength: Int get() = secret.length
 
     override fun toString(): String =
-        "LabChallenge(id=$id, alphabet=$alphabet, lengthPolicy=$lengthPolicy, seed=$seed)"
+        "LabChallenge(id=$id, policy=$policy, seed=$seed)"
 
     companion object {
         /** Builds a challenge with a random hidden secret drawn from the space. */
@@ -47,7 +49,7 @@ class LabChallenge private constructor(
                 buildString {
                     repeat(length) { append(alphabet[random.nextInt(alphabet.size)]) }
                 }
-            return LabChallenge(id, alphabet, lengthPolicy, seed, secret)
+            return LabChallenge(id, LabSecretPolicy(alphabet, lengthPolicy), seed, secret)
         }
 
         /**
@@ -64,8 +66,8 @@ class LabChallenge private constructor(
             require(secret.all { alphabet.symbols.contains(it) }) {
                 "secret contains symbols outside the alphabet"
             }
-            val policy = LengthPolicy.exactly(secret.length)
-            return LabChallenge(id, alphabet, policy, seed, secret)
+            val policy = LabSecretPolicy(alphabet, LengthPolicy.exactly(secret.length))
+            return LabChallenge(id, policy, seed, secret)
         }
     }
 }

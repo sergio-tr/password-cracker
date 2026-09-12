@@ -49,6 +49,23 @@ class CombinationCountTest {
     }
 
     @Test
+    fun exponents_far_beyond_64_bits_stay_exact() {
+        val twoTo256 = CombinationCount.alphabetPower(base = 2, length = 256)
+        assertEquals(
+            "115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,936",
+            twoTo256.toExactString(),
+        )
+        assertFalse(twoTo256.fitsInLong())
+
+        val printableLen20 = CombinationCount.alphabetPower(base = 95, length = 20)
+        assertEquals(
+            CombinationCount.alphabetPower(95, 10) * CombinationCount.alphabetPower(95, 10),
+            printableLen20,
+        )
+        assertFalse(printableLen20.fitsInLong())
+    }
+
+    @Test
     fun addition_and_comparison() {
         val a = CombinationCount.of(10)
         val b = CombinationCount.of(32)

@@ -15,6 +15,52 @@ enum class SearchState {
     Failed,
 }
 
+/** Allowed transitions of [SearchState]. Terminal states may only reset to [SearchState.Idle]. */
+object SearchLifecycle {
+    fun allowedTargets(from: SearchState): Set<SearchState> =
+        when (from) {
+            SearchState.Idle -> setOf(SearchState.Preparing)
+            SearchState.Preparing ->
+                setOf(SearchState.Running, SearchState.Cancelling, SearchState.Cancelled, SearchState.Failed)
+            SearchState.Running ->
+                setOf(
+                    SearchState.Cancelling,
+                    SearchState.Completed,
+                    SearchState.LimitReached,
+                    SearchState.Failed,
+                    SearchState.Cancelled,
+                )
+            SearchState.Cancelling -> setOf(SearchState.Cancelled, SearchState.Failed)
+            SearchState.Cancelled,
+            SearchState.Completed,
+            SearchState.LimitReached,
+            SearchState.Failed,
+            -> setOf(SearchState.Idle)
+        }
+
+    fun canTransition(
+        from: SearchState,
+        to: SearchState,
+    ): Boolean = to in allowedTargets(from)
+
+    fun requireTransition(
+        from: SearchState,
+        to: SearchState,
+    ): SearchState {
+        require(canTransition(from, to)) { "illegal search transition $from -> $to" }
+        return to
+    }
+}
+
+/**
+ * UI-oriented snapshot of an in-flight search: explicit state plus the latest
+ * aggregated metrics. Never updated per candidate.
+ */
+data class LabSearchProgress(
+    val state: SearchState,
+    val metrics: SearchMetrics,
+)
+
 /** Which configured limit stopped the search. */
 enum class LimitReason { Duration, Attempts }
 
@@ -88,4 +134,32 @@ data class LabSearchResult(
     val foundCandidate: String?,
     val limitReason: LimitReason? = null,
     val errorMessage: String? = null,
-)
+) {
+    companion object {
+        fun fromTerminal(
+            sessionId: SearchSessionId,
+            event: LabSearchEvent,
+        ): LabSearchResult? {
+            val emptyMetrics = SearchMetrics.initial(0, CombinationCount.ZERO)
+            return when (event) {
+                is LabSearchEvent.CandidateFound ->
+                    LabSearchResult(sessionId, SearchOutcome.Found, event.metrics, event.candidate)
+                is LabSearchEvent.Completed ->
+                    LabSearchResult(sessionId, SearchOutcome.NotFound, event.metrics, null)
+                is LabSearchEvent.LimitReached ->
+                    LabSearchResult(sessionId, SearchOutcome.LimitReached, event.metrics, null, event.reason)
+                is LabSearchEvent.Cancelled ->
+                    LabSearchResult(sessionId, SearchOutcome.Cancelled, event.metrics, null)
+                is LabSearchEvent.Failed ->
+                    LabSearchResult(
+                        sessionId,
+                        SearchOutcome.Failed,
+                        event.metrics ?: emptyMetrics,
+                        null,
+                        errorMessage = event.message,
+                    )
+                else -> null
+            }
+        }
+    }
+}
