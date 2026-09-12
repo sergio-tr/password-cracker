@@ -8,7 +8,7 @@ Laboratorio, Ajustes).
 | Estado | Pantallas |
 | --- | --- |
 | Implementadas | Nearby Networks, Saved Networks (list + detalle + alta + edición + borrado + gestión de secreto), Security Lab (config + ejecución + resultado), Settings. |
-| Pendientes (scaffold documentado) | Onboarding, Permissions dedicada, Security Analysis detallada, Lab Result como pantalla propia. |
+| Pendientes (scaffold documentado) | Onboarding, Permissions dedicada, Security Analysis detallada. |
 
 ## Principios aplicados
 
