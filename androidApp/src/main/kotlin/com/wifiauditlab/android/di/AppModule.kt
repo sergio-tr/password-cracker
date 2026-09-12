@@ -36,13 +36,16 @@ import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanner
+import com.wifiauditlab.lab.domain.InMemoryCalibrationStore
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
+import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
 import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
+import com.wifiauditlab.lab.engine.CalibratedThroughputEstimator
 import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
+import com.wifiauditlab.lab.engine.DefaultSearchCalibrationService
 import com.wifiauditlab.lab.engine.DefaultSearchFeasibilityAnalyzer
-import com.wifiauditlab.lab.engine.FixedThroughputEstimator
 import com.wifiauditlab.lab.engine.SearchStrategyRegistry
 import com.wifiauditlab.persistence.SqlDelightSavedNetworkRepository
 import com.wifiauditlab.persistence.db.VaultDatabase
@@ -78,7 +81,13 @@ val appModule =
         single<SearchPlanOptimizer> { SearchStrategyRegistry() }
         single<LabSearchEngine> { DefaultLabSearchEngine() }
         single<SearchFeasibilityAnalyzer> { DefaultSearchFeasibilityAnalyzer() }
-        single<SearchPerformanceEstimator> { FixedThroughputEstimator() }
+        single<SearchPerformanceEstimator> { CalibratedThroughputEstimator() }
+        single<SearchCalibrationService> {
+            DefaultSearchCalibrationService(
+                store = InMemoryCalibrationStore(),
+                nowMillis = { System.currentTimeMillis() },
+            )
+        }
 
         // Use cases
         factory { CreateSavedNetwork(get(), get()) }
@@ -106,5 +115,5 @@ val appModule =
         viewModel {
             VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
         }
-        viewModel { LabViewModel(get(), get(), get(), get()) }
+        viewModel { LabViewModel(get(), get(), get(), get(), calibration = get()) }
     }
