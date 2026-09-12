@@ -21,6 +21,12 @@ class InMemorySavedNetworkRepository : SavedNetworkRepository {
     private val state = MutableStateFlow<List<SavedWifiNetwork>>(emptyList())
     private var sequence = 0
 
+    /** When set, [create] throws to exercise compensation paths. */
+    var failOnCreate = false
+
+    /** When set, [update] throws to exercise compensation paths. */
+    var failOnUpdate = false
+
     override fun observeAll(): Flow<List<SavedWifiNetwork>> = state.asStateFlow()
 
     override suspend fun getById(id: SavedNetworkId): SavedWifiNetwork? =
@@ -30,6 +36,7 @@ class InMemorySavedNetworkRepository : SavedNetworkRepository {
         state.value.filter { it.identity == identity }
 
     override suspend fun create(network: NewSavedWifiNetwork): SavedWifiNetwork {
+        if (failOnCreate) throw IllegalStateException("create failed")
         val created =
             SavedWifiNetwork(
                 id = SavedNetworkId("net-${sequence++}"),
@@ -49,6 +56,7 @@ class InMemorySavedNetworkRepository : SavedNetworkRepository {
     }
 
     override suspend fun update(network: SavedWifiNetwork): SavedWifiNetwork {
+        if (failOnUpdate) throw IllegalStateException("update failed")
         state.update { list -> list.map { if (it.id == network.id) network else it } }
         return network
     }
@@ -65,7 +73,14 @@ class InMemorySecretVault : SecretVault {
 
     val storedCount: Int get() = secrets.size
 
+    /** When set, [create] throws to exercise compensation paths. */
+    var failOnCreate = false
+
+    /** When set, [delete] throws to simulate a best-effort cleanup failure. */
+    var failOnDelete = false
+
     override suspend fun create(secret: NetworkSecret): SecretId {
+        if (failOnCreate) throw IllegalStateException("secret create failed")
         val id = SecretId("secret-${sequence++}")
         secrets[id] = secret
         return id
@@ -81,6 +96,7 @@ class InMemorySecretVault : SecretVault {
     }
 
     override suspend fun delete(id: SecretId) {
+        if (failOnDelete) throw IllegalStateException("secret delete failed")
         secrets.remove(id)
     }
 }

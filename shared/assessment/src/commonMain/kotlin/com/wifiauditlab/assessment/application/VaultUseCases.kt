@@ -18,7 +18,14 @@ class SavedNetworkNotFoundException(id: SavedNetworkId) :
 private suspend fun SavedNetworkRepository.require(id: SavedNetworkId): SavedWifiNetwork =
     getById(id) ?: throw SavedNetworkNotFoundException(id)
 
-/** Creates a saved network, optionally attaching a secret in the secure vault. */
+/**
+ * Creates a saved network, optionally attaching a secret in the secure vault.
+ *
+ * There is no cross-store transaction between the metadata repository and the
+ * secret vault, so the two writes are coordinated with **explicit compensation**:
+ * the secret is created first, then the network; any failure rolls back the
+ * partial work so neither an orphaned secret nor an orphaned network remains.
+ */
 class CreateSavedNetwork(
     private val repository: SavedNetworkRepository,
     private val secretVault: SecretVault,
@@ -27,10 +34,23 @@ class CreateSavedNetwork(
         network: NewSavedWifiNetwork,
         secret: NetworkSecret? = null,
     ): SavedWifiNetwork {
-        val created = repository.create(network)
-        if (secret == null) return created
+        if (secret == null) return repository.create(network)
+
         val secretId = secretVault.create(secret)
-        return repository.update(created.copy(secretId = secretId))
+        val created =
+            try {
+                repository.create(network)
+            } catch (t: Throwable) {
+                runCatching { secretVault.delete(secretId) }
+                throw t
+            }
+        return try {
+            repository.update(created.copy(secretId = secretId))
+        } catch (t: Throwable) {
+            runCatching { repository.delete(created.id) }
+            runCatching { secretVault.delete(secretId) }
+            throw t
+        }
     }
 }
 
@@ -73,7 +93,14 @@ class UpdateSavedNetworkSecret(
         val network = repository.require(id)
         val existing = network.secretId
         return if (existing == null) {
-            repository.update(network.copy(secretId = secretVault.create(secret)))
+            // First set: create the secret, then link it; roll back the secret if linking fails.
+            val secretId = secretVault.create(secret)
+            try {
+                repository.update(network.copy(secretId = secretId))
+            } catch (t: Throwable) {
+                runCatching { secretVault.delete(secretId) }
+                throw t
+            }
         } else {
             secretVault.update(existing, secret)
             network
@@ -94,15 +121,24 @@ class RemoveSavedNetworkSecret(
     }
 }
 
-/** Deletes a network, consistently removing its associated secret first. */
+/**
+ * Deletes a network and its secret.
+ *
+ * The metadata is removed first so no network can ever reference a missing
+ * secret (a correctness bug); the secret deletion is then best-effort. If it
+ * fails, the only residue is an unreferenced, still-encrypted ciphertext, which
+ * is benign and cannot be turned back into a dangling reference.
+ */
 class DeleteSavedNetwork(
     private val repository: SavedNetworkRepository,
     private val secretVault: SecretVault,
 ) {
     suspend operator fun invoke(id: SavedNetworkId) {
         val network = repository.getById(id) ?: return
-        network.secretId?.let { secretVault.delete(it) }
         repository.delete(id)
+        network.secretId?.let { secretId ->
+            runCatching { secretVault.delete(secretId) }
+        }
     }
 }
 
