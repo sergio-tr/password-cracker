@@ -14,7 +14,7 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Frontera Real/Lab por grafo de módulos | ✅ | `:shared:lab` sólo depende de `:shared:core`. |
 | `CombinationCount` (> 64 bits, formato) | ✅ | Tests incluidos. |
 | `PlatformCapabilities` | ✅ | Android; iOS previsto. |
-| Modelo Wi-Fi + `WifiSecurityClassifier` | ✅ | Tests. |
+| Modelo Wi-Fi + `WifiSecurityClassifier` | ✅ | Tests + fixtures por familia (OPEN/WEP/WPA/WPA2/WPA3/mixto/EAP/OWE/DPP/Passpoint) y MFP. |
 | `KnownNetworkMatcher` (Exact/Probable/Unknown/Ambiguous) | ✅ | Tests. |
 | Security Assessment (Strategy Registry, 8 estrategias) | ✅ | Tests. |
 | Vault: modelo, puertos, casos de uso CRUD + secretos | ✅ | Tests; cascada de borrado de secreto. |
