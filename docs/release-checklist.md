@@ -1,7 +1,9 @@
 # Release checklist
 
 Primera versión técnicamente fiable. La auditoría de FASE 16 está en `main`
-(PR #17). Publicar sigue requiriendo revisión humana y el pase manual.
+(PR #17). La visión reconciliada del estado real está en
+`docs/12-current-state-audit.md` (FASE 17). Publicar sigue requiriendo revisión
+humana y el pase manual.
 
 ## Auditoría (FASE 16)
 

@@ -28,21 +28,23 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Dominio lab + motor baseline | Lazy, límites, cancelación, métricas, `SearchLifecycle`. |
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, STOP, límites, resultado + métricas. |
-| Calibración sintética + estimación por rangos | No altera límites del usuario. |
-| Paralelismo controlado | `WorkerAwareLabSearchEngine`; 1 worker = referencia. |
+| Calibración sintética + estimación por rangos | **Implemented** (run). Store = memoria de proceso → persistencia **Partial** (`docs/12`). |
+| Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Partial**. |
+| Resultado del Lab en UI | **Implemented** integrado en la pantalla Lab (`ResultCard`). Ruta propia = Deferred. |
 | Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes. |
 | Tests ViewModel (Nearby, Vault, Lab) | JUnit + `runTest`. |
 | Tooling CI | `ktlintCheck` + `test`/`jvmTest` + `assembleDebug`. |
-| Docs `01`–`11`, ADRs, release checklist, test evidence | Índice vivo en este fichero. |
+| Docs `01`–`12`, ADRs, release checklist, test evidence | Índice vivo aquí; auditoría de realidad en `docs/12-current-state-audit.md`. |
 
 ## Partial
 
 | Área | Notas |
 | --- | --- |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
-| Calibración entre procesos | Throughput se mide; store actual = memoria de proceso. |
-| Performance / benchmarks dedicados | Pool y estrategias medibles; no hay módulo de benchmark ni suite de profiling formal. |
-| Hardening RC | Auditoría documentada (#17 mergeada); pase manual de `test-evidence.md` pendiente de rellenar. |
+| Calibración entre procesos | Throughput se mide; `InMemoryCalibrationStore` (FASE 22). |
+| Performance / benchmarks dedicados | Pool medible; sin módulo/dashboard (FASE 23). |
+| Hardening RC | Auditoría #17 en `main`; pase manual de `test-evidence.md` pendiente. |
+| Visión documental única | Completada en FASE 17 (`docs/12-current-state-audit.md`). |
 
 ## Deferred
 
