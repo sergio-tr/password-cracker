@@ -120,6 +120,19 @@ private fun ConfigCard(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Text("Workers: ${config.workers} (1 es la referencia)")
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
+                listOf(1, 2, 4).forEach { count ->
+                    FilterChip(
+                        selected = config.workers == count,
+                        onClick = { if (enabled) onChange(config.copy(workers = count)) },
+                        label = { Text("$count") },
+                    )
+                }
+            }
             OutlinedTextField(
                 value = config.maxDurationSeconds?.toString().orEmpty(),
                 onValueChange = { value ->
