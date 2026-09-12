@@ -1,0 +1,34 @@
+# Release checklist
+
+Primera versión técnicamente fiable. Esta PR no se mergea automáticamente:
+queda para revisión humana.
+
+## Auditoría (FASE 16)
+
+| Comprobación | Resultado |
+| --- | --- |
+| Secretos en texto plano persistidos | No. Ciphertext en Keystore + prefs `secret_vault`. |
+| Logs / excepciones / `toString` de secretos | `NetworkSecret.toString()` redacta. Sin `Log`/`println` de secretos. |
+| `android.*` en `commonMain` | No hay matches. |
+| `GlobalScope` | No hay usos. |
+| Jobs sin cancelar | `LabViewModel.onCleared` cancela; Nearby/Vault usan `viewModelScope`. |
+| Bloqueo del hilo principal | Lab corre en `searchDispatcher` (Default). Calibración en background. |
+| Fugas de repositorio | SQLDelight driver en Koin singleton; observeAll es Flow. |
+| Migraciones | Esquema Vault v1 único; no hay migraciones pendientes de v0. |
+| Excepciones no controladas | Engine emite `Failed`; Vault compensa create/update. |
+| Estados UI imposibles | `SearchState` / `SearchLifecycle` explícitos; scan/vault sealed. |
+
+## Gaps conocidos (no bloquean el RC si se aceptan)
+
+- Tests Compose / instrumentación no corren en CI (sin emulador).
+- Calibración se guarda en memoria de proceso (`InMemoryCalibrationStore`).
+- Biometría antes de revelar: arquitectura lista, no implementada.
+- iOS: solo previsto.
+
+## Antes de publicar
+
+- [ ] CI `build` verde en esta PR
+- [ ] Recorrer casos manuales de `docs/test-evidence.md`
+- [ ] Confirmar que no hay secretos en fixtures versionados
+- [ ] Revisar `docs/00-progress.md`
+- [ ] Decidir versionName / versionCode
