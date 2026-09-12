@@ -14,6 +14,7 @@ import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.SearchStrategyId
 import com.wifiauditlab.lab.domain.engine.CancellationController
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
+import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
 import com.wifiauditlab.lab.domain.engine.SearchFeasibility
 import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
@@ -84,6 +85,7 @@ class LabViewModel(
     private val analyzer: SearchFeasibilityAnalyzer,
     private val estimator: SearchPerformanceEstimator,
     private val searchDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val calibration: SearchCalibrationService? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(LabUiState())
     val state = _state.asStateFlow()
@@ -93,6 +95,14 @@ class LabViewModel(
 
     init {
         recomputePreview(_state.value.config)
+        val service = calibration
+        if (service != null) {
+            viewModelScope.launch(searchDispatcher) {
+                val record = service.calibrate(_state.value.config.strategy.id.value)
+                estimator.refine(record.measuredAttemptsPerSecond)
+                recomputePreview(_state.value.config)
+            }
+        }
     }
 
     fun updateConfig(config: LabConfig) {

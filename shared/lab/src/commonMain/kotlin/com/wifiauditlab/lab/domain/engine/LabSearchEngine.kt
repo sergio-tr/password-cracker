@@ -52,4 +52,7 @@ interface SearchPerformanceEstimator {
 
     /** Estimated wall-clock duration to exhaust [space], or null when not meaningful. */
     fun estimateDuration(space: CombinationCount): Duration?
+
+    /** Optional refinement from a local calibration. Must not change user limits. */
+    fun refine(measuredAttemptsPerSecond: Double) = Unit
 }

@@ -1,6 +1,7 @@
 package com.wifiauditlab.lab.engine
 
 import com.wifiauditlab.core.math.CombinationCount
+import com.wifiauditlab.lab.domain.DurationRange
 import com.wifiauditlab.lab.domain.LabSearchPlan
 import com.wifiauditlab.lab.domain.SearchLimits
 import com.wifiauditlab.lab.domain.engine.FeasibilityRating
@@ -61,8 +62,9 @@ class DefaultSearchFeasibilityAnalyzer : SearchFeasibilityAnalyzer {
             return SearchFeasibility(
                 FeasibilityRating.Impractical,
                 null,
-                "the space ($spaceText combinations) is far too large to exhaust; " +
-                    "only the configured limit ($limitText) would ever stop it",
+                "This search is impractical with the current configuration. " +
+                    "The space ($spaceText combinations) cannot be exhausted; " +
+                    "only the configured limit ($limitText) would ever stop it.",
             )
         }
 
@@ -72,12 +74,17 @@ class DefaultSearchFeasibilityAnalyzer : SearchFeasibilityAnalyzer {
                 estimated <= EXPENSIVE_MAX -> FeasibilityRating.Expensive
                 else -> FeasibilityRating.Impractical
             }
-        return SearchFeasibility(
-            rating,
-            estimated,
-            "≈ $spaceText combinations, estimated $estimated to exhaust at " +
-                "${estimator.expectedThroughput().toLong()}/s (limit: $limitText)",
-        )
+        val range = DurationRange.fromPoint(estimated)
+        val reason =
+            if (rating == FeasibilityRating.Impractical) {
+                "This search is impractical with the current configuration. " +
+                    "Estimated ${range.toApproximateString()} to exhaust $spaceText combinations " +
+                    "(limit: $limitText)."
+            } else {
+                "≈ $spaceText combinations, estimated ${range.toApproximateString()} " +
+                    "at ${estimator.expectedThroughput().toLong()}/s (limit: $limitText)"
+            }
+        return SearchFeasibility(rating, estimated, reason, range)
     }
 
     private fun describeLimits(limits: SearchLimits): String {

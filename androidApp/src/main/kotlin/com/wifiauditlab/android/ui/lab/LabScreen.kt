@@ -147,6 +147,7 @@ private fun EstimatesCard(state: LabUiState) {
             Text("Límite de intentos: ${state.config.maxAttempts ?: "—"}")
             state.feasibility?.let { feasibility ->
                 Text("Viabilidad: ${feasibilityLabel(feasibility.rating)}")
+                feasibility.estimatedDurationRange?.let { Text("Estimación: ${it.toApproximateString()}") }
                 Text(feasibility.reason)
             }
         }

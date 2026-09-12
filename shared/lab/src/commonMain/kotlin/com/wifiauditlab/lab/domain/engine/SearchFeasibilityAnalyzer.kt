@@ -1,5 +1,6 @@
 package com.wifiauditlab.lab.domain.engine
 
+import com.wifiauditlab.lab.domain.DurationRange
 import com.wifiauditlab.lab.domain.LabSearchPlan
 import com.wifiauditlab.lab.domain.SearchLimits
 import kotlin.time.Duration
@@ -10,6 +11,7 @@ data class SearchFeasibility(
     val rating: FeasibilityRating,
     val estimatedDuration: Duration?,
     val reason: String,
+    val estimatedDurationRange: DurationRange? = estimatedDuration?.let { DurationRange.fromPoint(it) },
 )
 
 /**
