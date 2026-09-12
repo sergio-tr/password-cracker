@@ -46,9 +46,9 @@ Sin emulador / `androidTest`.
 | Calibration persistence | RC: in-memory | **Partial** — memory only | In-memory store tested | No Settings UI | Not durable | **FASE 22** |
 | Benchmark module / dashboard | Partial / Deferred | **Missing** | None | None | No dedicated module | **FASE 23** |
 | ViewModel unit tests | `00-progress` yes; `10-testing` was “pending” | **Implemented** Nearby/Vault/Lab | 3 files under `androidApp/src/test` | N/A | Doc contradiction | **Docs reconciled** in this audit lineage |
-| Compose UI tests | Deferred → Implemented (FASE 20) | **Implemented** (`*ComposeTest`) | androidTest sources | N/A | Ejecución CI emulador | **FASE 21** para automatizar run |
-| Android instrumentation | Deferred → Implemented (FASE 20) | **Implemented** Keystore/SQLDelight/lifecycle | androidTest sources | N/A | Ejecución CI emulador | **FASE 21** |
-| Emulator CI | Not present | **Missing** | CI has no emulator job | N/A | Flaky risk if naive | **FASE 21** |
+| Compose UI tests | Implemented (FASE 20+21) | **Implemented** + **CI emulator** | androidTest | N/A | Wi‑Fi físico manual | **Keep**; nightly API extra opcional |
+| Android instrumentation | Implemented (FASE 20+21) | **Implemented** + **CI emulator** | Keystore/SQLDelight | N/A | — | **Keep** |
+| Emulator CI | Missing → Implemented (FASE 21) | **Implemented** API 29+35 | connectedDebugAndroidTest | N/A | Coste matriz | Ver `docs/ci-emulator.md` |
 | Onboarding | Deferred → Implemented (FASE 18) | **Implemented** | `OnboardingViewModelTest` | First run + Settings replay | — | **Keep** |
 | Permission Center | Deferred → Implemented (FASE 18) | **Implemented** | `PermissionCenterViewModelTest` | Settings → Centro de permisos | Compose UI tests later | **Keep** |
 | Security Analysis Detail screen | Deferred → Implemented (FASE 19) | **Implemented** | Family-parameterized VM tests | Nearby detail CTA | Compose UI later | **Keep** |

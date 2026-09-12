@@ -23,7 +23,7 @@ humana y el pase manual.
 
 ## Gaps conocidos (no bloquean el RC si se aceptan)
 
-- Suite Compose UI + instrumentación **implementada** (FASE 20); ejecución en CI pendiente de emulador (FASE 21). Estado local: *IMPLEMENTED BUT NOT EXECUTED* sin dispositivo.
+- Compose UI + instrumentación corren en CI con emulador (API 29 + 35). Escaneo Wi‑Fi físico y diálogos OEM siguen siendo **manual**.
 - Calibración se guarda en memoria de proceso (`InMemoryCalibrationStore`).
 - Biometría antes de revelar: arquitectura lista, no implementada.
 - GeoLocation real: no expuesta en UI (sólo `LocationLabel`).

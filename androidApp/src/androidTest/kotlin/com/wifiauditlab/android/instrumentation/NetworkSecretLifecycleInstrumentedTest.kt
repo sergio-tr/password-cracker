@@ -19,7 +19,6 @@ import com.wifiauditlab.persistence.db.VaultDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -97,13 +96,16 @@ class NetworkSecretLifecycleInstrumentedTest {
                     assertNotNull(network!!.secretId)
 
                     val revealed = RevealSavedNetworkSecret(repo, vault)(networkId)
-                    assertEquals(initialPlaintext, revealed)
+                    assertTrue("reveal mismatch (values redacted)", revealed == initialPlaintext)
 
                     UpdateSavedNetworkSecret(repo, vault)(
                         networkId,
                         NetworkSecret(updatedPlaintext),
                     )
-                    assertEquals(updatedPlaintext, RevealSavedNetworkSecret(repo, vault)(networkId))
+                    assertTrue(
+                        "update reveal mismatch (values redacted)",
+                        RevealSavedNetworkSecret(repo, vault)(networkId) == updatedPlaintext,
+                    )
 
                     val cleared = RemoveSavedNetworkSecret(repo, vault)(networkId)
                     assertNull(cleared.secretId)

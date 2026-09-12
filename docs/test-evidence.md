@@ -1,56 +1,47 @@
 # Test evidence
 
-Evidencia de la suite automática y de los casos manuales obligatorios del RC.
-Actualizado en FASE 20 (`test/android-ui-instrumentation`).
+Evidencia de la suite automática y de los casos manuales del RC.
+Actualizado en FASE 21 (`chore/android-emulator-ci`).
 
-## Automático — JVM / KMP (CI actual)
+## AUTOMATED — JVM
 
-CI (`.github/workflows/ci.yml`): `ktlintCheck` → `test`/`jvmTest` → `assembleDebug`.
+CI job `jvm` (`.github/workflows/ci.yml`):
 
-| Área | Dónde | Qué cubre | Estado |
-| --- | --- | --- | --- |
-| Unit / dominio | `:shared:*` | CombinationCount, Vault, matcher, assessment, lab | **AUTOMATED PASS** (CI) |
-| Integración casos de uso | `VaultUseCasesTest`, `NearbyUseCasesTest` | CRUD, secretos, rollback | **AUTOMATED PASS** |
-| SQLDelight JVM | `SqlDelightSavedNetworkRepositoryTest` | CRUD + BSSID in-memory | **AUTOMATED PASS** |
-| ViewModels | Nearby/Vault/Lab/Onboarding/Permissions/Security | Orquestación UI | **AUTOMATED PASS** |
-| Redaction | `VaultModelTest` | `NetworkSecret.toString()` | **AUTOMATED PASS** |
-
-## Automático — Compose UI + instrumentación (FASE 20)
-
-Compilan con `:androidApp:compileDebugAndroidTestKotlin` / empaquetado
-`androidTest`. En el entorno de desarrollo de esta fase **no había dispositivo ni
-emulador conectado** (`connectedDebugAndroidTest` → *No connected devices*).
-
-| Área | Ficheros | Estado |
-| --- | --- | --- |
-| Compose Nearby / Onboarding / Permissions / Security / Vault / Lab | `*ComposeTest.kt` | **IMPLEMENTED BUT NOT EXECUTED** |
-| SQLDelight Android driver | `AndroidSqlDelightRepositoryTest` | **IMPLEMENTED BUT NOT EXECUTED** |
-| KeystoreSecretVault | `KeystoreSecretVaultInstrumentedTest` | **IMPLEMENTED BUT NOT EXECUTED** |
-| Lifecycle red+secreto | `NetworkSecretLifecycleInstrumentedTest` | **IMPLEMENTED BUT NOT EXECUTED** |
-| Permission manager smoke | `AndroidWifiPermissionManagerInstrumentedTest` | **IMPLEMENTED BUT NOT EXECUTED** |
-
-FASE 21 añadirá ejecución en CI con emulador.
-
-## Manual only
-
-| Caso | Por qué manual |
+| Área | Estado |
 | --- | --- |
-| Escaneo Wi‑Fi con redes reales | No debe hacer flaky CI |
-| Diálogos OEM de permiso / “no volver a preguntar” | Variante por fabricante |
-| Clipboard / recent-apps visual | Comportamiento de sistema |
-| Pase RC completo en dispositivo físico | Ver `release-checklist.md` |
+| `ktlintCheck` | Ver run de CI |
+| `test` / `jvmTest` | Ver run de CI |
+| `assembleDebug` + `compileDebugAndroidTestKotlin` | Ver run de CI |
 
-### Plantilla Wi‑Fi (manual)
+## AUTOMATED — ANDROID EMULATOR
 
-| Caso | Cómo verificar | Evidencia |
+CI job `android-emulator` · runner `ubuntu-latest` + KVM ·
+`:androidApp:connectedDebugAndroidTest`
+
+| API | Rol | Estado |
 | --- | --- | --- |
-| Permiso aceptado | Actualizar → conceder | |
-| Permiso denegado | Denegar | |
-| Ubicación desactivada | Apagar ubicación | |
-| Scan throttled | Actualizar en ráfaga | Mensaje “Escaneo limitado temporalmente…” |
-| Red conocida | Guardar y re-escanear | Alias primero |
+| 29 | Compatibilidad (cerca de minSdk 26) | Ver run de CI |
+| 35 | Principal (= targetSdk) | Ver run de CI |
 
-### Vault / Lab (manual smoke)
+Detalle de APIs: `docs/ci-emulator.md`.
 
-CRUD Vault tras reinicio, reveal/hide, Lab found/limit/STOP en dispositivo real.
-Registrar fecha, dispositivo y resultado al ejecutar el pase RC.
+Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
+
+Rellenar tras el primer run verde:
+
+| Campo | Valor |
+| --- | --- |
+| Run URL | _pendiente primer verde_ |
+| Tests ejecutados | _pendiente_ |
+| PASS / FAIL / SKIPPED | _pendiente_ |
+| Duración job / boot | _pendiente_ |
+| Keystore / SQLDelight / Compose | _pendiente_ |
+
+## MANUAL — PHYSICAL DEVICE
+
+| Caso | Notas |
+| --- | --- |
+| Escaneo Wi‑Fi con redes reales | No en CI |
+| Diálogos OEM de permiso | No en CI |
+| Clipboard / recent-apps visual | Smoke manual |
+| Pase RC completo | `release-checklist.md` |
