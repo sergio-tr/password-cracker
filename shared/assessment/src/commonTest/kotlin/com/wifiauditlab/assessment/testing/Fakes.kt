@@ -8,6 +8,9 @@ import com.wifiauditlab.assessment.domain.vault.SecretId
 import com.wifiauditlab.assessment.domain.wifi.NetworkIdentity
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
+import com.wifiauditlab.assessment.port.WifiScanRequestResult
+import com.wifiauditlab.assessment.port.WifiScanState
+import com.wifiauditlab.assessment.port.WifiScanner
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,5 +82,22 @@ class InMemorySecretVault : SecretVault {
 
     override suspend fun delete(id: SecretId) {
         secrets.remove(id)
+    }
+}
+
+/** Scriptable in-memory Wi-Fi scanner for use-case tests. */
+class FakeWifiScanner(initial: WifiScanState = WifiScanState.Idle) : WifiScanner {
+    val state = MutableStateFlow(initial)
+    var nextRefreshResult: WifiScanRequestResult = WifiScanRequestResult.STARTED
+    var refreshCount = 0
+        private set
+
+    fun emit(newState: WifiScanState) = state.update { newState }
+
+    override fun observeState(): Flow<WifiScanState> = state.asStateFlow()
+
+    override suspend fun refresh(): WifiScanRequestResult {
+        refreshCount++
+        return nextRefreshResult
     }
 }
