@@ -16,7 +16,7 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | `PlatformCapabilities` | ✅ | Android; iOS previsto. |
 | Modelo Wi-Fi + `WifiSecurityClassifier` | ✅ | Tests + fixtures por familia (OPEN/WEP/WPA/WPA2/WPA3/mixto/EAP/OWE/DPP/Passpoint) y MFP. |
 | `KnownNetworkMatcher` (Exact/Probable/Unknown/Ambiguous) | ✅ | Tests. |
-| Security Assessment (Strategy Registry, 8 estrategias) | ✅ | Tests. |
+| Security Assessment (Strategy Registry, 8 estrategias) | ✅ | Tests por estrategia y tabla de rating por familia (incl. hallazgos/PMF). |
 | Vault: modelo, puertos, casos de uso CRUD + secretos | ✅ | Tests; cascada de borrado de secreto. |
 | Motor de laboratorio (lazy, límites, cancelación, métricas, viabilidad) | ✅ | Tests de casos críticos. |
 | Adaptadores Android (WifiScanner/Mapper/Permisos, KeystoreSecretVault) | ✅ | Compila; falta test instrumentado. |
