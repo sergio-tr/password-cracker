@@ -26,6 +26,7 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Estimación por rangos + calibración sintética | ✅ | Benchmark breve local; UI muestra "approximately X–Y"; no altera los límites del usuario. |
 | Paralelismo controlado | ✅ | `WorkerPoolConfig` + `ParallelLabSearchEngine` (rangos disjuntos); 1 worker sigue siendo la referencia. |
 | Pulido UX y accesibilidad | ✅ | Destinos claros, detalle Nearby por capas, Settings explica las 3 áreas, STOP con semántica, dark mode del sistema. |
+| Hardening RC (auditoría + evidencia) | 🟡 | `docs/release-checklist.md` + `docs/test-evidence.md`; PR de revisión humana, sin merge automático. |
 | Adaptadores Android (WifiScanner/Mapper/Permisos, KeystoreSecretVault) | ✅ | Compila; falta test instrumentado. |
 | DI (Koin) + UI Compose (Redes, Guardadas, Laboratorio, Ajustes) | ✅ (parcial) | Ver pendientes de UI. |
 | Documentación `docs/01`–`11` + ADRs | ✅ | — |
