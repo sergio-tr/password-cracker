@@ -17,11 +17,17 @@ import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.MatchKnownNetwork
 import com.wifiauditlab.assessment.application.ObserveNearbyNetworks
 import com.wifiauditlab.assessment.application.ObserveSavedNetworks
+import com.wifiauditlab.assessment.application.QuerySavedNetworks
+import com.wifiauditlab.assessment.application.RecordNearbySightings
+import com.wifiauditlab.assessment.application.RecordSavedNetworkSighting
 import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
 import com.wifiauditlab.assessment.application.RemoveSavedNetworkSecret
+import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
+import com.wifiauditlab.assessment.application.SaveNearbyNetwork
 import com.wifiauditlab.assessment.application.SearchSavedNetworks
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
+import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.classifier.WifiSecurityClassifier
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
@@ -80,17 +86,25 @@ val appModule =
         factory { ObserveSavedNetworks(get()) }
         factory { UpdateSavedNetworkAlias(get()) }
         factory { UpdateSavedNetworkLocation(get()) }
+        factory { UpdateSavedNetworkNotes(get()) }
         factory { UpdateSavedNetworkSecret(get(), get()) }
         factory { RemoveSavedNetworkSecret(get(), get()) }
         factory { DeleteSavedNetwork(get(), get()) }
-        factory { SearchSavedNetworks(get()) }
+        factory { QuerySavedNetworks() }
+        factory { SearchSavedNetworks(get(), get()) }
+        factory { RevealSavedNetworkSecret(get(), get()) }
+        factory { RecordSavedNetworkSighting(get()) }
+        factory { RecordNearbySightings(get()) }
+        factory { SaveNearbyNetwork(get(), get(), get()) }
         factory { MatchKnownNetwork(get(), get()) }
         factory { AssessNetworkSecurity(get()) }
         factory { ObserveNearbyNetworks(get(), get(), get()) }
         factory { RefreshNearbyNetworks(get()) }
 
         // ViewModels
-        viewModel { NearbyViewModel(get(), get(), get(), get()) }
-        viewModel { VaultViewModel(get(), get(), get(), get()) }
+        viewModel { NearbyViewModel(get(), get(), get(), get(), get()) }
+        viewModel {
+            VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+        }
         viewModel { LabViewModel(get(), get(), get(), get()) }
     }

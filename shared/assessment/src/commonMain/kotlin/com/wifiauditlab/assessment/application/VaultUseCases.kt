@@ -6,6 +6,8 @@ import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
+import com.wifiauditlab.assessment.domain.wifi.Bssid
+import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import kotlinx.coroutines.flow.Flow
@@ -81,6 +83,15 @@ class UpdateSavedNetworkLocation(private val repository: SavedNetworkRepository)
         repository.update(repository.require(id).copy(locationLabel = locationLabel, geoLocation = geoLocation))
 }
 
+/** Updates the free-form notes attached to a saved network. */
+class UpdateSavedNetworkNotes(private val repository: SavedNetworkRepository) {
+    suspend operator fun invoke(
+        id: SavedNetworkId,
+        notes: String?,
+    ): SavedWifiNetwork =
+        repository.update(repository.require(id).copy(notes = notes?.takeIf { it.isNotBlank() }))
+}
+
 /** Creates the secret on first set, or updates the existing ciphertext in place. */
 class UpdateSavedNetworkSecret(
     private val repository: SavedNetworkRepository,
@@ -143,19 +154,103 @@ class DeleteSavedNetwork(
 }
 
 /** Case-insensitive search across alias, SSID and location label. */
-class SearchSavedNetworks(private val repository: SavedNetworkRepository) {
-    operator fun invoke(query: String): Flow<List<SavedWifiNetwork>> {
-        val needle = query.trim().lowercase()
-        return repository.observeAll().map { networks ->
-            if (needle.isEmpty()) {
-                networks
-            } else {
-                networks.filter { network ->
-                    network.alias.lowercase().contains(needle) ||
-                        network.ssid.lowercase().contains(needle) ||
-                        (network.locationLabel?.value?.lowercase()?.contains(needle) == true)
-                }
-            }
+class SearchSavedNetworks(
+    private val repository: SavedNetworkRepository,
+    private val querySaved: QuerySavedNetworks = QuerySavedNetworks(),
+) {
+    operator fun invoke(query: String): Flow<List<SavedWifiNetwork>> =
+        repository.observeAll().map { networks -> querySaved(networks, query) }
+}
+
+/**
+ * Reads a secret only when the caller asks. Returns plaintext for a transient UI
+ * reveal; never logs or stringifies the value.
+ */
+class RevealSavedNetworkSecret(
+    private val repository: SavedNetworkRepository,
+    private val secretVault: SecretVault,
+) {
+    suspend operator fun invoke(id: SavedNetworkId): String? {
+        val secretId = repository.getById(id)?.secretId ?: return null
+        return secretVault.read(secretId)?.value
+    }
+}
+
+/**
+ * Merges a newly observed BSSID and refreshes [SavedWifiNetwork.lastSeenAtEpochMillis].
+ *
+ * Writes are skipped when the BSSID is already known and the last sighting is
+ * more recent than [minSightingIntervalMillis], so a scan-driven observer cannot
+ * loop on its own repository updates.
+ */
+class RecordSavedNetworkSighting(
+    private val repository: SavedNetworkRepository,
+    private val minSightingIntervalMillis: Long = DEFAULT_SIGHTING_INTERVAL_MILLIS,
+) {
+    suspend operator fun invoke(
+        id: SavedNetworkId,
+        bssid: Bssid,
+        seenAtEpochMillis: Long,
+    ): SavedWifiNetwork {
+        val network = repository.require(id)
+        val needsBssid = bssid !in network.knownBssids
+        val lastSeen = network.lastSeenAtEpochMillis
+        val needsSeen = lastSeen == null || seenAtEpochMillis - lastSeen >= minSightingIntervalMillis
+        if (!needsBssid && !needsSeen) return network
+        return repository.update(
+            network.copy(
+                knownBssids = network.knownBssids + bssid,
+                lastSeenAtEpochMillis = seenAtEpochMillis,
+            ),
+        )
+    }
+
+    companion object {
+        const val DEFAULT_SIGHTING_INTERVAL_MILLIS: Long = 60_000L
+    }
+}
+
+/** Records sightings for Exact/Probable matches in a nearby snapshot. */
+class RecordNearbySightings(
+    private val recordSighting: RecordSavedNetworkSighting,
+) {
+    suspend operator fun invoke(networks: List<NearbyNetwork>) {
+        for (item in networks) {
+            val id = item.knownNetworkId ?: continue
+            recordSighting(id, item.observation.bssid, item.observation.observedAtEpochMillis)
         }
+    }
+}
+
+/**
+ * Saves a detected network, or refreshes an existing Exact/Probable match
+ * (alias + last seen + known BSSID) instead of creating a duplicate.
+ */
+class SaveNearbyNetwork(
+    private val createSavedNetwork: CreateSavedNetwork,
+    private val updateAlias: UpdateSavedNetworkAlias,
+    private val recordSighting: RecordSavedNetworkSighting,
+) {
+    suspend operator fun invoke(
+        observation: WifiObservation,
+        alias: String,
+        existingId: SavedNetworkId? = null,
+    ): SavedWifiNetwork {
+        if (existingId != null) {
+            val trimmed = alias.trim()
+            if (trimmed.isNotEmpty()) {
+                updateAlias(existingId, trimmed)
+            }
+            return recordSighting(existingId, observation.bssid, observation.observedAtEpochMillis)
+        }
+        val fallbackAlias = observation.ssid.value.ifEmpty { "Red oculta" }
+        return createSavedNetwork(
+            NewSavedWifiNetwork(
+                alias = alias.ifBlank { fallbackAlias },
+                ssid = observation.ssid.value,
+                securityFamily = observation.securityProfile.family,
+                knownBssids = setOf(observation.bssid),
+            ),
+        )
     }
 }

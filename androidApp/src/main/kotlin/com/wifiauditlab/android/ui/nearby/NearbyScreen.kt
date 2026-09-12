@@ -170,11 +170,14 @@ private fun NetworkDetailSheet(
     onSave: (String) -> Unit,
 ) {
     val observation = detail.item.observation
-    var alias by remember(detail.item) { mutableStateOf(observation.ssid.value) }
+    var alias by remember(detail.item) {
+        mutableStateOf(detail.item.alias ?: observation.ssid.value)
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-            Text(observation.ssid.toString(), fontWeight = FontWeight.Bold)
+            Text(detail.item.alias ?: observation.ssid.toString(), fontWeight = FontWeight.Bold)
+            if (detail.item.alias != null) Text(observation.ssid.toString())
             Text(
                 buildString {
                     append(observation.securityProfile.family.name)
@@ -210,7 +213,13 @@ private fun NetworkDetailSheet(
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { onSave(alias) }, modifier = Modifier.weight(1f)) {
-                        Text("Guardar en el Vault")
+                        Text(
+                            if (detail.item.isKnown && !detail.item.ambiguous) {
+                                "Actualizar en el Vault"
+                            } else {
+                                "Guardar en el Vault"
+                            },
+                        )
                     }
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
                         Text("Cerrar")

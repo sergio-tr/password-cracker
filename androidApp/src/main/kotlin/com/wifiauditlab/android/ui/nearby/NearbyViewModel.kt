@@ -3,12 +3,13 @@ package com.wifiauditlab.android.ui.nearby
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
-import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.NearbyNetwork
 import com.wifiauditlab.assessment.application.ObserveNearbyNetworks
+import com.wifiauditlab.assessment.application.RecordNearbySightings
 import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
+import com.wifiauditlab.assessment.application.SaveNearbyNetwork
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
-import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
+import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
 import com.wifiauditlab.assessment.port.WifiScanState
@@ -17,12 +18,14 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class NearbyItem(
     val observation: WifiObservation,
     val alias: String?,
+    val savedNetworkId: SavedNetworkId?,
     val isKnown: Boolean,
     val ambiguous: Boolean,
 )
@@ -43,6 +46,7 @@ private fun NearbyNetwork.toItem(): NearbyItem =
     NearbyItem(
         observation = observation,
         alias = knownAlias,
+        savedNetworkId = knownNetworkId,
         isKnown = isKnown,
         ambiguous = isAmbiguous,
     )
@@ -56,10 +60,12 @@ class NearbyViewModel(
     observeNearby: ObserveNearbyNetworks,
     private val refreshNearby: RefreshNearbyNetworks,
     private val assessSecurity: AssessNetworkSecurity,
-    private val createSavedNetwork: CreateSavedNetwork,
+    private val saveNearbyNetwork: SaveNearbyNetwork,
+    private val recordNearbySightings: RecordNearbySightings,
 ) : ViewModel() {
     val state: StateFlow<NearbyUiState> =
         observeNearby()
+            .onEach { snapshot -> recordNearbySightings(snapshot.networks) }
             .map { snapshot ->
                 NearbyUiState(
                     scanState = snapshot.scanState,
@@ -89,15 +95,11 @@ class NearbyViewModel(
 
     fun saveSelectedToVault(alias: String) {
         val current = _detail.value ?: return
-        val observation = current.item.observation
         viewModelScope.launch {
-            createSavedNetwork(
-                NewSavedWifiNetwork(
-                    alias = alias.ifBlank { observation.ssid.value.ifEmpty { "Red oculta" } },
-                    ssid = observation.ssid.value,
-                    securityFamily = observation.securityProfile.family,
-                    knownBssids = setOf(observation.bssid),
-                ),
+            saveNearbyNetwork(
+                observation = current.item.observation,
+                alias = alias,
+                existingId = current.item.savedNetworkId,
             )
             _detail.value = _detail.value?.takeIf { it.item == current.item }?.copy(saved = true)
         }

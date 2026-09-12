@@ -25,9 +25,11 @@ interface SecretVault {
 ## Casos de uso
 
 `CreateSavedNetwork`, `GetSavedNetwork`, `ObserveSavedNetworks`,
-`UpdateSavedNetworkAlias`, `UpdateSavedNetworkLocation`, `UpdateSavedNetworkSecret`,
-`RemoveSavedNetworkSecret`, `DeleteSavedNetwork`, `MatchKnownNetwork`,
-`SearchSavedNetworks`.
+`UpdateSavedNetworkAlias`, `UpdateSavedNetworkLocation`, `UpdateSavedNetworkNotes`,
+`UpdateSavedNetworkSecret`, `RemoveSavedNetworkSecret`, `DeleteSavedNetwork`,
+`MatchKnownNetwork`, `SearchSavedNetworks`, `QuerySavedNetworks`,
+`RevealSavedNetworkSecret`, `RecordSavedNetworkSighting`, `RecordNearbySightings`,
+`SaveNearbyNetwork`.
 
 ## Seguridad de secretos
 
@@ -46,4 +48,16 @@ interface SecretVault {
 Las credenciales aparecen ocultas por defecto (`••••••••••••`) y sólo se revelan
 o copian mediante acción explícita. La arquitectura permite añadir autenticación
 biométrica antes de revelar sin que el dominio dependa de biometría (la revelación
-es una acción de UI que invoca `SecretVault.read`).
+es una acción de UI que invoca `RevealSavedNetworkSecret`).
+
+## Listado y re-detección
+
+El listado muestra alias, SSID, ubicación, familia de seguridad, si hay secreto y
+la última vista. `QuerySavedNetworks` aplica búsqueda, filtro (con/sin contraseña)
+y orden (alias, última vista, seguridad).
+
+Si una red conocida se detecta de nuevo, Nearby muestra **primero el alias** del
+usuario. `RecordSavedNetworkSighting` fusiona el BSSID observado y actualiza
+`lastSeenAtEpochMillis` (con intervalo mínimo para no reescribir en bucle).
+`SaveNearbyNetwork` crea una red nueva o actualiza la coincidencia Exact/Probable
+en lugar de duplicarla.
