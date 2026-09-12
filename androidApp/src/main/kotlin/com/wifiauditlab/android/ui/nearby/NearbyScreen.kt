@@ -25,6 +25,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -173,31 +174,38 @@ private fun NetworkDetailSheet(
     var alias by remember(detail.item) {
         mutableStateOf(detail.item.alias ?: observation.ssid.value)
     }
+    var showAdvanced by remember(detail.item) { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
             Text(detail.item.alias ?: observation.ssid.toString(), fontWeight = FontWeight.Bold)
             if (detail.item.alias != null) Text(observation.ssid.toString())
+            Text("Seguridad: ${observation.securityProfile.family.name}")
+            Text("Señal: ${qualityLabel(observation.signal.quality)}")
             Text(
-                buildString {
-                    append(observation.securityProfile.family.name)
-                    append(" · ")
-                    append(bandLabel(observation.channel.band))
-                    append(" · canal ")
-                    append(observation.channel.number)
-                    append(" · ")
-                    append(qualityLabel(observation.signal.quality))
-                    append(" (${observation.signal.rssiDbm} dBm)")
+                when {
+                    detail.saved || (detail.item.isKnown && !detail.item.ambiguous) -> "Guardada en el Vault"
+                    detail.item.ambiguous -> "Coincidencia ambigua"
+                    else -> "No guardada"
                 },
+                fontWeight = FontWeight.SemiBold,
             )
-            Text("BSSID: ${observation.bssid}")
 
-            Spacer(Modifier.height(16.dp))
-            val assessment = detail.assessment
-            if (assessment == null) {
-                Text("Analizando seguridad…")
-            } else {
-                AssessmentBlock(assessment)
+            TextButton(onClick = { showAdvanced = !showAdvanced }) {
+                Text(if (showAdvanced) "Ocultar datos avanzados" else "Mostrar datos avanzados")
+            }
+            if (showAdvanced) {
+                Text(
+                    "${bandLabel(observation.channel.band)} · canal ${observation.channel.number} · " +
+                        "${observation.signal.rssiDbm} dBm",
+                )
+                Text("BSSID: ${observation.bssid}")
+                val assessment = detail.assessment
+                if (assessment == null) {
+                    Text("Analizando seguridad…")
+                } else {
+                    AssessmentBlock(assessment)
+                }
             }
 
             Spacer(Modifier.height(16.dp))

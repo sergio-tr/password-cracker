@@ -35,11 +35,13 @@ fun SettingsScreen() {
                 }
             }
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Acerca de", fontWeight = FontWeight.SemiBold)
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Qué hace esta app", fontWeight = FontWeight.SemiBold)
+                    Text("Cercanas — descubre redes Wi‑Fi reales y evalúa su seguridad.")
+                    Text("Guardadas — el Vault: alias, ubicación y contraseña cifrada.")
+                    Text("Laboratorio — busca secretos sintéticos con límites y un botón STOP.")
                     Text(
-                        "El laboratorio sintético está completamente aislado de las redes reales: " +
-                            "sus algoritmos nunca se conectan a un Wi-Fi.",
+                        "El laboratorio está aislado de las redes reales: sus algoritmos nunca se conectan a un Wi‑Fi.",
                     )
                 }
             }

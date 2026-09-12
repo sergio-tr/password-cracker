@@ -1,7 +1,11 @@
 # 09 · UI / UX
 
-Material 3, soporte light/dark, navegación con barra inferior (Redes, Guardadas,
-Laboratorio, Ajustes).
+Material 3, soporte light/dark del sistema, navegación con barra inferior
+(Cercanas, Guardadas, Laboratorio, Ajustes). Un usuario nuevo ve en Ajustes qué
+hace cada pestaña. El detalle de una red cercana muestra primero nombre,
+seguridad, señal y si está guardada; los datos avanzados se despliegan a
+demanda. El laboratorio explica reto, coste, límites y STOP antes y durante
+la ejecución.
 
 ## Pantallas
 
