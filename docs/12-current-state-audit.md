@@ -51,7 +51,7 @@ Sin emulador / `androidTest`.
 | Emulator CI | Not present | **Missing** | CI has no emulator job | N/A | Flaky risk if naive | **FASE 21** |
 | Onboarding | Deferred → Implemented (FASE 18) | **Implemented** | `OnboardingViewModelTest` | First run + Settings replay | — | **Keep** |
 | Permission Center | Deferred → Implemented (FASE 18) | **Implemented** | `PermissionCenterViewModelTest` | Settings → Centro de permisos | Compose UI tests later | **Keep** |
-| Security Analysis Detail screen | Deferred | **Missing** (summary in Nearby sheet) | Assessment domain tests only | Partial | Dedicated hierarchy | **FASE 19** |
+| Security Analysis Detail screen | Deferred → Implemented (FASE 19) | **Implemented** | Family-parameterized VM tests | Nearby detail CTA | Compose UI later | **Keep** |
 | GeoLocation UI | Partial | Domain+DB yes; UI `LocationLabel` only | Domain/persistence | Label only | No location picker | Deferred / later product |
 | Biometric reveal | Deferred | Not implemented | None | No | Architecture ready | Deferred |
 | iOS targets | Deferred | Not present | None | N/A | Needs macOS | Deferred (`docs/11`) |
