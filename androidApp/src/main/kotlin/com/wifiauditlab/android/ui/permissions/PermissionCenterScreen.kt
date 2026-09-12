@@ -43,12 +43,14 @@ import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Production entry. System permission request / settings intents stay here so
+ * Compose UI tests can drive [PermissionCenterContent] with fake callbacks.
+ */
 @Composable
 fun PermissionCenterScreen(
     viewModel: PermissionCenterViewModel = koinViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val permissionManager: AndroidWifiPermissionManager = koinInject()
     val scanPermission = permissionManager.requiredPermissions.first()
@@ -71,6 +73,36 @@ fun PermissionCenterScreen(
             }
             viewModel.refresh()
         }
+
+    PermissionCenterContent(
+        viewModel = viewModel,
+        onRequestPermission = {
+            hasRequested = true
+            requestPermission.launch(scanPermission)
+        },
+        onOpenAppSettings = {
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", context.packageName, null),
+                ),
+            )
+        },
+        onOpenLocationSettings = {
+            context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PermissionCenterContent(
+    viewModel: PermissionCenterViewModel,
+    onRequestPermission: () -> Unit,
+    onOpenAppSettings: () -> Unit,
+    onOpenLocationSettings: () -> Unit,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -95,21 +127,9 @@ fun PermissionCenterScreen(
             state.items.forEach { item ->
                 PermissionCard(
                     item = item,
-                    onRequest = {
-                        hasRequested = true
-                        requestPermission.launch(scanPermission)
-                    },
-                    onOpenAppSettings = {
-                        context.startActivity(
-                            Intent(
-                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.fromParts("package", context.packageName, null),
-                            ),
-                        )
-                    },
-                    onOpenLocationSettings = {
-                        context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                    },
+                    onRequest = onRequestPermission,
+                    onOpenAppSettings = onOpenAppSettings,
+                    onOpenLocationSettings = onOpenLocationSettings,
                 )
             }
             OutlinedButton(onClick = viewModel::refresh, modifier = Modifier.fillMaxWidth()) {

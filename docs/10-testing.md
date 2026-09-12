@@ -1,9 +1,23 @@
 # 10 · Testing
 
 Los tests del dominio y los casos de uso corren en el target `jvm` de KMP, sin
-emulador ni Android SDK: `./gradlew test`.
+emulador ni Android SDK: `./gradlew test` / `jvmTest`.
 
-## Cobertura actual (unit, JVM)
+## Matriz de cobertura (FASE 20)
+
+| Feature | JVM / ViewModel | Compose UI (`androidTest`) | Instrumentación Android | Missing / manual |
+| --- | --- | --- | --- | --- |
+| Nearby | `NearbyViewModelTest`, `NearbyUseCasesTest` | Loading, empty, results, known/unknown, permission, location, throttled, error, refresh, detail, save, Security Analysis CTA | — | Escaneo Wi‑Fi físico / OEM |
+| Onboarding | `OnboardingViewModelTest` | First run, 1→2→3, skip, completed, Settings replay | — | — |
+| Permission Center | `PermissionCenterViewModelTest` | Granted / Missing / permanent denial / location disabled + acciones | Smoke `AndroidWifiPermissionManager` | Diálogos OEM de permiso |
+| Security Analysis | `SecurityAnalysisViewModelTest` (8 familias) | Mismas familias + progressive disclosure técnico | — | — |
+| Vault UI | `VaultViewModelTest`, use cases | Empty, list, search, filter, sort, create, detail, alias, secret hide/reveal, delete confirm | — | Clipboard OEM |
+| Vault persistencia | `SqlDelight…Test` (JVM memoria) | — | `AndroidSqliteDriver` CRUD + reopen | — |
+| Secretos | Use cases + `VaultModelTest` redaction | UI mask only (sin plaintext en asserts) | `KeystoreSecretVault` P0 + lifecycle red↔secret | — |
+| Lab | Engine suite + `LabViewModelTest` | Config, feasibility, found, STOP/cancel, LimitReached (engine fake) | — | Runs largos en dispositivo |
+| Wifi mapper | Classifier fixtures JVM | — | — | Mapper con tipos framework + redes reales |
+
+## Cobertura JVM / KMP (unit)
 
 | Área | Fichero |
 | --- | --- |
@@ -23,26 +37,42 @@ emulador ni Android SDK: `./gradlew test`.
 | ViewModel Nearby | `NearbyViewModelTest` (`androidApp/src/test`) |
 | ViewModel Vault | `VaultViewModelTest` |
 | ViewModel Lab | `LabViewModelTest` |
-| ViewModel Onboarding | `OnboardingViewModelTest` (first run / skip / complete / reopen) |
-| ViewModel Permission Center | `PermissionCenterViewModelTest` (denied / permanent / service / restored) |
-| ViewModel Security Analysis | `SecurityAnalysisViewModelTest` + familias Open/WEP/WPA2/WPA3/transition/Enterprise/OWE/Unknown |
+| ViewModel Onboarding | `OnboardingViewModelTest` |
+| ViewModel Permission Center | `PermissionCenterViewModelTest` |
+| ViewModel Security Analysis | `SecurityAnalysisViewModelTest` |
 
-## Casos críticos cubiertos
+## Compose UI (`androidApp/src/androidTest`)
 
-- Cancelar durante la ejecución (`CancelAfterPolls`) → estado `Cancelled` inmediato.
-- Cancelar en transición de bucket (plan multi-longitud).
-- Límite de duración alcanzado (`AutoAdvancingTimeSource` determinista).
-- Límite de intentos alcanzado.
-- Secreto encontrado **exactamente** en el límite → `Found`; uno más allá → `LimitReached`.
-- Exhausción del espacio sin encontrar → `Completed`.
-- Aritmética de espacios enormes (2^100, 2^256, 95^20, …).
-- CRUD del repositorio; borrar red con secreto asociado; actualizar/eliminar secreto.
-- Compensación explícita red↔secreto (fallos de create/update).
-- Red conocida con BSSID nuevo → `Probable`; matching ambiguo → `Ambiguous`.
-- Pool paralelo: mismos hallazgos que el baseline; intentos ≤ espacio.
+| Área | Fichero | Notas |
+| --- | --- | --- |
+| Nearby | `NearbyComposeTest` | Fakes de scanner/repo; mensaje throttled visible |
+| Onboarding | `OnboardingComposeTest` | Fake prefs |
+| Permission Center | `PermissionCenterComposeTest` | Usa `PermissionCenterContent` (sin Koin) |
+| Security Analysis | `SecurityAnalysisComposeTest` | Parametrizado por familia |
+| Vault | `VaultComposeTest` | Secreto sintético `ui-test-secret-aa` |
+| Lab | `LabComposeTest` | Engine scripted / hanging |
 
-## Deferred
+Estado de ejecución en este entorno: ver `docs/test-evidence.md`
+(**IMPLEMENTED BUT NOT EXECUTED** si no hay emulador).
 
-- Tests de Compose UI.
-- Tests de integración Android (scanner, Keystore) e instrumentación (`androidTest`).
-- Suite formal de benchmarks (throughput / CPU / latencia de cancelación).
+## Instrumentación Android (`androidApp/src/androidTest`)
+
+| Área | Fichero |
+| --- | --- |
+| SQLDelight + `AndroidSqliteDriver` | `AndroidSqlDelightRepositoryTest` |
+| Keystore AEAD | `KeystoreSecretVaultInstrumentedTest` |
+| Lifecycle red + secreto | `NetworkSecretLifecycleInstrumentedTest` |
+| Permission manager smoke | `AndroidWifiPermissionManagerInstrumentedTest` |
+
+## Casos críticos cubiertos (dominio)
+
+- Cancelar durante la ejecución → `Cancelled` inmediato.
+- Límites de duración / intentos; Found exactamente en el límite.
+- Compensación explícita red↔secreto.
+- Pool paralelo: mismos hallazgos que el baseline.
+
+## Deferred / FASE 21+
+
+- Ejecución automática de `androidTest` en CI con emulador (FASE 21).
+- Suite formal de benchmarks (FASE 23).
+- Escaneo Wi‑Fi físico: smoke manual únicamente.
