@@ -4,8 +4,12 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.platform.KeystoreSecretVault
+import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.lab.LabViewModel
 import com.wifiauditlab.android.ui.nearby.NearbyViewModel
+import com.wifiauditlab.android.ui.onboarding.OnboardingViewModel
+import com.wifiauditlab.android.ui.permissions.AndroidPermissionInventory
+import com.wifiauditlab.android.ui.permissions.PermissionCenterViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
@@ -33,6 +37,7 @@ import com.wifiauditlab.assessment.domain.classifier.WifiSecurityClassifier
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.match.KnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
+import com.wifiauditlab.assessment.port.OnboardingPreferences
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanner
@@ -63,6 +68,7 @@ val appModule =
         single { AndroidWifiPermissionManager(androidContext()) }
         single<WifiScanner> { AndroidWifiScanner(androidContext(), get(), get()) }
         single<SecretVault> { KeystoreSecretVault(androidContext()) }
+        single<OnboardingPreferences> { SharedPreferencesOnboardingPreferences(androidContext()) }
         single<SqlDriver> { AndroidSqliteDriver(VaultDatabase.Schema, androidContext(), "vault.db") }
         single { VaultDatabase(get()) }
         single<SavedNetworkRepository> {
@@ -118,4 +124,16 @@ val appModule =
             VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
         }
         viewModel { LabViewModel(get(), get(), get(), get(), calibration = get()) }
+        viewModel { OnboardingViewModel(get()) }
+        viewModel {
+            PermissionCenterViewModel(
+                inventoryFactory = { permanentDenials ->
+                    AndroidPermissionInventory(
+                        context = androidContext(),
+                        permissionManager = get(),
+                        permanentlyDenied = { permanentDenials },
+                    )
+                },
+            )
+        }
     }

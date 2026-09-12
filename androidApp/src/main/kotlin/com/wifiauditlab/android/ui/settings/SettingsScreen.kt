@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -18,13 +20,34 @@ import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    onOpenPermissions: () -> Unit = {},
+    onReplayOnboarding: () -> Unit = {},
+) {
     val capabilities = AndroidPlatformCapabilities()
     Scaffold(topBar = { TopAppBar(title = { Text("Ajustes") }) }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Permisos y servicios", fontWeight = FontWeight.SemiBold)
+                    Text("Revisa permisos requeridos, servicios del sistema y capacidades opcionales.")
+                    Button(onClick = onOpenPermissions, modifier = Modifier.fillMaxWidth()) {
+                        Text("Abrir centro de permisos")
+                    }
+                }
+            }
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Onboarding", fontWeight = FontWeight.SemiBold)
+                    Text("Vuelve a ver la introducción de Cercanas, Vault y Laboratorio.")
+                    OutlinedButton(onClick = onReplayOnboarding, modifier = Modifier.fillMaxWidth()) {
+                        Text("Mostrar introducción")
+                    }
+                }
+            }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Capacidades de la plataforma", fontWeight = FontWeight.SemiBold)

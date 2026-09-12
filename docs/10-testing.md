@@ -23,6 +23,8 @@ emulador ni Android SDK: `./gradlew test`.
 | ViewModel Nearby | `NearbyViewModelTest` (`androidApp/src/test`) |
 | ViewModel Vault | `VaultViewModelTest` |
 | ViewModel Lab | `LabViewModelTest` |
+| ViewModel Onboarding | `OnboardingViewModelTest` (first run / skip / complete / reopen) |
+| ViewModel Permission Center | `PermissionCenterViewModelTest` (denied / permanent / service / restored) |
 
 ## Casos críticos cubiertos
 

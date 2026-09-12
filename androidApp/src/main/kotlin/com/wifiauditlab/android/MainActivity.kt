@@ -16,6 +16,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -26,9 +29,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.wifiauditlab.android.ui.lab.LabScreen
 import com.wifiauditlab.android.ui.nearby.NearbyScreen
+import com.wifiauditlab.android.ui.onboarding.OnboardingScreen
+import com.wifiauditlab.android.ui.permissions.PermissionCenterScreen
 import com.wifiauditlab.android.ui.settings.SettingsScreen
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.android.ui.vault.VaultScreen
+import com.wifiauditlab.assessment.port.OnboardingPreferences
+import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,29 +55,47 @@ private enum class Destination(val route: String, val label: String, val icon: I
     Settings("settings", "Ajustes", Icons.Filled.Settings),
 }
 
+private object Routes {
+    const val PERMISSIONS = "permissions"
+}
+
 @Composable
 private fun AppRoot() {
+    val onboardingPreferences: OnboardingPreferences = koinInject()
+    var showOnboarding by remember { mutableStateOf(!onboardingPreferences.isCompleted()) }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    val hideBottomBar =
+        showOnboarding || currentDestination?.route == Routes.PERMISSIONS
+
+    if (showOnboarding) {
+        OnboardingScreen(
+            replay = onboardingPreferences.isCompleted(),
+            onFinished = { showOnboarding = false },
+        )
+        return
+    }
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                Destination.entries.forEach { destination ->
-                    val selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(destination.icon, contentDescription = destination.label) },
-                        label = { Text(destination.label) },
-                    )
+            if (!hideBottomBar) {
+                NavigationBar {
+                    Destination.entries.forEach { destination ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(destination.icon, contentDescription = destination.label) },
+                            label = { Text(destination.label) },
+                        )
+                    }
                 }
             }
         },
@@ -83,7 +108,15 @@ private fun AppRoot() {
             composable(Destination.Nearby.route) { NearbyScreen() }
             composable(Destination.Vault.route) { VaultScreen() }
             composable(Destination.Lab.route) { LabScreen() }
-            composable(Destination.Settings.route) { SettingsScreen() }
+            composable(Destination.Settings.route) {
+                SettingsScreen(
+                    onOpenPermissions = { navController.navigate(Routes.PERMISSIONS) },
+                    onReplayOnboarding = {
+                        showOnboarding = true
+                    },
+                )
+            }
+            composable(Routes.PERMISSIONS) { PermissionCenterScreen() }
         }
     }
 }
