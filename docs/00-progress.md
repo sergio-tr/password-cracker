@@ -27,6 +27,8 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Casos de uso de aplicación para redes cercanas | ✅ | `ObserveNearbyNetworks` (matching fuera del ViewModel), `RefreshNearbyNetworks`; fakes + tests. |
 | Persistencia duradera del Vault (SQLDelight) | ✅ | Módulo `:shared:persistence`; `AndroidSqliteDriver`; tests JVM con SQLite en memoria; esquema versionado. |
 | Compensación explícita red + secreto | ✅ | Rollback en create/update-first; borrado sin referencias colgantes (ADR 0007); tests con fakes que fallan. |
+| `NearbyViewModel` recableado a `ObserveNearbyNetworks` | ✅ | Matching y clasificación fuera del ViewModel; `stateIn(viewModelScope)`; tests JUnit con `runTest`. |
+| Pantalla Nearby + detalle (bottom sheet) + guardar en Vault | ✅ | Assessment por red, alias editable, permisos UX (acciones a Ajustes). |
 
 ## Pendiente
 
@@ -34,9 +36,8 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | --- | --- | --- |
 | Persistencia duradera del Vault (SQLDelight) | Hecho | Ver fila en Implementado. |
 | Algoritmo de búsqueda más potente | Alta | Nuevas estrategias/optimizadores de priorización; pool de workers con benchmarks (ADR 0006). |
-| Pantallas restantes | Alta | Onboarding, Permissions dedicada, Network Detail, Security Analysis detallada, Saved Network Detail/Edit, Lab Result como pantalla propia. |
-| Recablear `NearbyViewModel` a `ObserveNearbyNetworks` | Alta | Quitar el matching del ViewModel (FASE 07). |
+| Pantallas restantes | Alta | Onboarding, Permissions dedicada, Security Analysis detallada, Saved Network Detail/Edit, Lab Result como pantalla propia. |
 | Acciones de Vault en UI | Alta | Editar alias/ubicación/secreto, copiar al portapapeles, revelar con biometría. |
-| Tests de ViewModel + Compose UI + instrumentación | Media | — |
+| Tests de Compose UI + instrumentación | Media | ViewModel cubierto; falta UI/androidTest (requiere emulador). |
 | Módulo de benchmarks del laboratorio | Media | Sección 29 del enunciado. |
 | Targets iOS reales | Baja | Requiere macOS/Xcode. |
