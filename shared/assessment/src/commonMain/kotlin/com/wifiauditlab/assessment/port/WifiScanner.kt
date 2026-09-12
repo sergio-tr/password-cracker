@@ -6,14 +6,20 @@ import kotlinx.coroutines.flow.Flow
 /** Snapshot of the Wi-Fi scanning subsystem. Explicit states avoid impossible flags. */
 sealed interface WifiScanState {
     data object Idle : WifiScanState
+
     data object Loading : WifiScanState
+
     data class Results(val observations: List<WifiObservation>) : WifiScanState
 
     /** The OS throttled scans; last known results (if any) are still shown. */
     data class Throttled(val lastObservations: List<WifiObservation>) : WifiScanState
+
     data object PermissionRequired : WifiScanState
+
     data object LocationServicesDisabled : WifiScanState
+
     data object Unavailable : WifiScanState
+
     data class Error(val message: String) : WifiScanState
 }
 
@@ -32,5 +38,6 @@ enum class WifiScanRequestResult {
  */
 interface WifiScanner {
     fun observeState(): Flow<WifiScanState>
+
     suspend fun refresh(): WifiScanRequestResult
 }

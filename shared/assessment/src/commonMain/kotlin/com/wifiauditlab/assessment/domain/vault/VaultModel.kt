@@ -9,7 +9,10 @@ import kotlin.uuid.Uuid
 
 @JvmInline
 value class SavedNetworkId(val value: String) {
-    init { require(value.isNotBlank()) { "SavedNetworkId must not be blank" } }
+    init {
+        require(value.isNotBlank()) { "SavedNetworkId must not be blank" }
+    }
+
     override fun toString(): String = value
 
     companion object {
@@ -20,7 +23,10 @@ value class SavedNetworkId(val value: String) {
 
 @JvmInline
 value class SecretId(val value: String) {
-    init { require(value.isNotBlank()) { "SecretId must not be blank" } }
+    init {
+        require(value.isNotBlank()) { "SecretId must not be blank" }
+    }
+
     override fun toString(): String = value
 
     companion object {
@@ -46,9 +52,12 @@ data class GeoLocation(val latitude: Double, val longitude: Double)
  * exceptions, analytics or [toString]; the redacting [toString] enforces that.
  */
 class NetworkSecret(val value: String) {
-    init { require(value.isNotEmpty()) { "secret must not be empty" } }
+    init {
+        require(value.isNotEmpty()) { "secret must not be empty" }
+    }
 
     override fun equals(other: Any?): Boolean = other is NetworkSecret && other.value == value
+
     override fun hashCode(): Int = value.hashCode()
 
     /** Never reveals the secret. */

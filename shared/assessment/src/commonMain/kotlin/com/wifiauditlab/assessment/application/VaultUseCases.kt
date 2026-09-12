@@ -1,7 +1,7 @@
 package com.wifiauditlab.assessment.application
 
-import com.wifiauditlab.assessment.domain.vault.LocationLabel
 import com.wifiauditlab.assessment.domain.vault.GeoLocation
+import com.wifiauditlab.assessment.domain.vault.LocationLabel
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
@@ -23,7 +23,10 @@ class CreateSavedNetwork(
     private val repository: SavedNetworkRepository,
     private val secretVault: SecretVault,
 ) {
-    suspend operator fun invoke(network: NewSavedWifiNetwork, secret: NetworkSecret? = null): SavedWifiNetwork {
+    suspend operator fun invoke(
+        network: NewSavedWifiNetwork,
+        secret: NetworkSecret? = null,
+    ): SavedWifiNetwork {
         val created = repository.create(network)
         if (secret == null) return created
         val secretId = secretVault.create(secret)
@@ -40,7 +43,10 @@ class ObserveSavedNetworks(private val repository: SavedNetworkRepository) {
 }
 
 class UpdateSavedNetworkAlias(private val repository: SavedNetworkRepository) {
-    suspend operator fun invoke(id: SavedNetworkId, alias: String): SavedWifiNetwork {
+    suspend operator fun invoke(
+        id: SavedNetworkId,
+        alias: String,
+    ): SavedWifiNetwork {
         require(alias.isNotBlank()) { "alias must not be blank" }
         return repository.update(repository.require(id).copy(alias = alias))
     }
@@ -60,7 +66,10 @@ class UpdateSavedNetworkSecret(
     private val repository: SavedNetworkRepository,
     private val secretVault: SecretVault,
 ) {
-    suspend operator fun invoke(id: SavedNetworkId, secret: NetworkSecret): SavedWifiNetwork {
+    suspend operator fun invoke(
+        id: SavedNetworkId,
+        secret: NetworkSecret,
+    ): SavedWifiNetwork {
         val network = repository.require(id)
         val existing = network.secretId
         return if (existing == null) {

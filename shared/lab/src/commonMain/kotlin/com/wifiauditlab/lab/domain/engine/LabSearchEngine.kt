@@ -18,7 +18,10 @@ interface LabSearchStrategy {
 
     fun supports(challenge: LabChallenge): Boolean
 
-    suspend fun createPlan(challenge: LabChallenge, limits: SearchLimits): LabSearchPlan
+    suspend fun createPlan(
+        challenge: LabChallenge,
+        limits: SearchLimits,
+    ): LabSearchPlan
 }
 
 /**
@@ -26,7 +29,10 @@ interface LabSearchStrategy {
  * different priorization policies so they can be compared in the lab.
  */
 interface SearchPlanOptimizer {
-    fun optimize(challenge: LabChallenge, strategyId: SearchStrategyId): LabSearchPlan
+    fun optimize(
+        challenge: LabChallenge,
+        strategyId: SearchStrategyId,
+    ): LabSearchPlan
 }
 
 /** Runs a plan, emitting a cold flow of [LabSearchEvent]s. Cooperatively cancelable. */

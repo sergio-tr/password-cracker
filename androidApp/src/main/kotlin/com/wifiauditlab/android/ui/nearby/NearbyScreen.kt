@@ -37,33 +37,40 @@ fun NearbyScreen(viewModel: NearbyViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     val permissions = scanPermissions()
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { viewModel.refresh() }
+    val launcher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) { viewModel.refresh() }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Redes cercanas") }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             Button(
                 onClick = {
-                    if (state.scanState is WifiScanState.PermissionRequired) launcher.launch(permissions)
-                    else viewModel.refresh()
+                    if (state.scanState is WifiScanState.PermissionRequired) {
+                        launcher.launch(permissions)
+                    } else {
+                        viewModel.refresh()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Actualizar") }
 
             when (val scan = state.scanState) {
-                WifiScanState.PermissionRequired -> StatusText(
-                    "Necesitamos permiso para descubrir redes. Pulsa Actualizar para concederlo.",
-                )
-                WifiScanState.LocationServicesDisabled -> StatusText(
-                    "Activa la ubicación del dispositivo para poder escanear redes Wi-Fi.",
-                )
+                WifiScanState.PermissionRequired ->
+                    StatusText(
+                        "Necesitamos permiso para descubrir redes. Pulsa Actualizar para concederlo.",
+                    )
+                WifiScanState.LocationServicesDisabled ->
+                    StatusText(
+                        "Activa la ubicación del dispositivo para poder escanear redes Wi-Fi.",
+                    )
                 WifiScanState.Unavailable -> StatusText("El Wi-Fi no está disponible en este dispositivo.")
                 is WifiScanState.Error -> StatusText("Error al escanear: ${scan.message}")
                 WifiScanState.Loading -> StatusText("Escaneando…")
                 WifiScanState.Idle -> StatusText("Pulsa Actualizar para buscar redes cercanas.")
                 is WifiScanState.Throttled,
-                is WifiScanState.Results -> NetworkList(state.items)
+                is WifiScanState.Results,
+                -> NetworkList(state.items)
             }
         }
     }
@@ -123,19 +130,21 @@ private fun StatusText(text: String) {
     }
 }
 
-private fun bandLabel(band: WifiBand): String = when (band) {
-    WifiBand.GHZ_2_4 -> "2,4 GHz"
-    WifiBand.GHZ_5 -> "5 GHz"
-    WifiBand.GHZ_6 -> "6 GHz"
-    WifiBand.UNKNOWN -> "Banda desconocida"
-}
+private fun bandLabel(band: WifiBand): String =
+    when (band) {
+        WifiBand.GHZ_2_4 -> "2,4 GHz"
+        WifiBand.GHZ_5 -> "5 GHz"
+        WifiBand.GHZ_6 -> "6 GHz"
+        WifiBand.UNKNOWN -> "Banda desconocida"
+    }
 
-private fun qualityLabel(quality: SignalQuality): String = when (quality) {
-    SignalQuality.EXCELLENT -> "Excelente"
-    SignalQuality.GOOD -> "Buena"
-    SignalQuality.FAIR -> "Aceptable"
-    SignalQuality.WEAK -> "Débil"
-}
+private fun qualityLabel(quality: SignalQuality): String =
+    when (quality) {
+        SignalQuality.EXCELLENT -> "Excelente"
+        SignalQuality.GOOD -> "Buena"
+        SignalQuality.FAIR -> "Aceptable"
+        SignalQuality.WEAK -> "Débil"
+    }
 
 private fun scanPermissions(): Array<String> =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

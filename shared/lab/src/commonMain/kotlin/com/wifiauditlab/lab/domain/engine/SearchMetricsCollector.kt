@@ -7,7 +7,12 @@ import kotlin.time.Duration.Companion.seconds
 
 /** Accumulates batch-level counters and produces [SearchMetrics] snapshots. */
 interface SearchMetricsCollector {
-    fun record(totalAttempts: Long, elapsed: Duration, currentBucketIndex: Int)
+    fun record(
+        totalAttempts: Long,
+        elapsed: Duration,
+        currentBucketIndex: Int,
+    )
+
     fun snapshot(): SearchMetrics
 }
 
@@ -19,12 +24,15 @@ class DefaultSearchMetricsCollector(
     private val totalBuckets: Int,
     private val searchSpace: CombinationCount,
 ) : SearchMetricsCollector {
-
     private var attempts: Long = 0
     private var elapsed: Duration = Duration.ZERO
     private var bucketIndex: Int = 0
 
-    override fun record(totalAttempts: Long, elapsed: Duration, currentBucketIndex: Int) {
+    override fun record(
+        totalAttempts: Long,
+        elapsed: Duration,
+        currentBucketIndex: Int,
+    ) {
         this.attempts = totalAttempts
         this.elapsed = elapsed
         this.bucketIndex = currentBucketIndex
@@ -35,11 +43,12 @@ class DefaultSearchMetricsCollector(
         val rate = if (seconds > 0.0) attempts / seconds else 0.0
         val attemptsCount = CombinationCount.of(attempts)
         val spaceLong = searchSpace.toLongOrNull()
-        val remaining: Duration? = if (rate > 0.0 && spaceLong != null && spaceLong >= attempts) {
-            ((spaceLong - attempts) / rate).seconds
-        } else {
-            null
-        }
+        val remaining: Duration? =
+            if (rate > 0.0 && spaceLong != null && spaceLong >= attempts) {
+                ((spaceLong - attempts) / rate).seconds
+            } else {
+                null
+            }
         return SearchMetrics(
             attempts = attemptsCount,
             elapsed = elapsed,

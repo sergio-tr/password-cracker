@@ -39,41 +39,42 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val appModule = module {
-    // Platform + adapters
-    single { AndroidPlatformCapabilities() }
-    single { WifiSecurityClassifier() }
-    single { AndroidWifiMapper(get()) }
-    single { AndroidWifiPermissionManager(androidContext()) }
-    single<WifiScanner> { AndroidWifiScanner(androidContext(), get(), get()) }
-    single<SecretVault> { KeystoreSecretVault(androidContext()) }
-    single<SavedNetworkRepository> { InMemorySavedNetworkRepository() }
+val appModule =
+    module {
+        // Platform + adapters
+        single { AndroidPlatformCapabilities() }
+        single { WifiSecurityClassifier() }
+        single { AndroidWifiMapper(get()) }
+        single { AndroidWifiPermissionManager(androidContext()) }
+        single<WifiScanner> { AndroidWifiScanner(androidContext(), get(), get()) }
+        single<SecretVault> { KeystoreSecretVault(androidContext()) }
+        single<SavedNetworkRepository> { InMemorySavedNetworkRepository() }
 
-    // Domain services
-    single<KnownNetworkMatcher> { DefaultKnownNetworkMatcher() }
-    single { SecurityAssessmentRegistry.default() }
+        // Domain services
+        single<KnownNetworkMatcher> { DefaultKnownNetworkMatcher() }
+        single { SecurityAssessmentRegistry.default() }
 
-    // Lab engine
-    single<SearchPlanOptimizer> { DefaultSearchPlanOptimizer() }
-    single<LabSearchEngine> { DefaultLabSearchEngine() }
-    single<SearchFeasibilityAnalyzer> { DefaultSearchFeasibilityAnalyzer() }
-    single<SearchPerformanceEstimator> { FixedThroughputEstimator() }
+        // Lab engine
+        single<SearchPlanOptimizer> { DefaultSearchPlanOptimizer() }
+        single<LabSearchEngine> { DefaultLabSearchEngine() }
+        single<SearchFeasibilityAnalyzer> { DefaultSearchFeasibilityAnalyzer() }
+        single<SearchPerformanceEstimator> { FixedThroughputEstimator() }
 
-    // Use cases
-    factory { CreateSavedNetwork(get(), get()) }
-    factory { GetSavedNetwork(get()) }
-    factory { ObserveSavedNetworks(get()) }
-    factory { UpdateSavedNetworkAlias(get()) }
-    factory { UpdateSavedNetworkLocation(get()) }
-    factory { UpdateSavedNetworkSecret(get(), get()) }
-    factory { RemoveSavedNetworkSecret(get(), get()) }
-    factory { DeleteSavedNetwork(get(), get()) }
-    factory { SearchSavedNetworks(get()) }
-    factory { MatchKnownNetwork(get(), get()) }
-    factory { AssessNetworkSecurity(get()) }
+        // Use cases
+        factory { CreateSavedNetwork(get(), get()) }
+        factory { GetSavedNetwork(get()) }
+        factory { ObserveSavedNetworks(get()) }
+        factory { UpdateSavedNetworkAlias(get()) }
+        factory { UpdateSavedNetworkLocation(get()) }
+        factory { UpdateSavedNetworkSecret(get(), get()) }
+        factory { RemoveSavedNetworkSecret(get(), get()) }
+        factory { DeleteSavedNetwork(get(), get()) }
+        factory { SearchSavedNetworks(get()) }
+        factory { MatchKnownNetwork(get(), get()) }
+        factory { AssessNetworkSecurity(get()) }
 
-    // ViewModels
-    viewModel { NearbyViewModel(get(), get(), get()) }
-    viewModel { VaultViewModel(get(), get(), get(), get()) }
-    viewModel { LabViewModel(get(), get(), get(), get()) }
-}
+        // ViewModels
+        viewModel { NearbyViewModel(get(), get(), get()) }
+        viewModel { VaultViewModel(get(), get(), get(), get()) }
+        viewModel { LabViewModel(get(), get(), get(), get()) }
+    }

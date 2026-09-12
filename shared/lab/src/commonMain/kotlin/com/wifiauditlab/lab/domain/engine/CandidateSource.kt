@@ -32,5 +32,8 @@ interface CancellationSignal {
 class CancellationController : CancellationSignal {
     private val cancelled = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val isCancelled: Boolean get() = cancelled.value
-    fun cancel() { cancelled.value = true }
+
+    fun cancel() {
+        cancelled.value = true
+    }
 }

@@ -37,14 +37,16 @@ class LabChallenge private constructor(
             id: ChallengeId = ChallengeId.random(),
         ): LabChallenge {
             val random = if (seed != null) Random(seed) else Random.Default
-            val length = if (lengthPolicy.minLength == lengthPolicy.maxLength) {
-                lengthPolicy.minLength
-            } else {
-                random.nextInt(lengthPolicy.minLength, lengthPolicy.maxLength + 1)
-            }
-            val secret = buildString {
-                repeat(length) { append(alphabet[random.nextInt(alphabet.size)]) }
-            }
+            val length =
+                if (lengthPolicy.minLength == lengthPolicy.maxLength) {
+                    lengthPolicy.minLength
+                } else {
+                    random.nextInt(lengthPolicy.minLength, lengthPolicy.maxLength + 1)
+                }
+            val secret =
+                buildString {
+                    repeat(length) { append(alphabet[random.nextInt(alphabet.size)]) }
+                }
             return LabChallenge(id, alphabet, lengthPolicy, seed, secret)
         }
 

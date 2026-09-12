@@ -22,6 +22,7 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Adaptadores Android (WifiScanner/Mapper/Permisos, KeystoreSecretVault) | ✅ | Compila; falta test instrumentado. |
 | DI (Koin) + UI Compose (Redes, Guardadas, Laboratorio, Ajustes) | ✅ (parcial) | Ver pendientes de UI. |
 | Documentación `docs/01`–`11` + ADRs | ✅ | — |
+| Tooling: CI (compile + unit tests + lint), ktlint + `.editorconfig`, reglas `.cursor` | ✅ | GitHub Actions; ADR-001/002/003. |
 
 ## Pendiente
 

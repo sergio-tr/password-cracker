@@ -17,7 +17,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class DefaultKnownNetworkMatcherTest {
-
     private val matcher = DefaultKnownNetworkMatcher()
 
     private fun observation(
@@ -87,10 +86,11 @@ class DefaultKnownNetworkMatcherTest {
     @Test
     fun probable_ssid_only_when_family_differs() {
         val net = saved("1", "Casa", family = SecurityFamily.WPA3_PERSONAL)
-        val result = matcher.match(
-            observation("Casa", "11:22:33:44:55:66", family = SecurityFamily.WPA2_PERSONAL),
-            listOf(net),
-        )
+        val result =
+            matcher.match(
+                observation("Casa", "11:22:33:44:55:66", family = SecurityFamily.WPA2_PERSONAL),
+                listOf(net),
+            )
         val probable = assertIs<NetworkMatchResult.Probable>(result)
         assertEquals(MatchConfidence.SSID_ONLY, probable.confidence)
     }

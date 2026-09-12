@@ -25,26 +25,32 @@ import javax.crypto.spec.GCMParameterSpec
  * will provide a Keychain-backed equivalent.
  */
 class KeystoreSecretVault(context: Context) : SecretVault {
-
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    override suspend fun create(secret: NetworkSecret): SecretId = withContext(Dispatchers.IO) {
-        val id = SecretId.random()
-        prefs.edit().putString(id.value, encrypt(secret.value)).apply()
-        id
-    }
+    override suspend fun create(secret: NetworkSecret): SecretId =
+        withContext(Dispatchers.IO) {
+            val id = SecretId.random()
+            prefs.edit().putString(id.value, encrypt(secret.value)).apply()
+            id
+        }
 
-    override suspend fun read(id: SecretId): NetworkSecret? = withContext(Dispatchers.IO) {
-        prefs.getString(id.value, null)?.let { NetworkSecret(decrypt(it)) }
-    }
+    override suspend fun read(id: SecretId): NetworkSecret? =
+        withContext(Dispatchers.IO) {
+            prefs.getString(id.value, null)?.let { NetworkSecret(decrypt(it)) }
+        }
 
-    override suspend fun update(id: SecretId, secret: NetworkSecret) = withContext(Dispatchers.IO) {
-        prefs.edit().putString(id.value, encrypt(secret.value)).apply()
-    }
+    override suspend fun update(
+        id: SecretId,
+        secret: NetworkSecret,
+    ) =
+        withContext(Dispatchers.IO) {
+            prefs.edit().putString(id.value, encrypt(secret.value)).apply()
+        }
 
-    override suspend fun delete(id: SecretId) = withContext(Dispatchers.IO) {
-        prefs.edit().remove(id.value).apply()
-    }
+    override suspend fun delete(id: SecretId) =
+        withContext(Dispatchers.IO) {
+            prefs.edit().remove(id.value).apply()
+        }
 
     private fun getOrCreateKey(): SecretKey {
         val keystore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }

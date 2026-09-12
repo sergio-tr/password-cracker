@@ -11,10 +11,15 @@ import kotlinx.coroutines.flow.Flow
 /** CRUD contract for the Vault of known networks. */
 interface SavedNetworkRepository {
     fun observeAll(): Flow<List<SavedWifiNetwork>>
+
     suspend fun getById(id: SavedNetworkId): SavedWifiNetwork?
+
     suspend fun findByIdentity(identity: NetworkIdentity): List<SavedWifiNetwork>
+
     suspend fun create(network: NewSavedWifiNetwork): SavedWifiNetwork
+
     suspend fun update(network: SavedWifiNetwork): SavedWifiNetwork
+
     suspend fun delete(id: SavedNetworkId)
 }
 
@@ -26,8 +31,14 @@ interface SavedNetworkRepository {
  */
 interface SecretVault {
     suspend fun create(secret: NetworkSecret): SecretId
+
     suspend fun read(id: SecretId): NetworkSecret?
-    suspend fun update(id: SecretId, secret: NetworkSecret)
+
+    suspend fun update(
+        id: SecretId,
+        secret: NetworkSecret,
+    )
+
     suspend fun delete(id: SecretId)
 }
 

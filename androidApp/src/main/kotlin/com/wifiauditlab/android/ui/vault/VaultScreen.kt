@@ -87,7 +87,10 @@ fun VaultScreen(viewModel: VaultViewModel = koinViewModel()) {
             title = { Text("Eliminar red") },
             text = { Text("¿Seguro que quieres eliminar \"${network.alias}\"? También se borrará su contraseña.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.delete(network.id); pendingDelete = null }) { Text("Eliminar") }
+                TextButton(onClick = {
+                    viewModel.delete(network.id)
+                    pendingDelete = null
+                }) { Text("Eliminar") }
             },
             dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancelar") } },
         )

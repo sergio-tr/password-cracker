@@ -12,12 +12,15 @@ enum class MatchConfidence { EXACT_BSSID, SSID_AND_FAMILY, SSID_ONLY }
  */
 sealed interface NetworkMatchResult {
     data class Exact(val network: SavedWifiNetwork) : NetworkMatchResult
+
     data class Probable(
         val network: SavedWifiNetwork,
         val confidence: MatchConfidence,
         val reason: String,
     ) : NetworkMatchResult
+
     data object Unknown : NetworkMatchResult
+
     data class Ambiguous(val candidates: List<SavedWifiNetwork>) : NetworkMatchResult
 }
 
@@ -34,7 +37,6 @@ interface KnownNetworkMatcher {
  * several access points.
  */
 class DefaultKnownNetworkMatcher : KnownNetworkMatcher {
-
     override fun match(
         observation: WifiObservation,
         candidates: Collection<SavedWifiNetwork>,
@@ -53,17 +55,19 @@ class DefaultKnownNetworkMatcher : KnownNetworkMatcher {
 
         val familyMatches = sameSsid.filter { it.securityFamily == family }
         return when {
-            familyMatches.size == 1 -> NetworkMatchResult.Probable(
-                familyMatches.single(),
-                MatchConfidence.SSID_AND_FAMILY,
-                "El SSID y la familia de seguridad coinciden, pero este punto de acceso es nuevo.",
-            )
+            familyMatches.size == 1 ->
+                NetworkMatchResult.Probable(
+                    familyMatches.single(),
+                    MatchConfidence.SSID_AND_FAMILY,
+                    "El SSID y la familia de seguridad coinciden, pero este punto de acceso es nuevo.",
+                )
             familyMatches.size > 1 -> NetworkMatchResult.Ambiguous(familyMatches)
-            sameSsid.size == 1 -> NetworkMatchResult.Probable(
-                sameSsid.single(),
-                MatchConfidence.SSID_ONLY,
-                "El SSID coincide, pero la seguridad observada difiere de la guardada.",
-            )
+            sameSsid.size == 1 ->
+                NetworkMatchResult.Probable(
+                    sameSsid.single(),
+                    MatchConfidence.SSID_ONLY,
+                    "El SSID coincide, pero la seguridad observada difiere de la guardada.",
+                )
             else -> NetworkMatchResult.Ambiguous(sameSsid)
         }
     }

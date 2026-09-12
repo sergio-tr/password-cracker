@@ -12,15 +12,16 @@ import androidx.core.content.ContextCompat
  * older versions require location access.
  */
 class AndroidWifiPermissionManager(private val context: Context) {
-
     val requiredPermissions: List<String>
-        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            listOf(Manifest.permission.NEARBY_WIFI_DEVICES)
-        } else {
-            listOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
+        get() =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                listOf(Manifest.permission.NEARBY_WIFI_DEVICES)
+            } else {
+                listOf(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
 
-    fun hasScanPermission(): Boolean = requiredPermissions.all { permission ->
-        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-    }
+    fun hasScanPermission(): Boolean =
+        requiredPermissions.all { permission ->
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        }
 }

@@ -10,7 +10,6 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
  * big-integer so the rest of the domain never depends on the concrete library.
  */
 class CombinationCount private constructor(internal val value: BigInteger) : Comparable<CombinationCount> {
-
     val isZero: Boolean get() = value.isZero()
 
     operator fun plus(other: CombinationCount): CombinationCount = CombinationCount(value + other.value)
@@ -66,7 +65,9 @@ class CombinationCount private constructor(internal val value: BigInteger) : Com
     }
 
     override fun equals(other: Any?): Boolean = other is CombinationCount && value == other.value
+
     override fun hashCode(): Int = value.hashCode()
+
     override fun toString(): String = toExactString()
 
     companion object {
@@ -89,7 +90,10 @@ class CombinationCount private constructor(internal val value: BigInteger) : Com
         }
 
         /** `base ^ length`, the size of the space of strings of [length] over an alphabet of [base] symbols. */
-        fun alphabetPower(base: Int, length: Int): CombinationCount {
+        fun alphabetPower(
+            base: Int,
+            length: Int,
+        ): CombinationCount {
             require(base >= 0) { "alphabet size must be non-negative, was $base" }
             require(length >= 0) { "length must be non-negative, was $length" }
             return CombinationCount(BigInteger.fromInt(base).pow(length))
@@ -107,7 +111,11 @@ class CombinationCount private constructor(internal val value: BigInteger) : Com
             return if (negative) "-$sb" else sb.toString()
         }
 
-        private fun scaled(digits: String, scaleExp: Int, suffix: String): String {
+        private fun scaled(
+            digits: String,
+            scaleExp: Int,
+            suffix: String,
+        ): String {
             val intLen = digits.length - scaleExp
             val intPart = groupThousands(digits.substring(0, intLen))
             val fracDigit = digits[intLen]

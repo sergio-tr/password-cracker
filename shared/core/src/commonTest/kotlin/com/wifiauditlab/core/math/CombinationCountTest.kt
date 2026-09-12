@@ -7,7 +7,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CombinationCountTest {
-
     @Test
     fun exact_string_groups_thousands() {
         assertEquals("12,340", CombinationCount.of(12_340).toExactString())

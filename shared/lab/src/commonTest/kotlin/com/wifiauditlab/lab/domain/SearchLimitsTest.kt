@@ -8,7 +8,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class SearchLimitsTest {
-
     @Test
     fun unbounded_search_is_invalid() {
         val violations = SearchLimits.validate(maxDuration = null, maxAttempts = null)

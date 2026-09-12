@@ -14,25 +14,29 @@ import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
  * synthetic priorization policy — it encodes no real-credential heuristics.
  */
 class DefaultSearchPlanOptimizer : SearchPlanOptimizer {
-
-    override fun optimize(challenge: LabChallenge, strategyId: SearchStrategyId): LabSearchPlan {
+    override fun optimize(
+        challenge: LabChallenge,
+        strategyId: SearchStrategyId,
+    ): LabSearchPlan {
         val alphabet: Alphabet = challenge.alphabet
-        val sizesByLength = challenge.lengthPolicy.lengths.associateWith { length ->
-            CombinationCount.alphabetPower(alphabet.size, length)
-        }
+        val sizesByLength =
+            challenge.lengthPolicy.lengths.associateWith { length ->
+                CombinationCount.alphabetPower(alphabet.size, length)
+            }
         val total = sizesByLength.values.fold(CombinationCount.ZERO) { acc, size -> acc + size }
 
-        val buckets = sizesByLength.entries
-            .sortedBy { it.key } // ascending length == ascending space for a fixed alphabet
-            .mapIndexed { index, (length, size) ->
-                SearchBucket(
-                    index = index,
-                    length = length,
-                    alphabet = alphabet,
-                    expectedRelativeWeight = (size.percentageOf(total) ?: 0.0) / 100.0,
-                    searchSpaceSize = size,
-                )
-            }
+        val buckets =
+            sizesByLength.entries
+                .sortedBy { it.key } // ascending length == ascending space for a fixed alphabet
+                .mapIndexed { index, (length, size) ->
+                    SearchBucket(
+                        index = index,
+                        length = length,
+                        alphabet = alphabet,
+                        expectedRelativeWeight = (size.percentageOf(total) ?: 0.0) / 100.0,
+                        searchSpaceSize = size,
+                    )
+                }
         return LabSearchPlan(strategyId, buckets, challenge.seed)
     }
 }
@@ -44,7 +48,6 @@ class DefaultSearchPlanOptimizer : SearchPlanOptimizer {
 class BruteForceSearchStrategy(
     private val optimizer: SearchPlanOptimizer = DefaultSearchPlanOptimizer(),
 ) : com.wifiauditlab.lab.domain.engine.LabSearchStrategy {
-
     override val id: SearchStrategyId = ID
 
     override fun supports(challenge: LabChallenge): Boolean = true
