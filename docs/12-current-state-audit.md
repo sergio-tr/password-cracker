@@ -87,8 +87,8 @@ Sin emulador / `androidTest`.
 
 | Phase | Branch | Depends on this audit |
 | --- | --- | --- |
-| 18 | `feature/onboarding-permissions` | Onboarding + Permission Center (**código listo; PR pendiente**) |
-| 19 | `feature/security-analysis-detail` | Dedicated assessment screen |
+| 18 | `feature/onboarding-permissions` | Onboarding + Permission Center (**merged** `#20` → `main`) |
+| 19 | `feature/security-analysis-to-main` | Dedicated assessment screen (**PR contra `main`**; no apilar) |
 | 20 | `test/android-ui-instrumentation` | Compose + Android instrument |
 | 21 | `chore/android-emulator-ci` | Emulator matrix from project SDKs |
 | 22 | `feature/persistent-search-calibration` | Durable `CalibrationRepository` |
