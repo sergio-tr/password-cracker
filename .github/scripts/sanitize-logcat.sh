@@ -1,18 +1,16 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Sanitize emulator logcat before publishing CI artifacts.
-# Strips lines that look like secrets, ciphertext blobs, or clipboard dumps.
-set -euo pipefail
+# POSIX sh — android-emulator-runner executes scripts with /usr/bin/sh.
+set -eu
 
 src="${1:?source logcat}"
 dst="${2:?destination sanitized logcat}"
 
-if [[ ! -f "$src" ]]; then
+if [ ! -f "$src" ]; then
   echo "No logcat at $src" > "$dst"
   exit 0
 fi
 
-# Patterns: vault prefs, synthetic instrumentation secrets, redaction markers misuse,
-# long base64-ish blobs typical of ciphertext, clipboard dumps.
 grep -Eiv \
   -e 'instrumentation-secret' \
   -e 'ui-test-secret' \
@@ -26,4 +24,4 @@ grep -Eiv \
   -e '[A-Za-z0-9+/]{64,}={0,2}' \
   "$src" > "$dst" || true
 
-echo "Sanitized logcat written to $dst ($(wc -l < "$dst") lines retained)"
+echo "Sanitized logcat written to $dst"
