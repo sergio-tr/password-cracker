@@ -26,6 +26,7 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Tests de dominio (objetos de valor Wi‑Fi/Vault/Alphabet) | ✅ | Redacción de `NetworkSecret`, umbrales de señal, identidad, invariantes. |
 | Casos de uso de aplicación para redes cercanas | ✅ | `ObserveNearbyNetworks` (matching fuera del ViewModel), `RefreshNearbyNetworks`; fakes + tests. |
 | Persistencia duradera del Vault (SQLDelight) | ✅ | Módulo `:shared:persistence`; `AndroidSqliteDriver`; tests JVM con SQLite en memoria; esquema versionado. |
+| Compensación explícita red + secreto | ✅ | Rollback en create/update-first; borrado sin referencias colgantes (ADR 0007); tests con fakes que fallan. |
 
 ## Pendiente
 
