@@ -47,7 +47,10 @@ import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NearbyScreen(viewModel: NearbyViewModel = koinViewModel()) {
+fun NearbyScreen(
+    viewModel: NearbyViewModel = koinViewModel(),
+    onOpenSecurityAnalysis: (NearbyItem) -> Unit = {},
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val detail by viewModel.detail.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -105,6 +108,10 @@ fun NearbyScreen(viewModel: NearbyViewModel = koinViewModel()) {
             detail = current,
             onDismiss = viewModel::dismissDetail,
             onSave = viewModel::saveSelectedToVault,
+            onOpenSecurityAnalysis = {
+                onOpenSecurityAnalysis(current.item)
+                viewModel.dismissDetail()
+            },
         )
     }
 }
@@ -169,6 +176,7 @@ private fun NetworkDetailSheet(
     detail: NearbyDetailState,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
+    onOpenSecurityAnalysis: () -> Unit,
 ) {
     val observation = detail.item.observation
     var alias by remember(detail.item) {
@@ -190,6 +198,12 @@ private fun NetworkDetailSheet(
                 },
                 fontWeight = FontWeight.SemiBold,
             )
+
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = onOpenSecurityAnalysis,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Ver análisis de seguridad") }
 
             TextButton(onClick = { showAdvanced = !showAdvanced }) {
                 Text(if (showAdvanced) "Ocultar datos avanzados" else "Mostrar datos avanzados")

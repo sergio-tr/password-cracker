@@ -25,6 +25,7 @@ emulador ni Android SDK: `./gradlew test`.
 | ViewModel Lab | `LabViewModelTest` |
 | ViewModel Onboarding | `OnboardingViewModelTest` (first run / skip / complete / reopen) |
 | ViewModel Permission Center | `PermissionCenterViewModelTest` (denied / permanent / service / restored) |
+| ViewModel Security Analysis | `SecurityAnalysisViewModelTest` + familias Open/WEP/WPA2/WPA3/transition/Enterprise/OWE/Unknown |
 
 ## Casos críticos cubiertos
 

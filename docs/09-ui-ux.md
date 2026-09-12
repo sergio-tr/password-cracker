@@ -11,8 +11,8 @@ la ejecución.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (config + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes). |
-| Deferred | Security Analysis dedicada, Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
+| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (config + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red). |
+| Deferred | Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
 
 ## Principios aplicados
 

@@ -31,6 +31,9 @@ import com.wifiauditlab.android.ui.lab.LabScreen
 import com.wifiauditlab.android.ui.nearby.NearbyScreen
 import com.wifiauditlab.android.ui.onboarding.OnboardingScreen
 import com.wifiauditlab.android.ui.permissions.PermissionCenterScreen
+import com.wifiauditlab.android.ui.security.SecurityAnalysisRequest
+import com.wifiauditlab.android.ui.security.SecurityAnalysisScreen
+import com.wifiauditlab.android.ui.security.SecurityAnalysisTargetStore
 import com.wifiauditlab.android.ui.settings.SettingsScreen
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.android.ui.vault.VaultScreen
@@ -57,6 +60,7 @@ private enum class Destination(val route: String, val label: String, val icon: I
 
 private object Routes {
     const val PERMISSIONS = "permissions"
+    const val SECURITY_ANALYSIS = "security_analysis"
 }
 
 @Composable
@@ -67,7 +71,9 @@ private fun AppRoot() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val hideBottomBar =
-        showOnboarding || currentDestination?.route == Routes.PERMISSIONS
+        showOnboarding ||
+            currentDestination?.route == Routes.PERMISSIONS ||
+            currentDestination?.route == Routes.SECURITY_ANALYSIS
 
     if (showOnboarding) {
         OnboardingScreen(
@@ -100,12 +106,26 @@ private fun AppRoot() {
             }
         },
     ) { innerPadding ->
+        val analysisTarget: SecurityAnalysisTargetStore = koinInject()
         NavHost(
             navController = navController,
             startDestination = Destination.Nearby.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Destination.Nearby.route) { NearbyScreen() }
+            composable(Destination.Nearby.route) {
+                NearbyScreen(
+                    onOpenSecurityAnalysis = { item ->
+                        analysisTarget.set(
+                            SecurityAnalysisRequest(
+                                displayName = item.alias ?: item.observation.ssid.toString(),
+                                ssidLabel = item.observation.ssid.toString(),
+                                profile = item.observation.securityProfile,
+                            ),
+                        )
+                        navController.navigate(Routes.SECURITY_ANALYSIS)
+                    },
+                )
+            }
             composable(Destination.Vault.route) { VaultScreen() }
             composable(Destination.Lab.route) { LabScreen() }
             composable(Destination.Settings.route) {
@@ -117,6 +137,9 @@ private fun AppRoot() {
                 )
             }
             composable(Routes.PERMISSIONS) { PermissionCenterScreen() }
+            composable(Routes.SECURITY_ANALYSIS) {
+                SecurityAnalysisScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }
