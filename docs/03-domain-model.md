@@ -33,8 +33,9 @@ estrategias del *Strategy Registry*.
 
 ## Laboratorio (`com.wifiauditlab.lab.domain`)
 
-`LabChallenge`, `LabSearchPlan`, `SearchBucket`, `SearchLimits`, `SearchMetrics`,
-`LabSearchProgress`/`LabSearchEvent`, `LabSearchResult`, `SearchState`,
+`LabChallengeId`/`ChallengeId`, `LabChallenge`, `LabSecretPolicy`, `LabSearchPlan`,
+`SearchBucket`, `SearchLimits`, `SearchMetrics`, `LabSearchProgress`,
+`LabSearchEvent`, `LabSearchResult`, `SearchState`/`SearchLifecycle`,
 `SearchSessionId`, `SearchStrategyId`, `Alphabet`, `LengthPolicy`.
 
 ## Regla

@@ -29,6 +29,9 @@ value class SearchSessionId(val value: String) {
     }
 }
 
+/** Plan name for a synthetic challenge identifier. */
+typealias LabChallengeId = ChallengeId
+
 /** Identifies a synthetic challenge. */
 @JvmInline
 value class ChallengeId(val value: String) {

@@ -17,6 +17,9 @@ data class SearchBucket(
     val expectedRelativeWeight: Double,
     val searchSpaceSize: CombinationCount,
 ) {
+    /** Policy of this slice: the bucket alphabet and a fixed candidate length. */
+    val policy: LabSecretPolicy get() = LabSecretPolicy(alphabet, LengthPolicy.exactly(length))
+
     fun candidateSource(seed: Long?): CandidateSource =
         OdometerCandidateSource(alphabet, length, seed)
 }
