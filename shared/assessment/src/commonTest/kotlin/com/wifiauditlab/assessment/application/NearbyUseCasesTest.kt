@@ -17,6 +17,7 @@ import com.wifiauditlab.assessment.port.WifiScanRequestResult
 import com.wifiauditlab.assessment.port.WifiScanState
 import com.wifiauditlab.assessment.testing.FakeWifiScanner
 import com.wifiauditlab.assessment.testing.InMemorySavedNetworkRepository
+import com.wifiauditlab.assessment.testing.InMemorySecretVault
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -119,5 +120,31 @@ class NearbyUseCasesTest {
 
             assertEquals(WifiScanRequestResult.THROTTLED, result)
             assertEquals(1, scanner.refreshCount)
+        }
+
+    @Test
+    fun save_nearby_creates_unknown_and_updates_known() =
+        runTest {
+            val repo = InMemorySavedNetworkRepository()
+            val vault = InMemorySecretVault()
+            val save =
+                SaveNearbyNetwork(
+                    CreateSavedNetwork(repo, vault),
+                    UpdateSavedNetworkAlias(repo),
+                    RecordSavedNetworkSighting(repo),
+                )
+            val created = save(observation("MOVISTAR_1234", "AA:BB:CC:DD:EE:01"), "Casa")
+            assertEquals("Casa", created.alias)
+            assertEquals(1, created.knownBssids.size)
+
+            val updated =
+                save(
+                    observation("MOVISTAR_1234", "AA:BB:CC:DD:EE:02"),
+                    "Hogar",
+                    existingId = created.id,
+                )
+            assertEquals("Hogar", updated.alias)
+            assertEquals(2, updated.knownBssids.size)
+            assertEquals(1, ObserveSavedNetworks(repo)().first().size)
         }
 }

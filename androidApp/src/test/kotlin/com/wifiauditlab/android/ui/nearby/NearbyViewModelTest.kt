@@ -3,7 +3,11 @@ package com.wifiauditlab.android.ui.nearby
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.ObserveNearbyNetworks
+import com.wifiauditlab.assessment.application.RecordNearbySightings
+import com.wifiauditlab.assessment.application.RecordSavedNetworkSighting
 import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
+import com.wifiauditlab.assessment.application.SaveNearbyNetwork
+import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
@@ -155,7 +159,12 @@ class NearbyViewModelTest {
             ObserveNearbyNetworks(scanner, repo, DefaultKnownNetworkMatcher()),
             RefreshNearbyNetworks(scanner),
             AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
-            CreateSavedNetwork(repo, FakeVault()),
+            SaveNearbyNetwork(
+                CreateSavedNetwork(repo, FakeVault()),
+                UpdateSavedNetworkAlias(repo),
+                RecordSavedNetworkSighting(repo),
+            ),
+            RecordNearbySightings(RecordSavedNetworkSighting(repo)),
         )
 
     @Test
@@ -215,6 +224,34 @@ class NearbyViewModelTest {
             assertTrue(vm.detail.value?.saved == true)
             assertEquals(1, repo.networks.value.size)
             assertEquals("Casa", repo.networks.value.first().alias)
+            job.cancel()
+        }
+
+    @Test
+    fun known_network_records_last_seen_and_new_bssid() =
+        runTest(dispatcher) {
+            val repo = FakeRepo()
+            repo.create(
+                NewSavedWifiNetwork(
+                    alias = "Casa",
+                    ssid = "Home",
+                    securityFamily = SecurityFamily.WPA2_PERSONAL,
+                    knownBssids = setOf(Bssid.of("AA:BB:CC:DD:EE:99")),
+                ),
+            )
+            val scanner =
+                FakeScanner(
+                    WifiScanState.Results(listOf(observation(ssid = "Home", bssid = "AA:BB:CC:DD:EE:01"))),
+                )
+            val vm = viewModel(scanner, repo)
+            val job = launch { vm.state.collect {} }
+            advanceUntilIdle()
+
+            val saved = repo.networks.value.single()
+            assertEquals("Casa", vm.state.value.items.single().alias)
+            assertTrue(vm.state.value.items.single().isKnown)
+            assertNotNull(saved.lastSeenAtEpochMillis)
+            assertTrue(saved.knownBssids.any { it.value == "aa:bb:cc:dd:ee:01" })
             job.cancel()
         }
 }

@@ -29,6 +29,8 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Compensación explícita red + secreto | ✅ | Rollback en create/update-first; borrado sin referencias colgantes (ADR 0007); tests con fakes que fallan. |
 | `NearbyViewModel` recableado a `ObserveNearbyNetworks` | ✅ | Matching y clasificación fuera del ViewModel; `stateIn(viewModelScope)`; tests JUnit con `runTest`. |
 | Pantalla Nearby + detalle (bottom sheet) + guardar en Vault | ✅ | Assessment por red, alias editable, permisos UX (acciones a Ajustes). |
+| Vault UI: listado + detalle + CRUD + secretos | ✅ | Búsqueda/orden/filtro; create manual y desde red detectada; alias/ubicación/notas/secreto; confirmación de borrado; Reveal/Hide/Copy/Replace/Remove sin auto-revelar. |
+| Re-detección de red conocida | ✅ | Alias primero en Nearby; `RecordSavedNetworkSighting` fusiona BSSID y actualiza last seen. |
 
 ## Pendiente
 
@@ -36,8 +38,8 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | --- | --- | --- |
 | Persistencia duradera del Vault (SQLDelight) | Hecho | Ver fila en Implementado. |
 | Algoritmo de búsqueda más potente | Alta | Nuevas estrategias/optimizadores de priorización; pool de workers con benchmarks (ADR 0006). |
-| Pantallas restantes | Alta | Onboarding, Permissions dedicada, Security Analysis detallada, Saved Network Detail/Edit, Lab Result como pantalla propia. |
-| Acciones de Vault en UI | Alta | Editar alias/ubicación/secreto, copiar al portapapeles, revelar con biometría. |
+| Pantallas restantes | Alta | Onboarding, Permissions dedicada, Security Analysis detallada, Lab Result como pantalla propia. |
+| Revelar secreto con biometría | Media | Arquitectura lista (`RevealSavedNetworkSecret`); no bloquea el CRUD. |
 | Tests de Compose UI + instrumentación | Media | ViewModel cubierto; falta UI/androidTest (requiere emulador). |
 | Módulo de benchmarks del laboratorio | Media | Sección 29 del enunciado. |
 | Targets iOS reales | Baja | Requiere macOS/Xcode. |

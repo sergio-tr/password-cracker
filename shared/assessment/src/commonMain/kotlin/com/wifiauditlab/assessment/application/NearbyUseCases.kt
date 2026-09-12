@@ -34,6 +34,15 @@ data class NearbyNetwork(
                 is NetworkMatchResult.Probable -> m.network.alias
                 else -> null
             }
+
+    /** Id of the single matched network, or null when unknown/ambiguous. */
+    val knownNetworkId
+        get() =
+            when (val m = match) {
+                is NetworkMatchResult.Exact -> m.network.id
+                is NetworkMatchResult.Probable -> m.network.id
+                else -> null
+            }
 }
 
 /** Scan state plus the classified networks derived from it. */
