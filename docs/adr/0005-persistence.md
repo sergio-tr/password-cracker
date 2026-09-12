@@ -27,6 +27,7 @@ secretos deben cifrarse con una clave del almacén seguro de plataforma.
 ## Consecuencias
 
 - La clave nunca sale del keystore; el dominio no conoce la criptografía.
-- Reiniciar la app pierde la lista de redes hasta que se implemente SQLDelight;
-  los secretos cifrados sí persisten en `SharedPreferences`.
-- Migrar a SQLDelight es un cambio de adaptador, transparente para dominio y UI.
+- Reiniciar la app **conserva** la lista de redes (`vault.db`) y los secretos
+  cifrados (prefs + Keystore).
+- Sustituir el adaptador de metadatos o de secretos sigue siendo transparente
+  para dominio y UI (puertos).

@@ -3,51 +3,53 @@
 Documento vivo para controlar qué está implementado y qué queda pendiente. Se
 actualiza en cada iteración (misma PR que el cambio, ver política de docs).
 
-Prioridades acordadas: **(1) Vault**, **(2) búsqueda de contraseñas con un
-algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
+Prioridades del producto (contrato): **(1) Fiabilidad**, **(2) Vault seguro y CRUD**,
+**(3) UX clara**, **(4) Laboratorio eficiente/cancelable**, **(5) Testing**,
+**(6) Performance medida**, **(7) Observabilidad**, **(8) Multiplataforma**.
 
-## Implementado
+Leyenda: **Implemented** · **Partial** · **Deferred**.
 
-| Área | Estado | Notas |
-| --- | --- | --- |
-| Build KMP multi-módulo (Gradle 8.11.1, Kotlin 2.1, AGP 8.7.3) | ✅ | `jvm` + `androidTarget`. |
-| Frontera Real/Lab por grafo de módulos | ✅ | `:shared:lab` sólo depende de `:shared:core`. |
-| `CombinationCount` (> 64 bits, formato) | ✅ | Tests incluidos. |
-| `PlatformCapabilities` | ✅ | Android; iOS previsto. |
-| Modelo Wi-Fi + `WifiSecurityClassifier` | ✅ | Tests + fixtures por familia (OPEN/WEP/WPA/WPA2/WPA3/mixto/EAP/OWE/DPP/Passpoint) y MFP. |
-| `KnownNetworkMatcher` (Exact/Probable/Unknown/Ambiguous) | ✅ | Tests. |
-| Security Assessment (Strategy Registry, 8 estrategias) | ✅ | Tests por estrategia y tabla de rating por familia (incl. hallazgos/PMF). |
-| Vault: modelo, puertos, casos de uso CRUD + secretos | ✅ | Tests; cascada de borrado de secreto. |
-| Motor de laboratorio (lazy, límites, cancelación, métricas, viabilidad) | ✅ | Tests de casos críticos. |
-| Dominio del laboratorio (policy, progress, transiciones) | ✅ | `LabSecretPolicy`, `LabSearchProgress`, `SearchLifecycle`, `LabSearchResult.fromTerminal`; CombinationCount exacto hasta 2^256. |
-| Motor baseline (lazy, cancelable, tests críticos) | ✅ | `CandidateSpace`; first/middle/last, exactitud, determinismo, progreso agregado, Failed con métricas. |
-| Planificador por estrategias (buckets + scoring) | ✅ | Uniform / Length / Tiered / SyntheticProbability / Adaptive; score = prob/cost con pesos en la estrategia. |
-| UX de ejecución del laboratorio | ✅ | Preview (reto/estrategia/límites/viabilidad), métricas en vivo, STOP visible, resultado con métricas; tests de ViewModel. |
-| Estimación por rangos + calibración sintética | ✅ | Benchmark breve local; UI muestra "approximately X–Y"; no altera los límites del usuario. |
-| Paralelismo controlado | ✅ | `WorkerPoolConfig` + `ParallelLabSearchEngine` (rangos disjuntos); 1 worker sigue siendo la referencia. |
-| Pulido UX y accesibilidad | ✅ | Destinos claros, detalle Nearby por capas, Settings explica las 3 áreas, STOP con semántica, dark mode del sistema. |
-| Hardening RC (auditoría + evidencia) | 🟡 | `docs/release-checklist.md` + `docs/test-evidence.md`; PR de revisión humana, sin merge automático. |
-| Adaptadores Android (WifiScanner/Mapper/Permisos, KeystoreSecretVault) | ✅ | Compila; falta test instrumentado. |
-| DI (Koin) + UI Compose (Redes, Guardadas, Laboratorio, Ajustes) | ✅ (parcial) | Ver pendientes de UI. |
-| Documentación `docs/01`–`11` + ADRs | ✅ | — |
-| Tooling: CI (compile + unit tests + lint), ktlint + `.editorconfig`, reglas `.cursor` | ✅ | GitHub Actions; ADR-001/002/003. |
-| Tests de dominio (objetos de valor Wi‑Fi/Vault/Alphabet) | ✅ | Redacción de `NetworkSecret`, umbrales de señal, identidad, invariantes. |
-| Casos de uso de aplicación para redes cercanas | ✅ | `ObserveNearbyNetworks` (matching fuera del ViewModel), `RefreshNearbyNetworks`; fakes + tests. |
-| Persistencia duradera del Vault (SQLDelight) | ✅ | Módulo `:shared:persistence`; `AndroidSqliteDriver`; tests JVM con SQLite en memoria; esquema versionado. |
-| Compensación explícita red + secreto | ✅ | Rollback en create/update-first; borrado sin referencias colgantes (ADR 0007); tests con fakes que fallan. |
-| `NearbyViewModel` recableado a `ObserveNearbyNetworks` | ✅ | Matching y clasificación fuera del ViewModel; `stateIn(viewModelScope)`; tests JUnit con `runTest`. |
-| Pantalla Nearby + detalle (bottom sheet) + guardar en Vault | ✅ | Assessment por red, alias editable, permisos UX (acciones a Ajustes). |
-| Vault UI: listado + detalle + CRUD + secretos | ✅ | Búsqueda/orden/filtro; create manual y desde red detectada; alias/ubicación/notas/secreto; confirmación de borrado; Reveal/Hide/Copy/Replace/Remove sin auto-revelar. |
-| Re-detección de red conocida | ✅ | Alias primero en Nearby; `RecordSavedNetworkSighting` fusiona BSSID y actualiza last seen. |
+## Implemented
 
-## Pendiente
+| Área | Notas |
+| --- | --- |
+| Build KMP multi-módulo (Gradle 8.11.1, Kotlin 2.1, AGP 8.7.3) | Targets `jvm` + `androidTarget`. |
+| Frontera Real/Lab por grafo de módulos | `:shared:lab` sólo depende de `:shared:core`. |
+| `CombinationCount` (> 64 bits, formato) | Exacto hasta 2^256; tests incluidos. |
+| `PlatformCapabilities` | Android; iOS previsto. |
+| Modelo Wi-Fi + `WifiSecurityClassifier` | Fixtures por familia + MFP; vive en `:shared:assessment`. |
+| `KnownNetworkMatcher` | Exact / Probable / Unknown / Ambiguous. |
+| Security Assessment (Strategy Registry) | 8 estrategias; tests por familia. |
+| Vault: modelo, puertos, casos de uso CRUD + secretos | Compensación explícita (ADR 0007). |
+| Persistencia Vault (SQLDelight) | `:shared:persistence`; `vault.db`; tests JVM en memoria. |
+| Secretos AEAD (Keystore) | Ciphertext en prefs; clave en Keystore. |
+| Nearby: observación, matching, assessment, guardar/actualizar | Alias primero; `RecordSavedNetworkSighting`. |
+| Vault UI | Listado + detalle + CRUD + secretos (Reveal/Hide/Copy/Replace/Remove). |
+| Dominio lab + motor baseline | Lazy, límites, cancelación, métricas, `SearchLifecycle`. |
+| Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
+| UX de ejecución del lab | Preview, STOP, límites, resultado + métricas. |
+| Calibración sintética + estimación por rangos | No altera límites del usuario. |
+| Paralelismo controlado | `WorkerAwareLabSearchEngine`; 1 worker = referencia. |
+| Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes. |
+| Tests ViewModel (Nearby, Vault, Lab) | JUnit + `runTest`. |
+| Tooling CI | `ktlintCheck` + `test`/`jvmTest` + `assembleDebug`. |
+| Docs `01`–`11`, ADRs, release checklist, test evidence | Índice vivo en este fichero. |
 
-| Área | Prioridad | Notas |
-| --- | --- | --- |
-| Persistencia duradera del Vault (SQLDelight) | Hecho | Ver fila en Implementado. |
-| Algoritmo de búsqueda más potente | Alta | Nuevas estrategias/optimizadores de priorización; pool de workers con benchmarks (ADR 0006). |
-| Pantallas restantes | Alta | Onboarding, Permissions dedicada, Security Analysis detallada, Lab Result como pantalla propia. |
-| Revelar secreto con biometría | Media | Arquitectura lista (`RevealSavedNetworkSecret`); no bloquea el CRUD. |
-| Tests de Compose UI + instrumentación | Media | ViewModel cubierto; falta UI/androidTest (requiere emulador). |
-| Módulo de benchmarks del laboratorio | Media | Sección 29 del enunciado. |
-| Targets iOS reales | Baja | Requiere macOS/Xcode. |
+## Partial
+
+| Área | Notas |
+| --- | --- |
+| GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
+| Calibración entre procesos | Throughput se mide; store actual = memoria de proceso. |
+| Performance / benchmarks dedicados | Pool y estrategias medibles; no hay módulo de benchmark ni suite de profiling formal. |
+| Hardening RC | Auditoría documentada (#17 mergeada); pase manual de `test-evidence.md` pendiente de rellenar. |
+
+## Deferred
+
+| Área | Notas |
+| --- | --- |
+| Revelar secreto con biometría | Arquitectura lista (`RevealSavedNetworkSecret`). |
+| Compose UI tests + instrumentación Android | Scanner / Keystore; requiere emulador. |
+| Onboarding, Permissions dedicada, Security Analysis detallada | Scaffold de producto. |
+| Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
+| Targets iOS reales | Requiere macOS/Xcode; ver `docs/11-ios-readiness.md`. |

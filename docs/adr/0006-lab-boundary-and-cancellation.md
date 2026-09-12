@@ -28,4 +28,6 @@
 
 - El motor libera recursos correctamente y no deja búsquedas zombie.
 - La cancelación es determinista y testeable sin hilos reales (`CancelAfterPolls`).
-- El paralelismo futuro debe preservar esta señal y la reproducibilidad.
+- El paralelismo controlado (`ParallelLabSearchEngine`) reutiliza la misma
+  señal cooperativa y parte el espacio en rangos disjuntos para no duplicar
+  candidatos ni romper contadores. El single-worker sigue siendo la referencia.
