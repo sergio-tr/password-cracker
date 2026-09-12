@@ -33,7 +33,7 @@ Sin emulador / `androidTest`.
 | Vault CRUD + secret ports | Implemented | **Implemented** | Use-case + compensation | Vault screen | Biometry Deferred | **Keep** |
 | SQLDelight network persistence | Implemented | **Implemented** (`vault.db`) | JVM `SqlDelight…Test` | Yes | No Android driver instrumented test | **Keep**; instrument = FASE 20 |
 | Keystore secret vault | Implemented | **Implemented** | Unit only (no instrument) | Reveal/copy flow | No androidTest | **Keep**; instrument = FASE 20 |
-| Nearby scan / permissions UX | Implemented | **Implemented** | ViewModel + use cases | Nearby | No Permission Center | Permission Center = FASE 18 |
+| Nearby scan / permissions UX | Implemented | **Implemented** | ViewModel + use cases | Nearby + Permission Center | Progressive request (not all at launch) | **Keep** |
 | Vault UI (search/sort/filter/CRUD/secrets) | Implemented | **Implemented** | `VaultViewModelTest` | Vault tab | No Compose UI tests | **Keep**; UI tests = FASE 20 |
 | Sightings (BSSID + lastSeen) | Implemented | **Implemented** | Use-case + Nearby VM | Nearby auto | — | **Keep** |
 | Lab domain + SearchLifecycle | Implemented | **Implemented** (8 states) | Transition + challenge tests | Lab screen | — | **Keep** |
@@ -49,8 +49,8 @@ Sin emulador / `androidTest`.
 | Compose UI tests | Deferred | **Missing** — no `androidTest` sources | None | N/A | RC gap | **FASE 20** |
 | Android instrumentation | Deferred | **Missing** | None | N/A | Keystore/SQLDelight Android | **FASE 20** |
 | Emulator CI | Not present | **Missing** | CI has no emulator job | N/A | Flaky risk if naive | **FASE 21** |
-| Onboarding | Deferred | **Missing** | None | None | First-run education | **FASE 18** |
-| Permission Center | Deferred | **Missing** (inline Nearby only) | None | Partial in Nearby | Dedicated screen | **FASE 18** |
+| Onboarding | Deferred → Implemented (FASE 18) | **Implemented** | `OnboardingViewModelTest` | First run + Settings replay | — | **Keep** |
+| Permission Center | Deferred → Implemented (FASE 18) | **Implemented** | `PermissionCenterViewModelTest` | Settings → Centro de permisos | Compose UI tests later | **Keep** |
 | Security Analysis Detail screen | Deferred | **Missing** (summary in Nearby sheet) | Assessment domain tests only | Partial | Dedicated hierarchy | **FASE 19** |
 | GeoLocation UI | Partial | Domain+DB yes; UI `LocationLabel` only | Domain/persistence | Label only | No location picker | Deferred / later product |
 | Biometric reveal | Deferred | Not implemented | None | No | Architecture ready | Deferred |
@@ -87,12 +87,21 @@ Sin emulador / `androidTest`.
 
 | Phase | Branch | Depends on this audit |
 | --- | --- | --- |
-| 18 | `feature/onboarding-permissions` | Onboarding + Permission Center |
+| 18 | `feature/onboarding-permissions` | Onboarding + Permission Center (**código listo; PR pendiente**) |
 | 19 | `feature/security-analysis-detail` | Dedicated assessment screen |
 | 20 | `test/android-ui-instrumentation` | Compose + Android instrument |
 | 21 | `chore/android-emulator-ci` | Emulator matrix from project SDKs |
 | 22 | `feature/persistent-search-calibration` | Durable `CalibrationRepository` |
 | 23 | `feature/lab-benchmarking` | Benchmark module + dashboard |
+| 24 | `perf/lab-search-engine-v2` | Indexed space / scheduler — **requiere baseline de FASE 23** |
+| 25 | `feature/resumable-lab-sessions` | Pause/resume checkpoints (ADR si cambia lifecycle) |
+| 26 | `feature/vault-biometric-authorization` | `SecretRevealAuthorizer` port + Android biometrics |
+| 27 | `chore/vault-security-hardening` | Clipboard, FLAG_SECURE, backups, redaction |
+| 28 | `feature/local-observability` | Ring buffer + Diagnostics + export sanitizado |
+| 29 | `chore/automate-rc-evidence` | Evidence bundle bajo `docs/evidence/<version>/` |
+| 30 | `chore/android-release-engineering` | R8, signing via env, `docs/release-process.md` |
+| 31 | `feature/product-ux-final-pass` | Flujo completo; sin features grandes |
+| 32 | `feature/ios-targets` | Solo con macOS/Xcode; ADR UI antes de implementar |
 
 ---
 
