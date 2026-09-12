@@ -1,56 +1,56 @@
 # Test evidence
 
 Evidencia de la suite automática y de los casos manuales obligatorios del RC.
-La auditoría automática de FASE 16 está en `main` (PR #17). Rellenar la columna
-**Evidencia** del pase manual con fecha, dispositivo y resultado.
+Actualizado en FASE 20 (`test/android-ui-instrumentation`).
 
-## Automático (CI: `ktlintCheck`, `test`, `jvmTest`, `assembleDebug`)
+## Automático — JVM / KMP (CI actual)
 
-| Área | Dónde | Qué cubre |
+CI (`.github/workflows/ci.yml`): `ktlintCheck` → `test`/`jvmTest` → `assembleDebug`.
+
+| Área | Dónde | Qué cubre | Estado |
+| --- | --- | --- | --- |
+| Unit / dominio | `:shared:*` | CombinationCount, Vault, matcher, assessment, lab | **AUTOMATED PASS** (CI) |
+| Integración casos de uso | `VaultUseCasesTest`, `NearbyUseCasesTest` | CRUD, secretos, rollback | **AUTOMATED PASS** |
+| SQLDelight JVM | `SqlDelightSavedNetworkRepositoryTest` | CRUD + BSSID in-memory | **AUTOMATED PASS** |
+| ViewModels | Nearby/Vault/Lab/Onboarding/Permissions/Security | Orquestación UI | **AUTOMATED PASS** |
+| Redaction | `VaultModelTest` | `NetworkSecret.toString()` | **AUTOMATED PASS** |
+
+## Automático — Compose UI + instrumentación (FASE 20)
+
+Compilan con `:androidApp:compileDebugAndroidTestKotlin` / empaquetado
+`androidTest`. En el entorno de desarrollo de esta fase **no había dispositivo ni
+emulador conectado** (`connectedDebugAndroidTest` → *No connected devices*).
+
+| Área | Ficheros | Estado |
 | --- | --- | --- |
-| Unit / dominio | `:shared:core`, `:shared:assessment`, `:shared:lab` | CombinationCount, Vault, matcher, assessment, lab domain |
-| Integración casos de uso | `VaultUseCasesTest`, `NearbyUseCasesTest`, compensación | CRUD, secretos, rollback, save-or-update |
-| Base de datos | `SqlDelightSavedNetworkRepositoryTest` | CRUD + BSSID en SQLite memoria |
-| Vault security | `VaultModelTest`, `KeystoreSecretVault` (compila) | `toString` redactado; AEAD en adaptador Android |
-| Search engine | `DefaultLabSearchEngineTest`, `CandidateSpaceTest` | first/middle/last, límites, cancel, determinismo |
-| Cancelación / límites | `SearchLimitsTest`, engine + parallel | duration, attempts, STOP cooperativo |
-| ViewModels | `NearbyViewModelTest`, `VaultViewModelTest`, `LabViewModelTest` | orquestación sin lógica de negocio |
-| Compose UI / instrumentación | — | No ejecutado en CI (sin emulador) |
+| Compose Nearby / Onboarding / Permissions / Security / Vault / Lab | `*ComposeTest.kt` | **IMPLEMENTED BUT NOT EXECUTED** |
+| SQLDelight Android driver | `AndroidSqlDelightRepositoryTest` | **IMPLEMENTED BUT NOT EXECUTED** |
+| KeystoreSecretVault | `KeystoreSecretVaultInstrumentedTest` | **IMPLEMENTED BUT NOT EXECUTED** |
+| Lifecycle red+secreto | `NetworkSecretLifecycleInstrumentedTest` | **IMPLEMENTED BUT NOT EXECUTED** |
+| Permission manager smoke | `AndroidWifiPermissionManagerInstrumentedTest` | **IMPLEMENTED BUT NOT EXECUTED** |
 
-## Casos manuales
+FASE 21 añadirá ejecución en CI con emulador.
 
-### Wi-Fi
+## Manual only
+
+| Caso | Por qué manual |
+| --- | --- |
+| Escaneo Wi‑Fi con redes reales | No debe hacer flaky CI |
+| Diálogos OEM de permiso / “no volver a preguntar” | Variante por fabricante |
+| Clipboard / recent-apps visual | Comportamiento de sistema |
+| Pase RC completo en dispositivo físico | Ver `release-checklist.md` |
+
+### Plantilla Wi‑Fi (manual)
 
 | Caso | Cómo verificar | Evidencia |
 | --- | --- | --- |
-| Permiso aceptado | Actualizar → conceder | Escaneo pasa a Results o Throttled |
-| Permiso denegado | Denegar | `PermissionRequired` + acción a Ajustes |
-| Ubicación desactivada | Apagar ubicación | `LocationServicesDisabled` |
-| Sin redes | Entorno vacío | Lista vacía / estado explícito |
-| Muchas redes | Zona densa | Scroll de tarjetas, alias primero si conocida |
-| Red conocida | Guardar y re-escanear | Alias de usuario primero; last seen |
-| Nuevo BSSID | Mismo SSID, otro AP | Se fusiona en `knownBssids` |
-| Scan throttled | Actualizar en ráfaga | Estado Throttled con últimas observaciones |
+| Permiso aceptado | Actualizar → conceder | |
+| Permiso denegado | Denegar | |
+| Ubicación desactivada | Apagar ubicación | |
+| Scan throttled | Actualizar en ráfaga | Mensaje “Escaneo limitado temporalmente…” |
+| Red conocida | Guardar y re-escanear | Alias primero |
 
-### Vault
+### Vault / Lab (manual smoke)
 
-| Caso | Cómo verificar | Evidencia |
-| --- | --- | --- |
-| Create | FAB / desde Nearby | Aparece en listado |
-| Read | Abrir detalle | Alias, SSID, seguridad, secreto oculto |
-| Edit alias / ubicación | Diálogos del detalle | Lista se actualiza |
-| Add / replace / reveal / hide / remove secret | Sección Contraseña | Nunca se revela solo |
-| Delete network | Confirmación | Desaparece; secreto no queda referenciado |
-| Reinicio | Matar app y abrir | Filas SQLDelight persisten |
-
-### Lab
-
-| Caso | Cómo verificar | Evidencia |
-| --- | --- | --- |
-| Run normal / found / not found | Dígitos, longitud 2–3 | Resultado + métricas |
-| Attempt / time limit | Límites bajos | `LimitReached` |
-| Cancel inmediato / a mitad | STOP | Cancelling → Cancelled, métricas conservadas |
-| Espacio enorme | Alfanumérico largo | Impractical + "approximately" |
-| Rotate / background | Según ciclo de vida | Job se cancela en `onCleared` |
-
-Registrar aquí fecha, dispositivo y resultado cuando se ejecute el pase manual del RC.
+CRUD Vault tras reinicio, reveal/hide, Lab found/limit/STOP en dispositivo real.
+Registrar fecha, dispositivo y resultado al ejecutar el pase RC.

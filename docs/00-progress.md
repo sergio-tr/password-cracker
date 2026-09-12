@@ -36,7 +36,9 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Permission Center | Requerido / servicio / opcional; request contextual; Abrir ajustes. |
 | Análisis de seguridad dedicado | Resumen, significado, autenticación, hallazgos, recomendaciones defensivas, detalles técnicos. |
 | Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis) | JUnit + `runTest`. |
-| Tooling CI | `ktlintCheck` + `test`/`jvmTest` + `assembleDebug`. |
+| Compose UI tests (`androidTest`) | Nearby, Onboarding, Permissions, Security, Vault, Lab — fakes deterministas. |
+| Instrumentación Android | SQLDelight `AndroidSqliteDriver`, KeystoreSecretVault, lifecycle red+secreto, smoke permisos. |
+| Tooling CI | `ktlintCheck` + `test`/`jvmTest` + `assembleDebug` (sin emulador aún). |
 | Docs `01`–`12`, ADRs, release checklist, test evidence | Índice vivo aquí; auditoría de realidad en `docs/12-current-state-audit.md`. |
 
 ## Partial
@@ -47,6 +49,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Calibración entre procesos | Throughput se mide; `InMemoryCalibrationStore` (FASE 22). |
 | Performance / benchmarks dedicados | Pool medible; sin módulo/dashboard (FASE 23). |
 | Hardening RC | Auditoría #17 en `main`; pase manual de `test-evidence.md` pendiente. |
+| Compose / androidTest ejecución | Suite **implementada**; ejecución en dispositivo = FASE 21 / local con emulador. |
 | Visión documental única | Completada en FASE 17 (`docs/12-current-state-audit.md`). |
 
 ## Deferred
@@ -54,7 +57,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Área | Notas |
 | --- | --- |
 | Revelar secreto con biometría | Arquitectura lista (`RevealSavedNetworkSecret`). |
-| Compose UI tests + instrumentación Android | Scanner / Keystore; requiere emulador. |
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
 | Search engine v2 (indexed/scheduler) | Tras baseline FASE 23 (`perf/lab-search-engine-v2`). |
 | Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |

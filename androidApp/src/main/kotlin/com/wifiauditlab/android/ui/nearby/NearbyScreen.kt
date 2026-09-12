@@ -96,9 +96,11 @@ fun NearbyScreen(
                 is WifiScanState.Error -> StatusText("Error al escanear: ${scan.message}")
                 WifiScanState.Loading -> StatusText("Escaneando…")
                 WifiScanState.Idle -> StatusText("Pulsa Actualizar para buscar redes cercanas.")
-                is WifiScanState.Throttled,
-                is WifiScanState.Results,
-                -> NetworkList(state.items, onSelect = viewModel::select)
+                is WifiScanState.Throttled -> {
+                    StatusText("Escaneo limitado temporalmente. Se muestran los últimos resultados.")
+                    NetworkList(state.items, onSelect = viewModel::select)
+                }
+                is WifiScanState.Results -> NetworkList(state.items, onSelect = viewModel::select)
             }
         }
     }
