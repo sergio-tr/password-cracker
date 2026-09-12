@@ -7,12 +7,12 @@ package com.wifiauditlab.lab.domain
  * order of the candidate space (before any seed-based permutation is applied).
  */
 class Alphabet private constructor(val symbols: String) {
-
     val size: Int get() = symbols.length
 
     operator fun get(index: Int): Char = symbols[index]
 
     override fun equals(other: Any?): Boolean = other is Alphabet && symbols == other.symbols
+
     override fun hashCode(): Int = symbols.hashCode()
 
     /** Never dumps the raw symbol string verbatim to avoid noisy logs; reports size only. */

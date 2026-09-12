@@ -66,12 +66,13 @@ enum class SignalQuality { EXCELLENT, GOOD, FAIR, WEAK }
 @JvmInline
 value class WifiSignal(val rssiDbm: Int) {
     val quality: SignalQuality
-        get() = when {
-            rssiDbm >= -55 -> SignalQuality.EXCELLENT
-            rssiDbm >= -67 -> SignalQuality.GOOD
-            rssiDbm >= -78 -> SignalQuality.FAIR
-            else -> SignalQuality.WEAK
-        }
+        get() =
+            when {
+                rssiDbm >= -55 -> SignalQuality.EXCELLENT
+                rssiDbm >= -67 -> SignalQuality.GOOD
+                rssiDbm >= -78 -> SignalQuality.FAIR
+                else -> SignalQuality.WEAK
+            }
 }
 
 /**
@@ -86,13 +87,14 @@ data class WifiSecurityProfile(
     val rawCapabilities: String?,
 ) {
     companion object {
-        fun open(rawCapabilities: String? = null): WifiSecurityProfile = WifiSecurityProfile(
-            family = SecurityFamily.OPEN,
-            keyManagements = emptySet(),
-            managementFrameProtection = ManagementFrameProtection.UNKNOWN,
-            isTransitionMode = false,
-            rawCapabilities = rawCapabilities,
-        )
+        fun open(rawCapabilities: String? = null): WifiSecurityProfile =
+            WifiSecurityProfile(
+                family = SecurityFamily.OPEN,
+                keyManagements = emptySet(),
+                managementFrameProtection = ManagementFrameProtection.UNKNOWN,
+                isTransitionMode = false,
+                rawCapabilities = rawCapabilities,
+            )
     }
 }
 

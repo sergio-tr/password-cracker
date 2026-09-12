@@ -33,6 +33,7 @@ data class SecurityAssessment(
  */
 interface SecurityAssessmentStrategy {
     fun supports(profile: WifiSecurityProfile): Boolean
+
     suspend fun assess(profile: WifiSecurityProfile): SecurityAssessment
 }
 
@@ -49,16 +50,18 @@ class SecurityAssessmentRegistry(
 
     companion object {
         /** Registry wired with every built-in strategy, catch-all last. */
-        fun default(): SecurityAssessmentRegistry = SecurityAssessmentRegistry(
-            strategies = listOf(
-                OpenNetworkAssessmentStrategy(),
-                LegacyNetworkAssessmentStrategy(),
-                PersonalNetworkAssessmentStrategy(),
-                EnterpriseNetworkAssessmentStrategy(),
-                OweAssessmentStrategy(),
-                PasspointAssessmentStrategy(),
-                DppAssessmentStrategy(),
-            ),
-        )
+        fun default(): SecurityAssessmentRegistry =
+            SecurityAssessmentRegistry(
+                strategies =
+                    listOf(
+                        OpenNetworkAssessmentStrategy(),
+                        LegacyNetworkAssessmentStrategy(),
+                        PersonalNetworkAssessmentStrategy(),
+                        EnterpriseNetworkAssessmentStrategy(),
+                        OweAssessmentStrategy(),
+                        PasspointAssessmentStrategy(),
+                        DppAssessmentStrategy(),
+                    ),
+            )
     }
 }

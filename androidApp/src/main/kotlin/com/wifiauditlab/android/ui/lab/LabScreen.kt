@@ -33,9 +33,10 @@ import kotlin.math.roundToInt
 @Composable
 fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val running = state.searchState == SearchState.Running ||
-        state.searchState == SearchState.Preparing ||
-        state.searchState == SearchState.Cancelling
+    val running =
+        state.searchState == SearchState.Running ||
+            state.searchState == SearchState.Preparing ||
+            state.searchState == SearchState.Cancelling
 
     Scaffold(topBar = { TopAppBar(title = { Text("Laboratorio sintético") }) }) { padding ->
         Column(
@@ -62,7 +63,11 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
 }
 
 @Composable
-private fun ConfigCard(state: LabUiState, enabled: Boolean, onChange: (LabConfig) -> Unit) {
+private fun ConfigCard(
+    state: LabUiState,
+    enabled: Boolean,
+    onChange: (LabConfig) -> Unit,
+) {
     val config = state.config
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -108,7 +113,10 @@ private fun EstimatesCard(state: LabUiState) {
 }
 
 @Composable
-private fun MetricsCard(searchState: SearchState, metrics: SearchMetrics) {
+private fun MetricsCard(
+    searchState: SearchState,
+    metrics: SearchMetrics,
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(searchState.name.uppercase(), fontWeight = FontWeight.Bold)
@@ -122,7 +130,10 @@ private fun MetricsCard(searchState: SearchState, metrics: SearchMetrics) {
 }
 
 @Composable
-private fun ResultCard(outcome: SearchOutcome, found: String?) {
+private fun ResultCard(
+    outcome: SearchOutcome,
+    found: String?,
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(outcomeLabel(outcome), fontWeight = FontWeight.Bold)
@@ -133,20 +144,22 @@ private fun ResultCard(outcome: SearchOutcome, found: String?) {
     }
 }
 
-private fun feasibilityLabel(rating: FeasibilityRating): String = when (rating) {
-    FeasibilityRating.Reasonable -> "Razonable"
-    FeasibilityRating.Expensive -> "Costosa"
-    FeasibilityRating.Impractical -> "Impracticable"
-    FeasibilityRating.Invalid -> "No válida"
-}
+private fun feasibilityLabel(rating: FeasibilityRating): String =
+    when (rating) {
+        FeasibilityRating.Reasonable -> "Razonable"
+        FeasibilityRating.Expensive -> "Costosa"
+        FeasibilityRating.Impractical -> "Impracticable"
+        FeasibilityRating.Invalid -> "No válida"
+    }
 
-private fun outcomeLabel(outcome: SearchOutcome): String = when (outcome) {
-    SearchOutcome.Found -> "ENCONTRADO"
-    SearchOutcome.NotFound -> "NO ENCONTRADO"
-    SearchOutcome.LimitReached -> "LÍMITE ALCANZADO"
-    SearchOutcome.Cancelled -> "CANCELADO"
-    SearchOutcome.Failed -> "ERROR"
-}
+private fun outcomeLabel(outcome: SearchOutcome): String =
+    when (outcome) {
+        SearchOutcome.Found -> "ENCONTRADO"
+        SearchOutcome.NotFound -> "NO ENCONTRADO"
+        SearchOutcome.LimitReached -> "LÍMITE ALCANZADO"
+        SearchOutcome.Cancelled -> "CANCELADO"
+        SearchOutcome.Failed -> "ERROR"
+    }
 
 private fun formatElapsed(totalSeconds: Long): String {
     val minutes = totalSeconds / 60

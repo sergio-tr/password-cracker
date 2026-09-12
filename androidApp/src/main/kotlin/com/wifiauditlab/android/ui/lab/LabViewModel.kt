@@ -62,7 +62,6 @@ class LabViewModel(
     private val analyzer: SearchFeasibilityAnalyzer,
     private val estimator: SearchPerformanceEstimator,
 ) : ViewModel() {
-
     private val strategyId = BruteForceSearchStrategy.ID
     private val _state = MutableStateFlow(LabUiState())
     val state = _state.asStateFlow()
@@ -87,21 +86,23 @@ class LabViewModel(
             it.copy(
                 estimatedCombinations = plan.searchSpace,
                 feasibility = limits?.let { l -> analyzer.analyze(plan, l, estimator) },
-                configError = if (limits == null) {
-                    "Configura al menos un límite de intentos o de tiempo."
-                } else {
-                    null
-                },
+                configError =
+                    if (limits == null) {
+                        "Configura al menos un límite de intentos o de tiempo."
+                    } else {
+                        null
+                    },
             )
         }
     }
 
     fun start() {
         val config = _state.value.config
-        val limits = runCatching { buildLimits(config) }.getOrNull() ?: run {
-            _state.update { it.copy(configError = "Configura al menos un límite de intentos o de tiempo.") }
-            return
-        }
+        val limits =
+            runCatching { buildLimits(config) }.getOrNull() ?: run {
+                _state.update { it.copy(configError = "Configura al menos un límite de intentos o de tiempo.") }
+                return
+            }
         val challenge = buildChallenge(config)
         val plan = optimizer.optimize(challenge, strategyId)
         val controller = CancellationController()
@@ -111,11 +112,12 @@ class LabViewModel(
             it.copy(searchState = SearchState.Preparing, metrics = null, outcome = null, foundCandidate = null)
         }
 
-        searchJob = viewModelScope.launch(Dispatchers.Default) {
-            engine.run(challenge, plan, limits, controller).collect { event ->
-                _state.update { current -> current.reduce(event) }
+        searchJob =
+            viewModelScope.launch(Dispatchers.Default) {
+                engine.run(challenge, plan, limits, controller).collect { event ->
+                    _state.update { current -> current.reduce(event) }
+                }
             }
-        }
     }
 
     fun stop() {
@@ -128,30 +130,33 @@ class LabViewModel(
         searchJob?.cancel()
     }
 
-    private fun LabUiState.reduce(event: LabSearchEvent): LabUiState = when (event) {
-        LabSearchEvent.Preparing -> copy(searchState = SearchState.Preparing)
-        is LabSearchEvent.Started -> copy(searchState = SearchState.Running)
-        is LabSearchEvent.Progress -> copy(searchState = SearchState.Running, metrics = event.metrics)
-        is LabSearchEvent.CandidateFound ->
-            copy(searchState = SearchState.Completed, metrics = event.metrics, outcome = SearchOutcome.Found, foundCandidate = event.candidate)
-        is LabSearchEvent.LimitReached ->
-            copy(searchState = SearchState.LimitReached, metrics = event.metrics, outcome = SearchOutcome.LimitReached)
-        is LabSearchEvent.Cancelled ->
-            copy(searchState = SearchState.Cancelled, metrics = event.metrics, outcome = SearchOutcome.Cancelled)
-        is LabSearchEvent.Completed ->
-            copy(searchState = SearchState.Completed, metrics = event.metrics, outcome = SearchOutcome.NotFound)
-        is LabSearchEvent.Failed ->
-            copy(searchState = SearchState.Failed, metrics = event.metrics ?: metrics, outcome = SearchOutcome.Failed)
-    }
+    private fun LabUiState.reduce(event: LabSearchEvent): LabUiState =
+        when (event) {
+            LabSearchEvent.Preparing -> copy(searchState = SearchState.Preparing)
+            is LabSearchEvent.Started -> copy(searchState = SearchState.Running)
+            is LabSearchEvent.Progress -> copy(searchState = SearchState.Running, metrics = event.metrics)
+            is LabSearchEvent.CandidateFound ->
+                copy(searchState = SearchState.Completed, metrics = event.metrics, outcome = SearchOutcome.Found, foundCandidate = event.candidate)
+            is LabSearchEvent.LimitReached ->
+                copy(searchState = SearchState.LimitReached, metrics = event.metrics, outcome = SearchOutcome.LimitReached)
+            is LabSearchEvent.Cancelled ->
+                copy(searchState = SearchState.Cancelled, metrics = event.metrics, outcome = SearchOutcome.Cancelled)
+            is LabSearchEvent.Completed ->
+                copy(searchState = SearchState.Completed, metrics = event.metrics, outcome = SearchOutcome.NotFound)
+            is LabSearchEvent.Failed ->
+                copy(searchState = SearchState.Failed, metrics = event.metrics ?: metrics, outcome = SearchOutcome.Failed)
+        }
 
-    private fun buildChallenge(config: LabConfig): LabChallenge = LabChallenge.withHiddenSecret(
-        alphabet = config.alphabet.alphabet,
-        lengthPolicy = LengthPolicy.exactly(config.secretLength),
-        seed = config.seed,
-    )
+    private fun buildChallenge(config: LabConfig): LabChallenge =
+        LabChallenge.withHiddenSecret(
+            alphabet = config.alphabet.alphabet,
+            lengthPolicy = LengthPolicy.exactly(config.secretLength),
+            seed = config.seed,
+        )
 
-    private fun buildLimits(config: LabConfig): SearchLimits = SearchLimits.of(
-        maxDuration = config.maxDurationSeconds?.seconds,
-        maxAttempts = config.maxAttempts?.let { CombinationCount.of(it) },
-    )
+    private fun buildLimits(config: LabConfig): SearchLimits =
+        SearchLimits.of(
+            maxDuration = config.maxDurationSeconds?.seconds,
+            maxAttempts = config.maxAttempts?.let { CombinationCount.of(it) },
+        )
 }

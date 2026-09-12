@@ -6,8 +6,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.location.LocationManager
 import android.net.wifi.WifiManager
-import com.wifiauditlab.assessment.port.WifiScanState
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
+import com.wifiauditlab.assessment.port.WifiScanState
 import com.wifiauditlab.assessment.port.WifiScanner
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,29 +24,33 @@ class AndroidWifiScanner(
     private val mapper: AndroidWifiMapper,
     private val now: () -> Long = { System.currentTimeMillis() },
 ) : WifiScanner {
-
     private val appContext = context.applicationContext
     private val wifiManager = appContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
     private val locationManager = appContext.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
 
-    override fun observeState(): Flow<WifiScanState> = callbackFlow {
-        val manager = wifiManager
-        if (manager == null) {
-            trySend(WifiScanState.Unavailable)
-            awaitClose { }
-            return@callbackFlow
+    override fun observeState(): Flow<WifiScanState> =
+        callbackFlow {
+            val manager = wifiManager
+            if (manager == null) {
+                trySend(WifiScanState.Unavailable)
+                awaitClose { }
+                return@callbackFlow
+            }
+
+            fun publish() = trySend(currentState(manager))
+
+            val receiver =
+                object : BroadcastReceiver() {
+                    override fun onReceive(
+                        context: Context?,
+                        intent: Intent?,
+                    ) = Unit.also { publish() }
+                }
+            appContext.registerReceiver(receiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
+            publish()
+
+            awaitClose { runCatching { appContext.unregisterReceiver(receiver) } }
         }
-
-        fun publish() = trySend(currentState(manager))
-
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) = Unit.also { publish() }
-        }
-        appContext.registerReceiver(receiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
-        publish()
-
-        awaitClose { runCatching { appContext.unregisterReceiver(receiver) } }
-    }
 
     override suspend fun refresh(): WifiScanRequestResult {
         val manager = wifiManager ?: return WifiScanRequestResult.UNAVAILABLE

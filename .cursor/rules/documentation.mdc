@@ -1,0 +1,14 @@
+---
+description: Documentación viva y ADRs
+globs: ["docs/**/*.md"]
+alwaysApply: false
+---
+
+# Documentación
+
+- Mantener `docs/00-progress.md` al día en cada fase: qué está implementado y qué no.
+- Cada decisión relevante de arquitectura o tecnología se registra como ADR en
+  `docs/adr/`.
+- Documentar desviaciones respecto al plan/spec de forma explícita (ADR o nota),
+  no de forma silenciosa.
+- La documentación se actualiza dentro de la misma fase que introduce el cambio.

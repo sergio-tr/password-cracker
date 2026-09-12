@@ -20,8 +20,9 @@ import kotlin.time.Duration.Companion.seconds
 class FixedThroughputEstimator(
     private val throughput: Double = DEFAULT_THROUGHPUT,
 ) : SearchPerformanceEstimator {
-
-    init { require(throughput > 0.0) { "throughput must be positive" } }
+    init {
+        require(throughput > 0.0) { "throughput must be positive" }
+    }
 
     override fun expectedThroughput(): Double = throughput
 
@@ -42,7 +43,6 @@ class FixedThroughputEstimator(
  * surfaced in the human-readable reason.
  */
 class DefaultSearchFeasibilityAnalyzer : SearchFeasibilityAnalyzer {
-
     override fun analyze(
         plan: LabSearchPlan,
         limits: SearchLimits,
@@ -66,11 +66,12 @@ class DefaultSearchFeasibilityAnalyzer : SearchFeasibilityAnalyzer {
             )
         }
 
-        val rating = when {
-            estimated <= REASONABLE_MAX -> FeasibilityRating.Reasonable
-            estimated <= EXPENSIVE_MAX -> FeasibilityRating.Expensive
-            else -> FeasibilityRating.Impractical
-        }
+        val rating =
+            when {
+                estimated <= REASONABLE_MAX -> FeasibilityRating.Reasonable
+                estimated <= EXPENSIVE_MAX -> FeasibilityRating.Expensive
+                else -> FeasibilityRating.Impractical
+            }
         return SearchFeasibility(
             rating,
             estimated,
@@ -80,10 +81,11 @@ class DefaultSearchFeasibilityAnalyzer : SearchFeasibilityAnalyzer {
     }
 
     private fun describeLimits(limits: SearchLimits): String {
-        val parts = buildList {
-            limits.maxDuration?.let { add("≤ $it") }
-            limits.maxAttempts?.let { add("≤ ${it.toAbbreviatedString()} attempts") }
-        }
+        val parts =
+            buildList {
+                limits.maxDuration?.let { add("≤ $it") }
+                limits.maxAttempts?.let { add("≤ ${it.toAbbreviatedString()} attempts") }
+            }
         return parts.joinToString(", ")
     }
 

@@ -27,19 +27,20 @@ class InMemorySavedNetworkRepository : SavedNetworkRepository {
         state.value.filter { it.identity == identity }
 
     override suspend fun create(network: NewSavedWifiNetwork): SavedWifiNetwork {
-        val created = SavedWifiNetwork(
-            id = SavedNetworkId("net-${sequence++}"),
-            alias = network.alias,
-            ssid = network.ssid,
-            securityFamily = network.securityFamily,
-            knownBssids = network.knownBssids,
-            locationLabel = network.locationLabel,
-            geoLocation = network.geoLocation,
-            secretId = null,
-            notes = network.notes,
-            createdAtEpochMillis = 0L,
-            lastSeenAtEpochMillis = null,
-        )
+        val created =
+            SavedWifiNetwork(
+                id = SavedNetworkId("net-${sequence++}"),
+                alias = network.alias,
+                ssid = network.ssid,
+                securityFamily = network.securityFamily,
+                knownBssids = network.knownBssids,
+                locationLabel = network.locationLabel,
+                geoLocation = network.geoLocation,
+                secretId = null,
+                notes = network.notes,
+                createdAtEpochMillis = 0L,
+                lastSeenAtEpochMillis = null,
+            )
         state.update { it + created }
         return created
     }
@@ -69,7 +70,10 @@ class InMemorySecretVault : SecretVault {
 
     override suspend fun read(id: SecretId): NetworkSecret? = secrets[id]
 
-    override suspend fun update(id: SecretId, secret: NetworkSecret) {
+    override suspend fun update(
+        id: SecretId,
+        secret: NetworkSecret,
+    ) {
         secrets[id] = secret
     }
 

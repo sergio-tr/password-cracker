@@ -32,75 +32,78 @@ import kotlin.time.TimeSource
 class DefaultLabSearchEngine(
     private val timeSource: TimeSource = TimeSource.Monotonic,
 ) : LabSearchEngine {
-
     override fun run(
         challenge: LabChallenge,
         plan: LabSearchPlan,
         limits: SearchLimits,
         cancellation: CancellationSignal,
-    ): Flow<LabSearchEvent> = flow {
-        emit(LabSearchEvent.Preparing)
+    ): Flow<LabSearchEvent> =
+        flow {
+            emit(LabSearchEvent.Preparing)
 
-        val verifier = challenge.asVerifier()
-        val space = plan.searchSpace
-        val sessionId = SearchSessionId.random()
-        val collector = DefaultSearchMetricsCollector(plan.totalBuckets, space)
-        val start = timeSource.markNow()
-        emit(LabSearchEvent.Started(sessionId, plan, space))
+            val verifier = challenge.asVerifier()
+            val space = plan.searchSpace
+            val sessionId = SearchSessionId.random()
+            val collector = DefaultSearchMetricsCollector(plan.totalBuckets, space)
+            val start = timeSource.markNow()
+            emit(LabSearchEvent.Started(sessionId, plan, space))
 
-        val maxAttempts: Long? = limits.maxAttempts?.toLongOrNull()
-        var processed = 0L
-        var found: String? = null
-        var limitReason: LimitReason? = null
-        var cancelled = false
-        var lastProgress = Duration.ZERO
+            val maxAttempts: Long? = limits.maxAttempts?.toLongOrNull()
+            var processed = 0L
+            var found: String? = null
+            var limitReason: LimitReason? = null
+            var cancelled = false
+            var lastProgress = Duration.ZERO
 
-        run runLoop@{
-            for (bucket in plan.buckets) {
-                val iterator = bucket.candidateSource(plan.seed).candidates().iterator()
-                while (iterator.hasNext()) {
-                    var inBatch = 0
-                    batch@ while (inBatch < limits.batchSize && iterator.hasNext()) {
-                        if (maxAttempts != null && processed >= maxAttempts) {
-                            limitReason = LimitReason.Attempts
-                            break@batch
+            run runLoop@{
+                for (bucket in plan.buckets) {
+                    val iterator = bucket.candidateSource(plan.seed).candidates().iterator()
+                    while (iterator.hasNext()) {
+                        var inBatch = 0
+                        batch@ while (inBatch < limits.batchSize && iterator.hasNext()) {
+                            if (maxAttempts != null && processed >= maxAttempts) {
+                                limitReason = LimitReason.Attempts
+                                break@batch
+                            }
+                            val candidate = iterator.next()
+                            processed++
+                            inBatch++
+                            if (verifier.verify(candidate)) {
+                                found = candidate
+                                break@batch
+                            }
                         }
-                        val candidate = iterator.next()
-                        processed++
-                        inBatch++
-                        if (verifier.verify(candidate)) {
-                            found = candidate
-                            break@batch
+
+                        val elapsed = start.elapsedNow()
+                        collector.record(processed, elapsed, bucket.index)
+
+                        if (found != null) return@runLoop
+                        if (limitReason != null) return@runLoop
+                        if (cancellation.isCancelled) {
+                            cancelled = true
+                            return@runLoop
                         }
-                    }
-
-                    val elapsed = start.elapsedNow()
-                    collector.record(processed, elapsed, bucket.index)
-
-                    if (found != null) return@runLoop
-                    if (limitReason != null) return@runLoop
-                    if (cancellation.isCancelled) { cancelled = true; return@runLoop }
-                    if (limits.maxDuration != null && elapsed >= limits.maxDuration) {
-                        limitReason = LimitReason.Duration
-                        return@runLoop
-                    }
-                    if (elapsed - lastProgress >= limits.progressInterval) {
-                        emit(LabSearchEvent.Progress(collector.snapshot()))
-                        lastProgress = elapsed
+                        if (limits.maxDuration != null && elapsed >= limits.maxDuration) {
+                            limitReason = LimitReason.Duration
+                            return@runLoop
+                        }
+                        if (elapsed - lastProgress >= limits.progressInterval) {
+                            emit(LabSearchEvent.Progress(collector.snapshot()))
+                            lastProgress = elapsed
+                        }
                     }
                 }
             }
-        }
 
-        val metrics = collector.snapshot()
-        when {
-            found != null -> emit(LabSearchEvent.CandidateFound(found!!, metrics))
-            cancelled -> emit(LabSearchEvent.Cancelled(metrics))
-            limitReason != null -> emit(LabSearchEvent.LimitReached(limitReason!!, metrics))
-            else -> emit(LabSearchEvent.Completed(metrics))
+            val metrics = collector.snapshot()
+            when {
+                found != null -> emit(LabSearchEvent.CandidateFound(found!!, metrics))
+                cancelled -> emit(LabSearchEvent.Cancelled(metrics))
+                limitReason != null -> emit(LabSearchEvent.LimitReached(limitReason!!, metrics))
+                else -> emit(LabSearchEvent.Completed(metrics))
+            }
+        }.catch { error ->
+            if (error is CancellationException) throw error
+            emit(LabSearchEvent.Failed(error.message ?: (error::class.simpleName ?: "unknown error"), null))
         }
-    }.catch { error ->
-        if (error is CancellationException) throw error
-        emit(LabSearchEvent.Failed(error.message ?: (error::class.simpleName ?: "unknown error"), null))
-    }
 }

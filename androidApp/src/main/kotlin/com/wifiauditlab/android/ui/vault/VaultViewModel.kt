@@ -36,7 +36,6 @@ class VaultViewModel(
     private val deleteSavedNetwork: DeleteSavedNetwork,
     private val secretVault: SecretVault,
 ) : ViewModel() {
-
     private val reveal = MutableStateFlow<Pair<SavedNetworkId, String>?>(null)
 
     val state: StateFlow<VaultUiState> =
@@ -48,7 +47,13 @@ class VaultViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VaultUiState())
 
-    fun create(alias: String, ssid: String, family: SecurityFamily, location: String?, secret: String?) {
+    fun create(
+        alias: String,
+        ssid: String,
+        family: SecurityFamily,
+        location: String?,
+        secret: String?,
+    ) {
         viewModelScope.launch {
             createSavedNetwork(
                 NewSavedWifiNetwork(

@@ -31,7 +31,9 @@ class LabSearchPlan(
     val buckets: List<SearchBucket>,
     val seed: Long?,
 ) {
-    init { require(buckets.isNotEmpty()) { "a search plan must contain at least one bucket" } }
+    init {
+        require(buckets.isNotEmpty()) { "a search plan must contain at least one bucket" }
+    }
 
     val totalBuckets: Int get() = buckets.size
 

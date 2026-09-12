@@ -1,0 +1,23 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+max_line_length = off
+# Compose composables use PascalCase; ktlint's function-naming rule would flag them.
+ktlint_standard_function-naming = disabled
+# KMP/Compose files often hold multiple top-level declarations by design.
+ktlint_standard_filename = disabled
+ktlint_standard_no-wildcard-imports = enabled
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

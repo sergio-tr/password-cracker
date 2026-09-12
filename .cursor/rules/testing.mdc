@@ -1,0 +1,17 @@
+---
+description: Estrategia y estándares de testing
+globs: ["**/*Test.kt", "**/src/**/kotlin/**"]
+alwaysApply: false
+---
+
+# Testing
+
+- El dominio y los casos de uso se prueban en la JVM (target `jvm` de KMP), sin emulador.
+- Casos de uso: probar contra fakes de los puertos, no contra adaptadores reales.
+- El laboratorio es determinista: inyectar `TimeSource`/semillas; nada de aleatoriedad
+  real ni relojes de pared en tests.
+- Cubrir: cancelación cooperativa, límites (incluido "exacto en el límite"),
+  métricas por lote, y análisis de viabilidad.
+- Vault/secretos: verificar que `toString()` nunca revela contenido y que las
+  operaciones compuestas compensan fallos (rollback explícito) y están testeadas.
+- Cada fase debe quedar con tests verdes antes de abrir su PR.

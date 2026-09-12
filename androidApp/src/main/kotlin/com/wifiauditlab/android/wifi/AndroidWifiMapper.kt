@@ -20,7 +20,10 @@ class AndroidWifiMapper(
     private val classifier: WifiSecurityClassifier = WifiSecurityClassifier(),
 ) {
     @Suppress("DEPRECATION") // ScanResult.SSID is deprecated on API 33 but still the portable field
-    fun toObservation(result: ScanResult, nowEpochMillis: Long): WifiObservation {
+    fun toObservation(
+        result: ScanResult,
+        nowEpochMillis: Long,
+    ): WifiObservation {
         val band = bandOf(result.frequency)
         return WifiObservation(
             ssid = Ssid(result.SSID ?: ""),
@@ -33,21 +36,29 @@ class AndroidWifiMapper(
         )
     }
 
-    private fun bandOf(frequencyMhz: Int): WifiBand = when (frequencyMhz) {
-        in 2400..2500 -> WifiBand.GHZ_2_4
-        in 4900..5895 -> WifiBand.GHZ_5
-        in 5925..7125 -> WifiBand.GHZ_6
-        else -> WifiBand.UNKNOWN
-    }
+    private fun bandOf(frequencyMhz: Int): WifiBand =
+        when (frequencyMhz) {
+            in 2400..2500 -> WifiBand.GHZ_2_4
+            in 4900..5895 -> WifiBand.GHZ_5
+            in 5925..7125 -> WifiBand.GHZ_6
+            else -> WifiBand.UNKNOWN
+        }
 
-    private fun channelOf(frequencyMhz: Int, band: WifiBand): Int = when (band) {
-        WifiBand.GHZ_2_4 -> (frequencyMhz - 2407) / 5
-        WifiBand.GHZ_5 -> (frequencyMhz - 5000) / 5
-        WifiBand.GHZ_6 -> (frequencyMhz - 5950) / 5
-        WifiBand.UNKNOWN -> 0
-    }
+    private fun channelOf(
+        frequencyMhz: Int,
+        band: WifiBand,
+    ): Int =
+        when (band) {
+            WifiBand.GHZ_2_4 -> (frequencyMhz - 2407) / 5
+            WifiBand.GHZ_5 -> (frequencyMhz - 5000) / 5
+            WifiBand.GHZ_6 -> (frequencyMhz - 5950) / 5
+            WifiBand.UNKNOWN -> 0
+        }
 
-    private fun standardOf(result: ScanResult, band: WifiBand): WifiStandard {
+    private fun standardOf(
+        result: ScanResult,
+        band: WifiBand,
+    ): WifiStandard {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return WifiStandard.UNKNOWN
         return when (result.wifiStandard) {
             ScanResult.WIFI_STANDARD_LEGACY -> WifiStandard.LEGACY

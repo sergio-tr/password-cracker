@@ -12,6 +12,7 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 class AutoAdvancingTimeSource(private val stepMillis: Long) : AbstractLongTimeSource(DurationUnit.MILLISECONDS) {
     private var now = 0L
+
     override fun read(): Long {
         val current = now
         now += stepMillis

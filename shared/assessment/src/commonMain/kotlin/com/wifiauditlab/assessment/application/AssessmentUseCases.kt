@@ -23,6 +23,7 @@ class MatchKnownNetwork(
 /** Produces a user-facing security assessment for a normalized profile. */
 class AssessNetworkSecurity(private val registry: SecurityAssessmentRegistry) {
     suspend operator fun invoke(profile: WifiSecurityProfile): SecurityAssessment = registry.assess(profile)
+
     suspend operator fun invoke(observation: WifiObservation): SecurityAssessment =
         registry.assess(observation.securityProfile)
 }

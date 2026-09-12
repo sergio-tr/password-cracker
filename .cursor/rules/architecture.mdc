@@ -1,0 +1,23 @@
+---
+description: Arquitectura Clean / Ports & Adapters y separación de dominios
+alwaysApply: true
+---
+
+# Arquitectura
+
+- Dirección de dependencias: `UI -> Application -> Domain`. Nunca al revés.
+- Prohibido `Domain -> Android/Compose/SQLite`. El dominio y los casos de uso son puros.
+- Nada de lógica de negocio en ViewModels: sólo orquestan casos de uso y exponen estado.
+- KMP: la lógica vive en `commonMain`. Prohibido `import android.*` en `commonMain`.
+  Las capacidades de plataforma se exponen por `PlatformCapabilities` y puertos.
+
+## Separación física de dominios (crítico)
+
+- Dos dominios que jamás se mezclan: **Wi‑Fi real** (`:shared:assessment` + Android)
+  y **Laboratorio sintético** (`:shared:lab`).
+- `:shared:lab` depende SÓLO de `:shared:core`. NO puede depender de
+  `:shared:assessment` ni de ninguna API de red de Android. Esta frontera se
+  impone por el grafo de módulos de Gradle y romperla debe romper la compilación.
+- No añadir dependencias que crucen esta frontera sin un ADR nuevo que lo justifique.
+
+Ver `docs/02-architecture.md` y `docs/adr/ADR-002`, `docs/adr/ADR-003`.

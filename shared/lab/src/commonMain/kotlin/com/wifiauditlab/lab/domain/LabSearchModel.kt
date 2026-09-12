@@ -33,22 +33,27 @@ data class SearchMetrics(
     val estimatedRemaining: Duration?,
 ) {
     companion object {
-        fun initial(totalBuckets: Int, searchSpace: CombinationCount): SearchMetrics = SearchMetrics(
-            attempts = CombinationCount.ZERO,
-            elapsed = Duration.ZERO,
-            attemptsPerSecond = 0.0,
-            currentBucketIndex = 0,
-            totalBuckets = totalBuckets,
-            searchSpace = searchSpace,
-            processedPercentage = null,
-            estimatedRemaining = null,
-        )
+        fun initial(
+            totalBuckets: Int,
+            searchSpace: CombinationCount,
+        ): SearchMetrics =
+            SearchMetrics(
+                attempts = CombinationCount.ZERO,
+                elapsed = Duration.ZERO,
+                attemptsPerSecond = 0.0,
+                currentBucketIndex = 0,
+                totalBuckets = totalBuckets,
+                searchSpace = searchSpace,
+                processedPercentage = null,
+                estimatedRemaining = null,
+            )
     }
 }
 
 /** Events emitted by the engine as a cold flow. Terminal events end the flow. */
 sealed interface LabSearchEvent {
     data object Preparing : LabSearchEvent
+
     data class Started(
         val sessionId: SearchSessionId,
         val plan: LabSearchPlan,

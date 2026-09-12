@@ -1,0 +1,14 @@
+# Normalize line endings to LF so ktlint (end_of_line = lf) is consistent across OSes.
+* text=auto eol=lf
+
+# Windows scripts keep CRLF.
+*.bat text eol=crlf
+
+# Gradle wrapper script must stay LF.
+gradlew text eol=lf
+
+# Binary assets: never normalize.
+*.png binary
+*.jar binary
+*.keystore binary
+*.webp binary

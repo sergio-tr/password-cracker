@@ -11,7 +11,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SearchPlanAndFeasibilityTest {
-
     private val optimizer = DefaultSearchPlanOptimizer()
     private val analyzer = DefaultSearchFeasibilityAnalyzer()
 
@@ -32,11 +31,12 @@ class SearchPlanAndFeasibilityTest {
     fun tiny_space_is_reasonable() {
         val challenge = LabChallenge.withHiddenSecret(Alphabet.DIGITS, LengthPolicy.exactly(6), seed = 1)
         val plan = optimizer.optimize(challenge, BruteForceSearchStrategy.ID)
-        val feasibility = analyzer.analyze(
-            plan,
-            SearchLimits.of(maxAttempts = CombinationCount.of(1_000_000)),
-            FixedThroughputEstimator(),
-        )
+        val feasibility =
+            analyzer.analyze(
+                plan,
+                SearchLimits.of(maxAttempts = CombinationCount.of(1_000_000)),
+                FixedThroughputEstimator(),
+            )
         assertEquals(FeasibilityRating.Reasonable, feasibility.rating)
     }
 
@@ -45,11 +45,12 @@ class SearchPlanAndFeasibilityTest {
         // 10^9 combinations at 500k/s ≈ 2000 s → Expensive.
         val challenge = LabChallenge.withHiddenSecret(Alphabet.DIGITS, LengthPolicy.exactly(9), seed = 1)
         val plan = optimizer.optimize(challenge, BruteForceSearchStrategy.ID)
-        val feasibility = analyzer.analyze(
-            plan,
-            SearchLimits.of(maxDuration = kotlin.time.Duration.parse("1h")),
-            FixedThroughputEstimator(),
-        )
+        val feasibility =
+            analyzer.analyze(
+                plan,
+                SearchLimits.of(maxDuration = kotlin.time.Duration.parse("1h")),
+                FixedThroughputEstimator(),
+            )
         assertEquals(FeasibilityRating.Expensive, feasibility.rating)
     }
 
@@ -57,11 +58,12 @@ class SearchPlanAndFeasibilityTest {
     fun space_beyond_64_bits_is_impractical() {
         val challenge = LabChallenge.withHiddenSecret(Alphabet.ALPHANUMERIC, LengthPolicy.exactly(20), seed = 1)
         val plan = optimizer.optimize(challenge, BruteForceSearchStrategy.ID)
-        val feasibility = analyzer.analyze(
-            plan,
-            SearchLimits.of(maxDuration = kotlin.time.Duration.parse("1h")),
-            FixedThroughputEstimator(),
-        )
+        val feasibility =
+            analyzer.analyze(
+                plan,
+                SearchLimits.of(maxDuration = kotlin.time.Duration.parse("1h")),
+                FixedThroughputEstimator(),
+            )
         assertEquals(FeasibilityRating.Impractical, feasibility.rating)
         assertTrue(feasibility.reason.isNotBlank())
     }

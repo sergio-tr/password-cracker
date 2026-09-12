@@ -33,21 +33,21 @@ class NearbyViewModel(
     private val matcher: KnownNetworkMatcher,
     observeSaved: ObserveSavedNetworks,
 ) : ViewModel() {
-
     val state: StateFlow<NearbyUiState> =
         combine(scanner.observeState(), observeSaved()) { scan, saved ->
-            val items = (scan as? WifiScanState.Results)?.observations?.map { observation ->
-                when (val match = matcher.match(observation, saved)) {
-                    is NetworkMatchResult.Exact ->
-                        NearbyItem(observation, match.network.alias, isKnown = true, ambiguous = false)
-                    is NetworkMatchResult.Probable ->
-                        NearbyItem(observation, match.network.alias, isKnown = true, ambiguous = false)
-                    is NetworkMatchResult.Ambiguous ->
-                        NearbyItem(observation, null, isKnown = true, ambiguous = true)
-                    NetworkMatchResult.Unknown ->
-                        NearbyItem(observation, null, isKnown = false, ambiguous = false)
-                }
-            }.orEmpty()
+            val items =
+                (scan as? WifiScanState.Results)?.observations?.map { observation ->
+                    when (val match = matcher.match(observation, saved)) {
+                        is NetworkMatchResult.Exact ->
+                            NearbyItem(observation, match.network.alias, isKnown = true, ambiguous = false)
+                        is NetworkMatchResult.Probable ->
+                            NearbyItem(observation, match.network.alias, isKnown = true, ambiguous = false)
+                        is NetworkMatchResult.Ambiguous ->
+                            NearbyItem(observation, null, isKnown = true, ambiguous = true)
+                        NetworkMatchResult.Unknown ->
+                            NearbyItem(observation, null, isKnown = false, ambiguous = false)
+                    }
+                }.orEmpty()
             NearbyUiState(scanState = scan, items = items)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NearbyUiState())
 

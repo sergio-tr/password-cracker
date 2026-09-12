@@ -38,13 +38,14 @@ data class SearchLimits(
             maxAttempts: CombinationCount? = null,
             progressInterval: Duration = DEFAULT_PROGRESS_INTERVAL,
             batchSize: Int = DEFAULT_BATCH_SIZE,
-        ): List<Violation> = buildList {
-            if (maxDuration == null && maxAttempts == null) add(Violation.UNBOUNDED)
-            if (maxDuration != null && maxDuration <= Duration.ZERO) add(Violation.NON_POSITIVE_DURATION)
-            if (maxAttempts != null && maxAttempts.isZero) add(Violation.NON_POSITIVE_ATTEMPTS)
-            if (progressInterval <= Duration.ZERO) add(Violation.NON_POSITIVE_PROGRESS_INTERVAL)
-            if (batchSize <= 0) add(Violation.NON_POSITIVE_BATCH_SIZE)
-        }
+        ): List<Violation> =
+            buildList {
+                if (maxDuration == null && maxAttempts == null) add(Violation.UNBOUNDED)
+                if (maxDuration != null && maxDuration <= Duration.ZERO) add(Violation.NON_POSITIVE_DURATION)
+                if (maxAttempts != null && maxAttempts.isZero) add(Violation.NON_POSITIVE_ATTEMPTS)
+                if (progressInterval <= Duration.ZERO) add(Violation.NON_POSITIVE_PROGRESS_INTERVAL)
+                if (batchSize <= 0) add(Violation.NON_POSITIVE_BATCH_SIZE)
+            }
 
         /** Convenience factory that keeps the sensible progress/batch defaults. */
         fun of(

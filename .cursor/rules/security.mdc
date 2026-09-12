@@ -1,0 +1,16 @@
+---
+description: Manejo seguro de secretos y criptografía
+alwaysApply: true
+---
+
+# Seguridad
+
+- Nunca almacenar contraseñas ni secretos en texto plano.
+- La clave criptográfica debe residir en el almacén seguro de la plataforma
+  (Android Keystore). Sólo se persiste el ciphertext.
+- No implementar criptografía propia. Usar primitives estándar y mantenidas
+  (p. ej. AES-GCM / AEAD) con nonce/IV correcto y ciphertext autenticado.
+- Nunca incluir secretos en: logs, excepciones, analytics, crash reports,
+  `toString()`, estado persistido de ViewModel, previews ni fixtures versionados.
+- `NetworkSecret.toString()` jamás revela contenido (redactado).
+- Ante ambigüedad funcional relevante: parar y preguntar; no inventar decisiones.

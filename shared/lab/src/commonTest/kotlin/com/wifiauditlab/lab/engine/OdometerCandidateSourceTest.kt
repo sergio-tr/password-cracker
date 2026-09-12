@@ -9,7 +9,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class OdometerCandidateSourceTest {
-
     @Test
     fun enumerates_the_whole_fixed_length_space_in_order() {
         val source = OdometerCandidateSource(Alphabet.DIGITS, length = 2)
