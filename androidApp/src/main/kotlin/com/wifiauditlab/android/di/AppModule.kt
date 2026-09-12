@@ -43,10 +43,10 @@ import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
 import com.wifiauditlab.lab.engine.CalibratedThroughputEstimator
-import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import com.wifiauditlab.lab.engine.DefaultSearchCalibrationService
 import com.wifiauditlab.lab.engine.DefaultSearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.engine.SearchStrategyRegistry
+import com.wifiauditlab.lab.engine.WorkerAwareLabSearchEngine
 import com.wifiauditlab.persistence.SqlDelightSavedNetworkRepository
 import com.wifiauditlab.persistence.db.VaultDatabase
 import kotlinx.coroutines.Dispatchers
@@ -79,7 +79,9 @@ val appModule =
 
         // Lab engine
         single<SearchPlanOptimizer> { SearchStrategyRegistry() }
-        single<LabSearchEngine> { DefaultLabSearchEngine() }
+        single<LabSearchEngine> {
+            WorkerAwareLabSearchEngine(availableProcessors = Runtime.getRuntime().availableProcessors())
+        }
         single<SearchFeasibilityAnalyzer> { DefaultSearchFeasibilityAnalyzer() }
         single<SearchPerformanceEstimator> { CalibratedThroughputEstimator() }
         single<SearchCalibrationService> {

@@ -24,6 +24,7 @@ import com.wifiauditlab.lab.engine.LengthPrioritizedStrategy
 import com.wifiauditlab.lab.engine.SyntheticProbabilityWeightedStrategy
 import com.wifiauditlab.lab.engine.TieredAlphabetStrategy
 import com.wifiauditlab.lab.engine.UniformBaselineStrategy
+import com.wifiauditlab.lab.engine.WorkerAwareLabSearchEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -54,6 +55,7 @@ data class LabConfig(
     val secretLength: Int = 4,
     val maxAttempts: Long? = 5_000_000,
     val maxDurationSeconds: Long? = 30,
+    val workers: Int = 1,
     val seed: Long? = 1,
 ) {
     fun activeLimitsDescription(): String =
@@ -137,6 +139,7 @@ class LabViewModel(
             }
         val challenge = buildChallenge(config)
         val plan = optimizer.optimize(challenge, config.strategy.id)
+        (engine as? WorkerAwareLabSearchEngine)?.workers = config.workers
         val controller = CancellationController()
         cancellation = controller
 
