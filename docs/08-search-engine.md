@@ -2,8 +2,9 @@
 
 ## Generación de candidatos
 
-`OdometerCandidateSource` enumera el espacio de cadenas de longitud fija sobre un
-alfabeto como un **cuentakilómetros** perezoso:
+`CandidateSpace` describe un slice (alfabeto, longitud, tamaño exacto) sin
+materializarlo. `OdometerCandidateSource` enumera ese espacio como un
+**cuentakilómetros** perezoso:
 
 - **lazy** e **incremental** (`Sequence<String>`);
 - **memoria O(longitud)**, nunca O(espacio de búsqueda);
