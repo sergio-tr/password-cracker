@@ -42,8 +42,8 @@ import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
 import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import com.wifiauditlab.lab.engine.DefaultSearchFeasibilityAnalyzer
-import com.wifiauditlab.lab.engine.DefaultSearchPlanOptimizer
 import com.wifiauditlab.lab.engine.FixedThroughputEstimator
+import com.wifiauditlab.lab.engine.SearchStrategyRegistry
 import com.wifiauditlab.persistence.SqlDelightSavedNetworkRepository
 import com.wifiauditlab.persistence.db.VaultDatabase
 import kotlinx.coroutines.Dispatchers
@@ -75,7 +75,7 @@ val appModule =
         single { SecurityAssessmentRegistry.default() }
 
         // Lab engine
-        single<SearchPlanOptimizer> { DefaultSearchPlanOptimizer() }
+        single<SearchPlanOptimizer> { SearchStrategyRegistry() }
         single<LabSearchEngine> { DefaultLabSearchEngine() }
         single<SearchFeasibilityAnalyzer> { DefaultSearchFeasibilityAnalyzer() }
         single<SearchPerformanceEstimator> { FixedThroughputEstimator() }

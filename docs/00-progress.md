@@ -21,6 +21,7 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Motor de laboratorio (lazy, límites, cancelación, métricas, viabilidad) | ✅ | Tests de casos críticos. |
 | Dominio del laboratorio (policy, progress, transiciones) | ✅ | `LabSecretPolicy`, `LabSearchProgress`, `SearchLifecycle`, `LabSearchResult.fromTerminal`; CombinationCount exacto hasta 2^256. |
 | Motor baseline (lazy, cancelable, tests críticos) | ✅ | `CandidateSpace`; first/middle/last, exactitud, determinismo, progreso agregado, Failed con métricas. |
+| Planificador por estrategias (buckets + scoring) | ✅ | Uniform / Length / Tiered / SyntheticProbability / Adaptive; score = prob/cost con pesos en la estrategia. |
 | Adaptadores Android (WifiScanner/Mapper/Permisos, KeystoreSecretVault) | ✅ | Compila; falta test instrumentado. |
 | DI (Koin) + UI Compose (Redes, Guardadas, Laboratorio, Ajustes) | ✅ (parcial) | Ver pendientes de UI. |
 | Documentación `docs/01`–`11` + ADRs | ✅ | — |
