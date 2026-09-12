@@ -27,4 +27,5 @@ rootProject.name = "password-cracker"
 include(":shared:core")
 include(":shared:assessment")
 include(":shared:lab")
+include(":shared:persistence")
 include(":androidApp")

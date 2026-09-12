@@ -1,7 +1,8 @@
 # ADR 0005 · Persistencia del Vault
 
-- Estado: Aceptada (parcial) — persistencia duradera pendiente
+- Estado: Aceptada
 - Fecha: 2026-09-12
+- Actualización: persistencia duradera implementada con SQLDelight (`:shared:persistence`).
 
 ## Contexto
 
@@ -14,10 +15,14 @@ secretos deben cifrarse con una clave del almacén seguro de plataforma.
   clave AES-GCM generada dentro del Android Keystore (hardware-backed). Sólo se
   persiste el *ciphertext* (IV + tag + datos, Base64) en `SharedPreferences`
   privadas. Este es el diseño definitivo del canal de secretos.
-- **Metadatos de red**: en esta fase se usa `InMemorySavedNetworkRepository` para
-  ejecutar la app end-to-end. La implementación duradera (SQLDelight, KMP-native,
-  respetando `Database -> Ports` y sin `Domain -> SQLite`) queda como tarea
-  siguiente y **no** cambia el puerto.
+- **Metadatos de red**: `SqlDelightSavedNetworkRepository` (módulo KMP
+  `:shared:persistence`) implementa el puerto `SavedNetworkRepository` sobre
+  SQLDelight. En Android usa `AndroidSqliteDriver` (BD `vault.db`); los tests JVM
+  usan un driver SQLite en memoria. El esquema está versionado vía
+  `VaultDatabase.Schema` (create/migrate), de modo que futuras migraciones son
+  ficheros `.sqm` incrementales. El BSSID set se serializa como lista separada por
+  comas dentro del adaptador (detalle interno; el dominio no lo ve). No se guarda
+  ningún secreto: sólo el puntero `SecretId`.
 
 ## Consecuencias
 

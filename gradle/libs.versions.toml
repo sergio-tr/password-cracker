@@ -7,7 +7,7 @@ datetime = "0.6.1"
 serialization = "1.7.3"
 bignum = "0.3.10"
 koin = "4.0.0"
-sqldelight = "2.0.2"
+sqldelight = "2.1.0"
 
 androidCompileSdk = "35"
 androidMinSdk = "26"
@@ -32,6 +32,7 @@ koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
 
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }

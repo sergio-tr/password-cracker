@@ -1,0 +1,50 @@
+CREATE TABLE saved_network (
+    id TEXT NOT NULL PRIMARY KEY,
+    alias TEXT NOT NULL,
+    ssid TEXT NOT NULL,
+    security_family TEXT NOT NULL,
+    -- Small, bounded set of BSSIDs serialized as a comma-separated list.
+    -- BSSIDs are lower-case colon-separated MACs, so a comma never collides.
+    known_bssids TEXT NOT NULL DEFAULT '',
+    location_label TEXT,
+    geo_lat REAL,
+    geo_lng REAL,
+    secret_id TEXT,
+    notes TEXT,
+    created_at INTEGER NOT NULL,
+    last_seen_at INTEGER
+);
+
+CREATE INDEX saved_network_ssid ON saved_network(ssid);
+
+selectAll:
+SELECT * FROM saved_network ORDER BY alias, id;
+
+selectById:
+SELECT * FROM saved_network WHERE id = ?;
+
+selectByIdentity:
+SELECT * FROM saved_network WHERE ssid = :ssid AND security_family = :family;
+
+insert:
+INSERT INTO saved_network(
+    id, alias, ssid, security_family, known_bssids,
+    location_label, geo_lat, geo_lng, secret_id, notes, created_at, last_seen_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE saved_network SET
+    alias = :alias,
+    ssid = :ssid,
+    security_family = :security_family,
+    known_bssids = :known_bssids,
+    location_label = :location_label,
+    geo_lat = :geo_lat,
+    geo_lng = :geo_lng,
+    secret_id = :secret_id,
+    notes = :notes,
+    last_seen_at = :last_seen_at
+WHERE id = :id;
+
+deleteById:
+DELETE FROM saved_network WHERE id = ?;
