@@ -11,13 +11,19 @@ import com.wifiauditlab.lab.domain.SearchLimits
 import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
+import com.wifiauditlab.lab.domain.SearchStrategyId
 import com.wifiauditlab.lab.domain.engine.CancellationController
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchFeasibility
 import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
-import com.wifiauditlab.lab.engine.BruteForceSearchStrategy
+import com.wifiauditlab.lab.engine.AdaptiveSyntheticStrategy
+import com.wifiauditlab.lab.engine.LengthPrioritizedStrategy
+import com.wifiauditlab.lab.engine.SyntheticProbabilityWeightedStrategy
+import com.wifiauditlab.lab.engine.TieredAlphabetStrategy
+import com.wifiauditlab.lab.engine.UniformBaselineStrategy
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,13 +39,28 @@ enum class AlphabetChoice(val label: String, val alphabet: Alphabet) {
     ALPHANUMERIC("Alfanumérico (a-z, A-Z, 0-9)", Alphabet.ALPHANUMERIC),
 }
 
+enum class StrategyChoice(val label: String, val id: SearchStrategyId) {
+    UNIFORM("Uniforme", UniformBaselineStrategy.ID),
+    LENGTH("Longitud primero", LengthPrioritizedStrategy.ID),
+    TIERED("Alfabeto por capas", TieredAlphabetStrategy.ID),
+    WEIGHTED("Probabilidad sintética", SyntheticProbabilityWeightedStrategy.ID),
+    ADAPTIVE("Adaptativa", AdaptiveSyntheticStrategy.ID),
+}
+
 data class LabConfig(
     val alphabet: AlphabetChoice = AlphabetChoice.DIGITS,
+    val strategy: StrategyChoice = StrategyChoice.LENGTH,
     val secretLength: Int = 4,
     val maxAttempts: Long? = 5_000_000,
     val maxDurationSeconds: Long? = 30,
     val seed: Long? = 1,
-)
+) {
+    fun activeLimitsDescription(): String =
+        buildList {
+            maxAttempts?.let { add("$it intentos") }
+            maxDurationSeconds?.let { add("$it s") }
+        }.joinToString(" · ").ifEmpty { "Sin límite (inválido)" }
+}
 
 data class LabUiState(
     val config: LabConfig = LabConfig(),
@@ -50,6 +71,7 @@ data class LabUiState(
     val outcome: SearchOutcome? = null,
     val foundCandidate: String? = null,
     val configError: String? = null,
+    val errorMessage: String? = null,
 )
 
 /**
@@ -61,8 +83,8 @@ class LabViewModel(
     private val optimizer: SearchPlanOptimizer,
     private val analyzer: SearchFeasibilityAnalyzer,
     private val estimator: SearchPerformanceEstimator,
+    private val searchDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    private val strategyId = BruteForceSearchStrategy.ID
     private val _state = MutableStateFlow(LabUiState())
     val state = _state.asStateFlow()
 
@@ -80,7 +102,7 @@ class LabViewModel(
 
     private fun recomputePreview(config: LabConfig) {
         val challenge = buildChallenge(config)
-        val plan = optimizer.optimize(challenge, strategyId)
+        val plan = optimizer.optimize(challenge, config.strategy.id)
         val limits = runCatching { buildLimits(config) }.getOrNull()
         _state.update {
             it.copy(
@@ -104,16 +126,22 @@ class LabViewModel(
                 return
             }
         val challenge = buildChallenge(config)
-        val plan = optimizer.optimize(challenge, strategyId)
+        val plan = optimizer.optimize(challenge, config.strategy.id)
         val controller = CancellationController()
         cancellation = controller
 
         _state.update {
-            it.copy(searchState = SearchState.Preparing, metrics = null, outcome = null, foundCandidate = null)
+            it.copy(
+                searchState = SearchState.Preparing,
+                metrics = null,
+                outcome = null,
+                foundCandidate = null,
+                errorMessage = null,
+            )
         }
 
         searchJob =
-            viewModelScope.launch(Dispatchers.Default) {
+            viewModelScope.launch(searchDispatcher) {
                 engine.run(challenge, plan, limits, controller).collect { event ->
                     _state.update { current -> current.reduce(event) }
                 }
@@ -144,7 +172,12 @@ class LabViewModel(
             is LabSearchEvent.Completed ->
                 copy(searchState = SearchState.Completed, metrics = event.metrics, outcome = SearchOutcome.NotFound)
             is LabSearchEvent.Failed ->
-                copy(searchState = SearchState.Failed, metrics = event.metrics ?: metrics, outcome = SearchOutcome.Failed)
+                copy(
+                    searchState = SearchState.Failed,
+                    metrics = event.metrics ?: metrics,
+                    outcome = SearchOutcome.Failed,
+                    errorMessage = event.message,
+                )
         }
 
     private fun buildChallenge(config: LabConfig): LabChallenge =

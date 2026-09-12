@@ -1,5 +1,6 @@
 package com.wifiauditlab.android.ui.lab
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -56,8 +58,8 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                 ) { Text("Iniciar búsqueda") }
             }
 
-            state.metrics?.let { MetricsCard(state.searchState, it) }
-            state.outcome?.let { ResultCard(it, state.foundCandidate) }
+            state.metrics?.let { MetricsCard(state, it) }
+            state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
         }
     }
 }
@@ -72,12 +74,29 @@ private fun ConfigCard(
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Reto", fontWeight = FontWeight.SemiBold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(config.alphabet.label)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
                 AlphabetChoice.entries.forEach { choice ->
                     FilterChip(
                         selected = config.alphabet == choice,
                         onClick = { if (enabled) onChange(config.copy(alphabet = choice)) },
-                        label = { Text(choice.name) },
+                        label = { Text(choice.label) },
+                    )
+                }
+            }
+            Text("Estrategia: ${config.strategy.label}")
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
+                StrategyChoice.entries.forEach { choice ->
+                    FilterChip(
+                        selected = config.strategy == choice,
+                        onClick = { if (enabled) onChange(config.copy(strategy = choice)) },
+                        label = { Text(choice.label) },
                     )
                 }
             }
@@ -91,8 +110,26 @@ private fun ConfigCard(
                     onClick = { if (enabled && config.secretLength < 12) onChange(config.copy(secretLength = config.secretLength + 1)) },
                 ) { Text("+") }
             }
-            Text("Límite de intentos: ${config.maxAttempts ?: "—"}")
-            Text("Límite de tiempo: ${config.maxDurationSeconds?.let { "$it s" } ?: "—"}")
+            OutlinedTextField(
+                value = config.maxAttempts?.toString().orEmpty(),
+                onValueChange = { value ->
+                    if (enabled) onChange(config.copy(maxAttempts = value.trim().toLongOrNull()))
+                },
+                label = { Text("Límite de intentos") },
+                enabled = enabled,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = config.maxDurationSeconds?.toString().orEmpty(),
+                onValueChange = { value ->
+                    if (enabled) onChange(config.copy(maxDurationSeconds = value.trim().toLongOrNull()))
+                },
+                label = { Text("Límite de tiempo (s)") },
+                enabled = enabled,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
             state.configError?.let { Text(it) }
         }
     }
@@ -102,8 +139,12 @@ private fun ConfigCard(
 private fun EstimatesCard(state: LabUiState) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Estimaciones", fontWeight = FontWeight.SemiBold)
-            Text("Combinaciones: ${state.estimatedCombinations.toAbbreviatedString()}")
+            Text("Antes de iniciar", fontWeight = FontWeight.SemiBold)
+            Text("Reto: ${state.config.alphabet.label} · longitud ${state.config.secretLength}")
+            Text("Estrategia: ${state.config.strategy.label}")
+            Text("Combinaciones estimadas: ${state.estimatedCombinations.toAbbreviatedString()}")
+            Text("Límite de tiempo: ${state.config.maxDurationSeconds?.let { "$it s" } ?: "—"}")
+            Text("Límite de intentos: ${state.config.maxAttempts ?: "—"}")
             state.feasibility?.let { feasibility ->
                 Text("Viabilidad: ${feasibilityLabel(feasibility.rating)}")
                 Text(feasibility.reason)
@@ -114,17 +155,20 @@ private fun EstimatesCard(state: LabUiState) {
 
 @Composable
 private fun MetricsCard(
-    searchState: SearchState,
+    state: LabUiState,
     metrics: SearchMetrics,
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(searchState.name.uppercase(), fontWeight = FontWeight.Bold)
+            Text(state.searchState.name.uppercase(), fontWeight = FontWeight.Bold)
             Text("Intentos: ${metrics.attempts.toExactString()}")
             Text("Tiempo: ${formatElapsed(metrics.elapsed.inWholeSeconds)}")
             Text("Velocidad: ${(metrics.attemptsPerSecond / 1000).roundToInt()} k/s")
-            metrics.processedPercentage?.let { Text("Progreso: ${(it * 100).roundToInt() / 100.0} %") }
             Text("Fase: ${metrics.currentBucketIndex + 1} / ${metrics.totalBuckets}")
+            Text("Bucket actual: ${metrics.currentBucketIndex + 1}")
+            Text("Espacio estimado: ${metrics.searchSpace.toAbbreviatedString()}")
+            metrics.processedPercentage?.let { Text("Progreso: ${(it * 100).roundToInt() / 100.0} %") }
+            Text("Límites activos: ${state.config.activeLimitsDescription()}")
         }
     }
 }
@@ -133,12 +177,19 @@ private fun MetricsCard(
 private fun ResultCard(
     outcome: SearchOutcome,
     found: String?,
+    errorMessage: String?,
+    metrics: SearchMetrics?,
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(outcomeLabel(outcome), fontWeight = FontWeight.Bold)
             if (outcome == SearchOutcome.Found && found != null) {
                 Text("Secreto encontrado: $found")
+            }
+            errorMessage?.let { Text(it) }
+            metrics?.let {
+                Text("Intentos finales: ${it.attempts.toExactString()}")
+                Text("Tiempo final: ${formatElapsed(it.elapsed.inWholeSeconds)}")
             }
         }
     }
