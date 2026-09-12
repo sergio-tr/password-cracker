@@ -21,6 +21,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,7 +51,10 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             EstimatesCard(state)
 
             if (running) {
-                Button(onClick = viewModel::stop, modifier = Modifier.fillMaxWidth()) { Text("STOP") }
+                Button(
+                    onClick = viewModel::stop,
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Detener búsqueda" },
+                ) { Text("STOP") }
             } else {
                 Button(
                     onClick = viewModel::start,

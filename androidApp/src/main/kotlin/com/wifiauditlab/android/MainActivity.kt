@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Destination(val route: String, val label: String, val icon: ImageVector) {
-    Nearby("nearby", "Redes", Icons.Filled.Wifi),
+    Nearby("nearby", "Cercanas", Icons.Filled.Wifi),
     Vault("vault", "Guardadas", Icons.Filled.Lock),
     Lab("lab", "Laboratorio", Icons.Filled.Science),
     Settings("settings", "Ajustes", Icons.Filled.Settings),
