@@ -11,8 +11,13 @@ materializarlo. `OdometerCandidateSource` enumera ese espacio como un
 - **determinista**: orden natural del alfabeto, o permutación reproducible cuando
   hay `seed` (Fisher–Yates sembrado).
 
-No se materializa el espacio: el `SearchPlanOptimizer` sólo construye *buckets*
-ordenados (uno por longitud), con tamaño y peso relativo pre-calculados.
+No se materializa el espacio: el `SearchPlanOptimizer` construye *buckets*
+disjuntos (uno por longitud). Las estrategias (`UniformBaseline`,
+`LengthPrioritized`, `TieredAlphabet`, `SyntheticProbabilityWeighted`,
+`AdaptiveSynthetic`) solo cambian orden y puntuación. El score conceptual es
+`probabilidad sintética / coste estimado`; los pesos viven en la estrategia, no
+en el engine. Las dos estrategias ponderadas usan únicamente la distribución
+declarada en `LabSecretPolicy`, nunca datasets de credenciales reales.
 
 ## Tamaño del espacio: `CombinationCount`
 

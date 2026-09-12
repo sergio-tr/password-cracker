@@ -18,6 +18,8 @@ data class SearchBucket(
     val expectedRelativeWeight: Double,
     val searchSpaceSize: CombinationCount,
     val sourceOverride: CandidateSource? = null,
+    val relativePriority: Double = expectedRelativeWeight,
+    val estimatedCost: CombinationCount = searchSpaceSize,
 ) {
     /** Policy of this slice: the bucket alphabet and a fixed candidate length. */
     val policy: LabSecretPolicy get() = LabSecretPolicy(alphabet, LengthPolicy.exactly(length))

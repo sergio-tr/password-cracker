@@ -37,6 +37,7 @@ class LabChallenge private constructor(
             lengthPolicy: LengthPolicy,
             seed: Long? = null,
             id: ChallengeId = ChallengeId.random(),
+            syntheticLengthWeights: Map<Int, Double> = emptyMap(),
         ): LabChallenge {
             val random = if (seed != null) Random(seed) else Random.Default
             val length =
@@ -49,7 +50,12 @@ class LabChallenge private constructor(
                 buildString {
                     repeat(length) { append(alphabet[random.nextInt(alphabet.size)]) }
                 }
-            return LabChallenge(id, LabSecretPolicy(alphabet, lengthPolicy), seed, secret)
+            return LabChallenge(
+                id,
+                LabSecretPolicy(alphabet, lengthPolicy, syntheticLengthWeights),
+                seed,
+                secret,
+            )
         }
 
         /**

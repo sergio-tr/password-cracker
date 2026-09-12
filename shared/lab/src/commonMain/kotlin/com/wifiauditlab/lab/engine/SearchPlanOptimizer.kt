@@ -1,43 +1,25 @@
 package com.wifiauditlab.lab.engine
 
-import com.wifiauditlab.core.math.CombinationCount
-import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchPlan
-import com.wifiauditlab.lab.domain.SearchBucket
+import com.wifiauditlab.lab.domain.SearchLimits
 import com.wifiauditlab.lab.domain.SearchStrategyId
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
 
 /**
- * Default optimizer: one bucket per candidate length, ordered from the smallest
- * space to the largest so cheaper slices are explored first. This is a neutral,
- * synthetic priorization policy — it encodes no real-credential heuristics.
+ * Default optimizer used by the baseline engine. Delegates to
+ * [LengthPrioritizedStrategy] and stamps the caller-requested strategy id so
+ * existing brute-force sessions keep a stable identifier.
  */
 class DefaultSearchPlanOptimizer : SearchPlanOptimizer {
+    private val delegate = LengthPrioritizedStrategy()
+
     override fun optimize(
         challenge: LabChallenge,
         strategyId: SearchStrategyId,
     ): LabSearchPlan {
-        val alphabet: Alphabet = challenge.alphabet
-        val sizesByLength =
-            challenge.lengthPolicy.lengths.associateWith { length ->
-                CombinationCount.alphabetPower(alphabet.size, length)
-            }
-        val total = sizesByLength.values.fold(CombinationCount.ZERO) { acc, size -> acc + size }
-
-        val buckets =
-            sizesByLength.entries
-                .sortedBy { it.key } // ascending length == ascending space for a fixed alphabet
-                .mapIndexed { index, (length, size) ->
-                    SearchBucket(
-                        index = index,
-                        length = length,
-                        alphabet = alphabet,
-                        expectedRelativeWeight = (size.percentageOf(total) ?: 0.0) / 100.0,
-                        searchSpaceSize = size,
-                    )
-                }
-        return LabSearchPlan(strategyId, buckets, challenge.seed)
+        val planned = delegate.optimize(challenge, strategyId)
+        return LabSearchPlan(strategyId, planned.buckets, planned.seed)
     }
 }
 
@@ -54,7 +36,7 @@ class BruteForceSearchStrategy(
 
     override suspend fun createPlan(
         challenge: LabChallenge,
-        limits: com.wifiauditlab.lab.domain.SearchLimits,
+        limits: SearchLimits,
     ): LabSearchPlan = optimizer.optimize(challenge, id)
 
     companion object {
