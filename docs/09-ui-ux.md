@@ -11,8 +11,8 @@ la ejecución.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Nearby Networks, Saved Networks (list + detalle + alta + edición + borrado + gestión de secreto), Security Lab (config + ejecución + resultado), Settings. |
-| Pendientes (scaffold documentado) | Onboarding, Permissions dedicada, Security Analysis detallada. |
+| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (config + ejecución + **resultado integrado**), Ajustes. |
+| Deferred | Onboarding, Permission Center, Security Analysis dedicada, Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
 
 ## Principios aplicados
 

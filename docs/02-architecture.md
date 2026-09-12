@@ -17,9 +17,12 @@ de negocio relevante dentro de ViewModels.
 
 ```
 :androidApp  (Compose UI, ViewModels, adaptadores Android, DI Koin)
-    |            |                 |
-    v            v                 v
-:shared:assessment            :shared:lab
+    |            |                 |              |
+    v            v                 v              v
+:shared:persistence          :shared:lab    (también assessment/core)
+    |                              |
+    v                              |
+:shared:assessment                 |
     |                              |
     +--------------+---------------+
                    v
@@ -29,6 +32,8 @@ de negocio relevante dentro de ViewModels.
 - `:shared:core`: kernel de value objects (`CombinationCount`, `PlatformCapabilities`).
 - `:shared:assessment`: dominio **Real Wi-Fi Assessment** (Wi-Fi, seguridad, matcher,
   Vault) + casos de uso + puertos.
+- `:shared:persistence`: adaptador SQLDelight de `SavedNetworkRepository`
+  (depende de `:shared:assessment`; el dominio no ve SQLDelight).
 - `:shared:lab`: dominio **Synthetic Security Lab** (motor, planificador, límites,
   métricas, viabilidad). Depende **sólo** de `:shared:core`.
 - `:androidApp`: adaptadores e infraestructura Android + UI.

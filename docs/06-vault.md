@@ -39,8 +39,10 @@ interface SecretVault {
 - La **clave** criptográfica reside en el almacén seguro de plataforma (Android
   Keystore, AES-GCM hardware-backed). Sólo el *ciphertext* (IV + tag + datos) se
   persiste.
-- Eliminar una red elimina/desvincula su secreto de forma consistente
-  (`DeleteSavedNetwork` borra el secreto antes que la red).
+- Eliminar una red elimina/desvincula su secreto de forma consistente:
+  `DeleteSavedNetwork` borra primero los metadatos y luego el secreto
+  (best-effort), de modo que nunca quede una red apuntando a un secreto
+  inexistente (ADR 0007).
 - `SecretVault` es una abstracción reemplazable por Keychain en iOS.
 
 ## Visualización

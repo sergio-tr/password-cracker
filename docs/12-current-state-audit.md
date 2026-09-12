@@ -1,0 +1,101 @@
+# 12 · Current state audit (FASE 17)
+
+Auditoría de realidad del repositorio `password-cracker` a fecha **2026-09-12**.
+Fuente de verdad: **código + tests + grafo de módulos + CI**. La documentación
+se alinea a esta tabla; si hay conflicto, gana el código.
+
+**Alcance de esta fase:** inspeccionar y reconciliar. **No** se añade funcionalidad.
+
+**Módulos reales** (`settings.gradle.kts`):
+
+| Módulo | Rol |
+| --- | --- |
+| `:shared:core` | `CombinationCount`, `PlatformCapabilities` |
+| `:shared:assessment` | Wi‑Fi real, Vault, assessment, casos de uso |
+| `:shared:lab` | Laboratorio sintético (sólo depende de `:shared:core`) |
+| `:shared:persistence` | SQLDelight → `SavedNetworkRepository` |
+| `:androidApp` | Compose UI, ViewModels, adaptadores Android, Koin |
+
+**CI** (`.github/workflows/ci.yml`): `ktlintCheck` → `test`/`jvmTest` → `assembleDebug`.
+Sin emulador / `androidTest`.
+
+---
+
+## Capability matrix
+
+| Capability | Documented status (antes de FASE 17) | Actual code status | Tests | Integrated in UI | Gap | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| Module frontier Real vs Lab | Implemented | **Implemented** — `lab` → `core` only | Compile-time | N/A | — | **Keep** |
+| `CombinationCount` (>64 bits) | Implemented | **Implemented** | `CombinationCountTest` | Lab estimates | — | **Keep** |
+| Wi‑Fi model + classifier | Implemented | **Implemented** in `:shared:assessment` | Classifier + fixtures | Nearby cards / detail | Docs once said “(core)” | **Keep** (docs fixed) |
+| Known-network matcher | Implemented | **Implemented** | `DefaultKnownNetworkMatcherTest` | Via `ObserveNearbyNetworks` | — | **Keep** |
+| Security assessment registry | Implemented | **Implemented** (8 strategies) | Registry + strategies tests | Nearby detail (collapsed) | No dedicated analysis screen | **Keep domain**; screen = FASE 19 |
+| Vault CRUD + secret ports | Implemented | **Implemented** | Use-case + compensation | Vault screen | Biometry Deferred | **Keep** |
+| SQLDelight network persistence | Implemented | **Implemented** (`vault.db`) | JVM `SqlDelight…Test` | Yes | No Android driver instrumented test | **Keep**; instrument = FASE 20 |
+| Keystore secret vault | Implemented | **Implemented** | Unit only (no instrument) | Reveal/copy flow | No androidTest | **Keep**; instrument = FASE 20 |
+| Nearby scan / permissions UX | Implemented | **Implemented** | ViewModel + use cases | Nearby | No Permission Center | Permission Center = FASE 18 |
+| Vault UI (search/sort/filter/CRUD/secrets) | Implemented | **Implemented** | `VaultViewModelTest` | Vault tab | No Compose UI tests | **Keep**; UI tests = FASE 20 |
+| Sightings (BSSID + lastSeen) | Implemented | **Implemented** | Use-case + Nearby VM | Nearby auto | — | **Keep** |
+| Lab domain + SearchLifecycle | Implemented | **Implemented** (8 states) | Transition + challenge tests | Lab screen | — | **Keep** |
+| Sequential search engine | Implemented | **Implemented** `DefaultLabSearchEngine` | Critical engine suite | Via `WorkerAware` when workers=1 | — | **Keep** (baseline) |
+| Parallel search engine | `00-progress` Implemented; `08` was “future” | **Implemented** `ParallelLabSearchEngine` + `WorkerPoolConfig` | `ParallelLabSearchEngineTest` | Worker chips 1/2/4 | No formal throughput evidence | **Keep**; benchmarks = FASE 23; **docs reconciled** |
+| Search plan strategies (5) | Implemented | **Implemented** | Coverage + scorer tests | Strategy chips | — | **Keep** |
+| Lab execution UX (preview/STOP/result card) | Implemented (integrated) | **Implemented** on **same** Lab screen (`ResultCard`) | `LabViewModelTest` | Yes | Separate “Lab Result” route Deferred | **Keep integrated result**; optional own screen stays Deferred (FASE deferred, not contradiction) |
+| Feasibility analyzer | Implemented | **Implemented** | Plan/feasibility tests | Estimates card | — | **Keep** |
+| Calibration service | Implemented / Partial | **Implemented** run + refine | `SearchCalibrationServiceTest` | Auto on Lab VM init | **`InMemoryCalibrationStore` only** — lost on process death | **Document Partial**; durable store = FASE 22 |
+| Calibration persistence | RC: in-memory | **Partial** — memory only | In-memory store tested | No Settings UI | Not durable | **FASE 22** |
+| Benchmark module / dashboard | Partial / Deferred | **Missing** | None | None | No dedicated module | **FASE 23** |
+| ViewModel unit tests | `00-progress` yes; `10-testing` was “pending” | **Implemented** Nearby/Vault/Lab | 3 files under `androidApp/src/test` | N/A | Doc contradiction | **Docs reconciled** in this audit lineage |
+| Compose UI tests | Deferred | **Missing** — no `androidTest` sources | None | N/A | RC gap | **FASE 20** |
+| Android instrumentation | Deferred | **Missing** | None | N/A | Keystore/SQLDelight Android | **FASE 20** |
+| Emulator CI | Not present | **Missing** | CI has no emulator job | N/A | Flaky risk if naive | **FASE 21** |
+| Onboarding | Deferred | **Missing** | None | None | First-run education | **FASE 18** |
+| Permission Center | Deferred | **Missing** (inline Nearby only) | None | Partial in Nearby | Dedicated screen | **FASE 18** |
+| Security Analysis Detail screen | Deferred | **Missing** (summary in Nearby sheet) | Assessment domain tests only | Partial | Dedicated hierarchy | **FASE 19** |
+| GeoLocation UI | Partial | Domain+DB yes; UI `LocationLabel` only | Domain/persistence | Label only | No location picker | Deferred / later product |
+| Biometric reveal | Deferred | Not implemented | None | No | Architecture ready | Deferred |
+| iOS targets | Deferred | Not present | None | N/A | Needs macOS | Deferred (`docs/11`) |
+| Docs coherence | Partial | This audit + reconciled `00`/`08`/`10`/ADRs | N/A | N/A | Was contradictory | **This phase** |
+
+---
+
+## Contradiction resolutions (explicit)
+
+### 1. ViewModel tests: `00-progress` vs `10-testing`
+
+- **Reality:** `NearbyViewModelTest`, `VaultViewModelTest`, `LabViewModelTest` exist.
+- **Resolution:** `10-testing.md` lists them under cobertura actual. Status = **Implemented**.
+
+### 2. Parallelism: `00-progress` vs `08-search-engine`
+
+- **Reality:** `ParallelLabSearchEngine` + UI worker selector + DI `WorkerAwareLabSearchEngine`.
+- **Resolution:** `08-search-engine.md` describes the pool as implemented; benchmarks formal remain **Partial**. Status of engine = **Implemented**.
+
+### 3. Calibration: “exists” vs “memory only”
+
+- **Reality:** calibration **runs** and refines throughput; store is `InMemoryCalibrationStore`.
+- **Resolution:** capability split — **Calibration run = Implemented**; **Persistent calibration = Partial** (FASE 22).
+
+### 4. Lab result: integrated vs pending dedicated screen
+
+- **Reality:** terminal outcome + metrics render in `LabScreen` (`ResultCard`). There is **no** separate navigation route.
+- **Resolution:** **Integrated lab result = Implemented**. **Dedicated Lab Result screen = Deferred** (product polish, not a missing core capability).
+
+---
+
+## Decisions for subsequent phases
+
+| Phase | Branch | Depends on this audit |
+| --- | --- | --- |
+| 18 | `feature/onboarding-permissions` | Onboarding + Permission Center |
+| 19 | `feature/security-analysis-detail` | Dedicated assessment screen |
+| 20 | `test/android-ui-instrumentation` | Compose + Android instrument |
+| 21 | `chore/android-emulator-ci` | Emulator matrix from project SDKs |
+| 22 | `feature/persistent-search-calibration` | Durable `CalibrationRepository` |
+| 23 | `feature/lab-benchmarking` | Benchmark module + dashboard |
+
+---
+
+## Evidence inventory (tests found)
+
+29 test classes under `**/src/**Test` (excluding `build/`), including domain, use cases, persistence JVM, lab engine/parallel/calibration, and three Android unit ViewModel tests. **Zero** `androidTest` sources.

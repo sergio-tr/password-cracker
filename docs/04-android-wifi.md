@@ -24,7 +24,7 @@ limita `startScan()` y eso se refleja en `THROTTLED`.
 | `AndroidWifiScanner` | Adaptador del puerto; escucha `SCAN_RESULTS_AVAILABLE_ACTION`. |
 | `AndroidWifiMapper` | Traduce `ScanResult` → `WifiObservation`. |
 | `AndroidWifiPermissionManager` | Resuelve permisos según versión (NEARBY_WIFI_DEVICES / ubicación). |
-| `WifiSecurityClassifier` (core) | Normaliza `capabilities` → `WifiSecurityProfile`. |
+| `WifiSecurityClassifier` (`:shared:assessment`) | Normaliza `capabilities` → `WifiSecurityProfile`. |
 
 El **classifier** vive en el núcleo de negocio (`:shared:assessment`), sin tipos
 Android, por lo que es testeable sin emulador y reutilizable en iOS. El mapper

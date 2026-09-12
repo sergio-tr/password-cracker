@@ -65,7 +65,11 @@ años como una operación normal.
 
 ## Paralelismo
 
-Se implementa primero un baseline **determinista de un solo worker** con tests y
-benchmarks. El pool de workers controlado queda para una fase posterior,
-manteniendo cancelación, evitando duplicados y contadores thread-safe (ver
-`docs/29`/benchmarking y ADR 0006).
+El baseline **determinista de un solo worker** (`DefaultLabSearchEngine`) sigue
+siendo la referencia de corrección. Sobre él existe un pool acotado
+(`WorkerPoolConfig`, `ParallelLabSearchEngine`, `WorkerAwareLabSearchEngine`)
+que parte cada bucket en rangos disjuntos: sin candidatos duplicados, sin
+contadores inventados y con la misma señal cooperativa de cancelación
+(ADR 0006). La UI permite elegir 1 / 2 / 4 workers; más workers no se asumen
+mejores. Un módulo de benchmarks formales (throughput/CPU/latencia de cancel)
+sigue **Partial** / pendiente de documentar evidencia numérica.

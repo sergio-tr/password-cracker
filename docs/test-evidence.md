@@ -1,6 +1,8 @@
 # Test evidence
 
 Evidencia de la suite automática y de los casos manuales obligatorios del RC.
+La auditoría automática de FASE 16 está en `main` (PR #17). Rellenar la columna
+**Evidencia** del pase manual con fecha, dispositivo y resultado.
 
 ## Automático (CI: `ktlintCheck`, `test`, `jvmTest`, `assembleDebug`)
 
