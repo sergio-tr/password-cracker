@@ -2,16 +2,21 @@ package com.wifiauditlab.android.ui.nearby
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wifiauditlab.assessment.application.ObserveSavedNetworks
-import com.wifiauditlab.assessment.domain.match.KnownNetworkMatcher
-import com.wifiauditlab.assessment.domain.match.NetworkMatchResult
+import com.wifiauditlab.assessment.application.AssessNetworkSecurity
+import com.wifiauditlab.assessment.application.CreateSavedNetwork
+import com.wifiauditlab.assessment.application.NearbyNetwork
+import com.wifiauditlab.assessment.application.ObserveNearbyNetworks
+import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
+import com.wifiauditlab.assessment.domain.security.SecurityAssessment
+import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
 import com.wifiauditlab.assessment.port.WifiScanState
-import com.wifiauditlab.assessment.port.WifiScanner
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -25,33 +30,79 @@ data class NearbyItem(
 data class NearbyUiState(
     val scanState: WifiScanState = WifiScanState.Idle,
     val items: List<NearbyItem> = emptyList(),
-    val lastRequest: WifiScanRequestResult? = null,
 )
 
+/** Detail of a selected network, with its (async) security assessment. */
+data class NearbyDetailState(
+    val item: NearbyItem,
+    val assessment: SecurityAssessment? = null,
+    val saved: Boolean = false,
+)
+
+private fun NearbyNetwork.toItem(): NearbyItem =
+    NearbyItem(
+        observation = observation,
+        alias = knownAlias,
+        isKnown = isKnown,
+        ambiguous = isAmbiguous,
+    )
+
+/**
+ * Presentation for the nearby-networks screen. Contains no matching or
+ * assessment logic itself: it only orchestrates use cases and maps their
+ * results to UI state.
+ */
 class NearbyViewModel(
-    private val scanner: WifiScanner,
-    private val matcher: KnownNetworkMatcher,
-    observeSaved: ObserveSavedNetworks,
+    observeNearby: ObserveNearbyNetworks,
+    private val refreshNearby: RefreshNearbyNetworks,
+    private val assessSecurity: AssessNetworkSecurity,
+    private val createSavedNetwork: CreateSavedNetwork,
 ) : ViewModel() {
     val state: StateFlow<NearbyUiState> =
-        combine(scanner.observeState(), observeSaved()) { scan, saved ->
-            val items =
-                (scan as? WifiScanState.Results)?.observations?.map { observation ->
-                    when (val match = matcher.match(observation, saved)) {
-                        is NetworkMatchResult.Exact ->
-                            NearbyItem(observation, match.network.alias, isKnown = true, ambiguous = false)
-                        is NetworkMatchResult.Probable ->
-                            NearbyItem(observation, match.network.alias, isKnown = true, ambiguous = false)
-                        is NetworkMatchResult.Ambiguous ->
-                            NearbyItem(observation, null, isKnown = true, ambiguous = true)
-                        NetworkMatchResult.Unknown ->
-                            NearbyItem(observation, null, isKnown = false, ambiguous = false)
-                    }
-                }.orEmpty()
-            NearbyUiState(scanState = scan, items = items)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NearbyUiState())
+        observeNearby()
+            .map { snapshot ->
+                NearbyUiState(
+                    scanState = snapshot.scanState,
+                    items = snapshot.networks.map { it.toItem() },
+                )
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NearbyUiState())
+
+    private val _detail = MutableStateFlow<NearbyDetailState?>(null)
+    val detail: StateFlow<NearbyDetailState?> = _detail.asStateFlow()
 
     fun refresh() {
-        viewModelScope.launch { scanner.refresh() }
+        viewModelScope.launch { refreshNearby() }
     }
+
+    fun select(item: NearbyItem) {
+        _detail.value = NearbyDetailState(item)
+        viewModelScope.launch {
+            val assessment = assessSecurity(item.observation)
+            _detail.value = _detail.value?.takeIf { it.item == item }?.copy(assessment = assessment)
+        }
+    }
+
+    fun dismissDetail() {
+        _detail.value = null
+    }
+
+    fun saveSelectedToVault(alias: String) {
+        val current = _detail.value ?: return
+        val observation = current.item.observation
+        viewModelScope.launch {
+            createSavedNetwork(
+                NewSavedWifiNetwork(
+                    alias = alias.ifBlank { observation.ssid.value.ifEmpty { "Red oculta" } },
+                    ssid = observation.ssid.value,
+                    securityFamily = observation.securityProfile.family,
+                    knownBssids = setOf(observation.bssid),
+                ),
+            )
+            _detail.value = _detail.value?.takeIf { it.item == current.item }?.copy(saved = true)
+        }
+    }
+
+    /** Exposed for callers that want to react to a manual refresh result. */
+    suspend fun requestRefresh(): WifiScanRequestResult = refreshNearby()
 }

@@ -15,7 +15,9 @@ import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.DeleteSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.MatchKnownNetwork
+import com.wifiauditlab.assessment.application.ObserveNearbyNetworks
 import com.wifiauditlab.assessment.application.ObserveSavedNetworks
+import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
 import com.wifiauditlab.assessment.application.RemoveSavedNetworkSecret
 import com.wifiauditlab.assessment.application.SearchSavedNetworks
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
@@ -84,9 +86,11 @@ val appModule =
         factory { SearchSavedNetworks(get()) }
         factory { MatchKnownNetwork(get(), get()) }
         factory { AssessNetworkSecurity(get()) }
+        factory { ObserveNearbyNetworks(get(), get(), get()) }
+        factory { RefreshNearbyNetworks(get()) }
 
         // ViewModels
-        viewModel { NearbyViewModel(get(), get(), get()) }
+        viewModel { NearbyViewModel(get(), get(), get(), get()) }
         viewModel { VaultViewModel(get(), get(), get(), get()) }
         viewModel { LabViewModel(get(), get(), get(), get()) }
     }
