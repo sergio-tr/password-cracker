@@ -23,6 +23,7 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | DI (Koin) + UI Compose (Redes, Guardadas, Laboratorio, Ajustes) | ✅ (parcial) | Ver pendientes de UI. |
 | Documentación `docs/01`–`11` + ADRs | ✅ | — |
 | Tooling: CI (compile + unit tests + lint), ktlint + `.editorconfig`, reglas `.cursor` | ✅ | GitHub Actions; ADR-001/002/003. |
+| Tests de dominio (objetos de valor Wi‑Fi/Vault/Alphabet) | ✅ | Redacción de `NetworkSecret`, umbrales de señal, identidad, invariantes. |
 
 ## Pendiente
 
