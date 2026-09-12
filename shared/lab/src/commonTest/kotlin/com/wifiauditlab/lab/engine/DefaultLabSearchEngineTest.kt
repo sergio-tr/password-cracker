@@ -192,4 +192,110 @@ class DefaultLabSearchEngineTest {
             assertIs<LabSearchEvent.Preparing>(events.first())
             assertTrue(events.any { it is LabSearchEvent.Started })
         }
+
+    @Test
+    fun finds_first_middle_and_last_candidates() =
+        runTest {
+            val engine = DefaultLabSearchEngine()
+            listOf("00", "50", "99").forEach { secret ->
+                val challenge = LabChallenge.withKnownSecret(Alphabet.DIGITS, secret)
+                val events =
+                    engine.run(
+                        challenge,
+                        plan(challenge),
+                        SearchLimits.of(maxAttempts = CombinationCount.of(200), batchSize = 7),
+                        NeverCancel,
+                    ).toList()
+                val found = assertIs<LabSearchEvent.CandidateFound>(events.last())
+                assertEquals(secret, found.candidate)
+            }
+        }
+
+    @Test
+    fun exhausted_space_attempt_count_equals_search_space() =
+        runTest {
+            val verifier = LabChallenge.withKnownSecret(Alphabet.DIGITS, secret = "000")
+            val planned = LabChallenge.withKnownSecret(Alphabet.DIGITS, secret = "00")
+            val events =
+                DefaultLabSearchEngine().run(
+                    verifier,
+                    plan(planned),
+                    SearchLimits.of(maxAttempts = CombinationCount.of(10_000), batchSize = 16),
+                    NeverCancel,
+                ).toList()
+            val completed = assertIs<LabSearchEvent.Completed>(events.last())
+            assertEquals(plan(planned).searchSpace, completed.metrics.attempts)
+        }
+
+    @Test
+    fun two_seeded_runs_are_deterministic() =
+        runTest {
+            val challenge = LabChallenge.withKnownSecret(Alphabet.DIGITS, secret = "42", seed = 11L)
+            val engine = DefaultLabSearchEngine()
+            val limits = SearchLimits.of(maxAttempts = CombinationCount.of(200), batchSize = 8)
+            val first = engine.run(challenge, plan(challenge), limits, NeverCancel).toList()
+            val second = engine.run(challenge, plan(challenge), limits, NeverCancel).toList()
+            val a = assertIs<LabSearchEvent.CandidateFound>(first.last())
+            val b = assertIs<LabSearchEvent.CandidateFound>(second.last())
+            assertEquals(a.candidate, b.candidate)
+            assertEquals(a.metrics.attempts, b.metrics.attempts)
+        }
+
+    @Test
+    fun emits_aggregated_progress_not_per_candidate() =
+        runTest {
+            val challenge = LabChallenge.withKnownSecret(Alphabet.DIGITS, secret = "99")
+            val engine = DefaultLabSearchEngine(timeSource = AutoAdvancingTimeSource(stepMillis = 20))
+            val events =
+                engine.run(
+                    challenge,
+                    plan(challenge),
+                    SearchLimits.of(
+                        maxAttempts = CombinationCount.of(200),
+                        progressInterval = 15.milliseconds,
+                        batchSize = 5,
+                    ),
+                    NeverCancel,
+                ).toList()
+            val progress = events.filterIsInstance<LabSearchEvent.Progress>()
+            assertTrue(progress.isNotEmpty())
+            assertTrue(progress.size < 100)
+        }
+
+    @Test
+    fun generation_failure_emits_failed_with_metrics() =
+        runTest {
+            val challenge = LabChallenge.withKnownSecret(Alphabet.DIGITS, secret = "00")
+            val throwing =
+                object : com.wifiauditlab.lab.domain.engine.CandidateSource {
+                    override val size = CombinationCount.ONE
+
+                    override fun candidates(): Sequence<String> = sequence { error("generation exploded") }
+                }
+            val plan =
+                com.wifiauditlab.lab.domain.LabSearchPlan(
+                    strategyId,
+                    listOf(
+                        com.wifiauditlab.lab.domain.SearchBucket(
+                            index = 0,
+                            length = 1,
+                            alphabet = Alphabet.DIGITS,
+                            expectedRelativeWeight = 1.0,
+                            searchSpaceSize = CombinationCount.of(10),
+                            sourceOverride = throwing,
+                        ),
+                    ),
+                    seed = null,
+                )
+            val events =
+                DefaultLabSearchEngine().run(
+                    challenge,
+                    plan,
+                    SearchLimits.of(maxAttempts = CombinationCount.of(10)),
+                    NeverCancel,
+                ).toList()
+            val failed = assertIs<LabSearchEvent.Failed>(events.last())
+            assertTrue(failed.message.contains("generation exploded"))
+            assertTrue(failed.metrics != null)
+        }
 }

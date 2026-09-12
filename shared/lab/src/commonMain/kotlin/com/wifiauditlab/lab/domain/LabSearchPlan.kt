@@ -2,6 +2,7 @@ package com.wifiauditlab.lab.domain
 
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.engine.CandidateSource
+import com.wifiauditlab.lab.domain.engine.CandidateSpace
 import com.wifiauditlab.lab.domain.engine.OdometerCandidateSource
 
 /**
@@ -16,12 +17,16 @@ data class SearchBucket(
     val alphabet: Alphabet,
     val expectedRelativeWeight: Double,
     val searchSpaceSize: CombinationCount,
+    val sourceOverride: CandidateSource? = null,
 ) {
     /** Policy of this slice: the bucket alphabet and a fixed candidate length. */
     val policy: LabSecretPolicy get() = LabSecretPolicy(alphabet, LengthPolicy.exactly(length))
 
+    /** Exact, non-materialized description of this bucket's candidate slice. */
+    val space: CandidateSpace get() = CandidateSpace(alphabet, length, searchSpaceSize)
+
     fun candidateSource(seed: Long?): CandidateSource =
-        OdometerCandidateSource(alphabet, length, seed)
+        sourceOverride ?: OdometerCandidateSource(alphabet, length, seed)
 }
 
 /**
