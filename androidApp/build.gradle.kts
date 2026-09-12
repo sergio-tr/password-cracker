@@ -41,8 +41,11 @@ dependencies {
     implementation(projects.shared.core)
     implementation(projects.shared.assessment)
     implementation(projects.shared.lab)
+    implementation(projects.shared.persistence)
 
     implementation(libs.kotlin.coroutines.core)
+
+    implementation(libs.sqldelight.android.driver)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

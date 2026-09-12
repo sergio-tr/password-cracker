@@ -1,6 +1,7 @@
 package com.wifiauditlab.android.di
 
-import com.wifiauditlab.android.data.InMemorySavedNetworkRepository
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.platform.KeystoreSecretVault
 import com.wifiauditlab.android.ui.lab.LabViewModel
@@ -35,6 +36,9 @@ import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import com.wifiauditlab.lab.engine.DefaultSearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.engine.DefaultSearchPlanOptimizer
 import com.wifiauditlab.lab.engine.FixedThroughputEstimator
+import com.wifiauditlab.persistence.SqlDelightSavedNetworkRepository
+import com.wifiauditlab.persistence.db.VaultDatabase
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -48,7 +52,15 @@ val appModule =
         single { AndroidWifiPermissionManager(androidContext()) }
         single<WifiScanner> { AndroidWifiScanner(androidContext(), get(), get()) }
         single<SecretVault> { KeystoreSecretVault(androidContext()) }
-        single<SavedNetworkRepository> { InMemorySavedNetworkRepository() }
+        single<SqlDriver> { AndroidSqliteDriver(VaultDatabase.Schema, androidContext(), "vault.db") }
+        single { VaultDatabase(get()) }
+        single<SavedNetworkRepository> {
+            SqlDelightSavedNetworkRepository(
+                database = get(),
+                dispatcher = Dispatchers.IO,
+                nowMillis = { System.currentTimeMillis() },
+            )
+        }
 
         // Domain services
         single<KnownNetworkMatcher> { DefaultKnownNetworkMatcher() }

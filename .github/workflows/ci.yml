@@ -37,7 +37,7 @@ jobs:
         run: ./gradlew ktlintCheck --stacktrace
 
       - name: Unit tests
-        run: ./gradlew test --stacktrace
+        run: ./gradlew test jvmTest --stacktrace
 
       - name: Compile Android (assembleDebug)
         run: ./gradlew :androidApp:assembleDebug --stacktrace

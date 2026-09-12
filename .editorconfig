@@ -21,3 +21,8 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+# Never lint build outputs (e.g. SQLDelight-generated sources under build/).
+[**/build/**]
+ktlint = disabled
+

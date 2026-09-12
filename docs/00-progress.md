@@ -25,12 +25,13 @@ algoritmo potente**, **(3) cobertura completa de pantallas y acciones**.
 | Tooling: CI (compile + unit tests + lint), ktlint + `.editorconfig`, reglas `.cursor` | ✅ | GitHub Actions; ADR-001/002/003. |
 | Tests de dominio (objetos de valor Wi‑Fi/Vault/Alphabet) | ✅ | Redacción de `NetworkSecret`, umbrales de señal, identidad, invariantes. |
 | Casos de uso de aplicación para redes cercanas | ✅ | `ObserveNearbyNetworks` (matching fuera del ViewModel), `RefreshNearbyNetworks`; fakes + tests. |
+| Persistencia duradera del Vault (SQLDelight) | ✅ | Módulo `:shared:persistence`; `AndroidSqliteDriver`; tests JVM con SQLite en memoria; esquema versionado. |
 
 ## Pendiente
 
 | Área | Prioridad | Notas |
 | --- | --- | --- |
-| Persistencia duradera del Vault (SQLDelight) | Alta | Hoy repo en memoria; secretos cifrados sí persisten (ADR 0005). |
+| Persistencia duradera del Vault (SQLDelight) | Hecho | Ver fila en Implementado. |
 | Algoritmo de búsqueda más potente | Alta | Nuevas estrategias/optimizadores de priorización; pool de workers con benchmarks (ADR 0006). |
 | Pantallas restantes | Alta | Onboarding, Permissions dedicada, Network Detail, Security Analysis detallada, Saved Network Detail/Edit, Lab Result como pantalla propia. |
 | Recablear `NearbyViewModel` a `ObserveNearbyNetworks` | Alta | Quitar el matching del ViewModel (FASE 07). |
