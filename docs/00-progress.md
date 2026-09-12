@@ -34,7 +34,8 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes. |
 | Onboarding (primera ejecución) | 3 pantallas; Omitir/Continuar; persistido; replay desde Ajustes. |
 | Permission Center | Requerido / servicio / opcional; request contextual; Abrir ajustes. |
-| Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions) | JUnit + `runTest`. |
+| Análisis de seguridad dedicado | Resumen, significado, autenticación, hallazgos, recomendaciones defensivas, detalles técnicos. |
+| Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis) | JUnit + `runTest`. |
 | Tooling CI | `ktlintCheck` + `test`/`jvmTest` + `assembleDebug`. |
 | Docs `01`–`12`, ADRs, release checklist, test evidence | Índice vivo aquí; auditoría de realidad en `docs/12-current-state-audit.md`. |
 
@@ -54,7 +55,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | --- | --- |
 | Revelar secreto con biometría | Arquitectura lista (`RevealSavedNetworkSecret`). |
 | Compose UI tests + instrumentación Android | Scanner / Keystore; requiere emulador. |
-| Security Analysis detallada | Pantalla dedicada desde Network Detail (FASE 19). |
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
 | Search engine v2 (indexed/scheduler) | Tras baseline FASE 23 (`perf/lab-search-engine-v2`). |
 | Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |

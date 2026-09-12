@@ -10,6 +10,8 @@ import com.wifiauditlab.android.ui.nearby.NearbyViewModel
 import com.wifiauditlab.android.ui.onboarding.OnboardingViewModel
 import com.wifiauditlab.android.ui.permissions.AndroidPermissionInventory
 import com.wifiauditlab.android.ui.permissions.PermissionCenterViewModel
+import com.wifiauditlab.android.ui.security.SecurityAnalysisTargetStore
+import com.wifiauditlab.android.ui.security.SecurityAnalysisViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
@@ -69,6 +71,7 @@ val appModule =
         single<WifiScanner> { AndroidWifiScanner(androidContext(), get(), get()) }
         single<SecretVault> { KeystoreSecretVault(androidContext()) }
         single<OnboardingPreferences> { SharedPreferencesOnboardingPreferences(androidContext()) }
+        single { SecurityAnalysisTargetStore() }
         single<SqlDriver> { AndroidSqliteDriver(VaultDatabase.Schema, androidContext(), "vault.db") }
         single { VaultDatabase(get()) }
         single<SavedNetworkRepository> {
@@ -125,6 +128,7 @@ val appModule =
         }
         viewModel { LabViewModel(get(), get(), get(), get(), calibration = get()) }
         viewModel { OnboardingViewModel(get()) }
+        viewModel { SecurityAnalysisViewModel(get(), get()) }
         viewModel {
             PermissionCenterViewModel(
                 inventoryFactory = { permanentDenials ->
