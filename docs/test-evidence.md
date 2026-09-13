@@ -1,7 +1,16 @@
 # Test evidence
 
 Evidencia de la suite automática y de los casos manuales del RC.
-Actualizado en PR7 (Quick Audit Compose + reconciliación docs).
+Actualizado en FIX-05 (regresión producto + cierre docs honesto).
+
+## FIX-01..04 — PRs merged (CI green)
+
+| Fix | PR | Área |
+| --- | --- | --- |
+| FIX-01 Runtime localization | [#44](https://github.com/sergio-tr/password-cracker/pull/44) | `AppCompatActivity`, `localeConfig`, strings ES/EN |
+| FIX-02 Navigation + usability | [#45](https://github.com/sergio-tr/password-cracker/pull/45) | `ArrowBack`, CD `navigate_back`, iconografía CTAs |
+| FIX-03 Local network prototype | [#46](https://github.com/sergio-tr/password-cracker/pull/46) | Prototipo local configurable + motor encapsulado |
+| FIX-04 Guided local prototype | [#47](https://github.com/sergio-tr/password-cracker/pull/47) | Flujo guiado novice, SSID/contraseña sin Avanzado |
 
 ## AUTOMATED — JVM
 
@@ -33,8 +42,9 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 
 | Campo | Valor |
 | --- | --- |
-| Suite Compose + instrumentación | 13 clases `androidTest` |
+| Suite Compose + instrumentación | 15 clases `androidTest` (incl. `ProductRegressionComposeTest`, `AppLanguagePreferencesInstrumentedTest`) |
 | `PasswordAuditComposeTest` | STOP bottomBar, found + recommendations, vault deferred, advanced restore |
+| `ProductRegressionComposeTest` | Guided Lab SSID sin Avanzado; Permission Center `navigate_back`; packs ES/EN divergen |
 | Keystore / SQLDelight / Compose | PASS en emulador |
 | Calibración persistente | SharedPreferences + Settings (FASE 22) |
 
@@ -65,3 +75,14 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 12. Cambiar por contraseña más fuerte.
 13. Reconectar.
 14. Repetir y comparar.
+
+## MANUAL — FIX-01..04 UX REGRESSION (P1–P4)
+
+**MANUAL NOT EXECUTED** (pendiente de validación en dispositivo físico por el usuario):
+
+1. Settings → English → UI switches (Lab/Vault/Nearby titles)
+2. Settings → Español → back to Spanish
+3. Ajustes → Permisos → ArrowBack returns
+4. Lab Guided: SSID + password + Start without Advanced
+5. DETENER works on prototype run
+6. No AP authentication / local-only banner visible

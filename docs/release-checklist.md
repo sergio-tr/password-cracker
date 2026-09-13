@@ -16,12 +16,13 @@ Publicar sigue requiriendo revisión humana y el pase manual.
 | Bloqueo del hilo principal | Lab y audit corren en `searchDispatcher` (Default). |
 | Frontera Real/Lab | `:shared:lab` → sólo `:shared:core`. Search Engine nunca autentica contra AP. |
 | Known-password audit | Verificación local vía `EncapsulatedPasswordVerifier`; informe separa config vs resistencia. |
-| Localización | Audit/settings/nav EN+ES; Lab/Nearby/Vault/Onboarding parcial (ES hardcoded). |
+| Localización | FIX-01 merged: strings ES/EN en Lab/Nearby/Vault/Onboarding/Permissions/Security; runtime locale activo. **Partial** — pase manual FIX-01..04 pendiente (`docs/test-evidence.md`). |
 
 ## Gaps conocidos (no bloquean el RC si se aceptan)
 
 - Compose UI + instrumentación corren en CI con emulador (API 29 + 35). Escaneo Wi‑Fi físico, walkthrough connected audit y diálogos OEM siguen siendo **manual**.
-- Localización incompleta fuera de audit/settings/nav.
+- Localización FIX-01 merged pero sin pase manual del usuario (checklist FIX-01..04 en `test-evidence.md`).
+- Lab prototipo local (FIX-03/04) sin validación manual en dispositivo.
 - Biometría antes de revelar: arquitectura lista, no implementada.
 - GeoLocation real: no expuesta en UI (sólo `LocationLabel`).
 - Historial compare-runs: deferred.
@@ -33,5 +34,5 @@ Publicar sigue requiriendo revisión humana y el pase manual.
 - [ ] Recorrer casos manuales de `docs/test-evidence.md` (incl. walkthrough connected audit) y anotar dispositivo/fecha
 - [ ] Confirmar que no hay secretos en fixtures versionados
 - [ ] Revisar `docs/00-progress.md`
-- [ ] Probar selector de idioma (ES/EN) en Quick Audit y Ajustes
+- [ ] Ejecutar checklist MANUAL FIX-01..04 en `docs/test-evidence.md` (idioma, Permisos ArrowBack, Lab guiado, DETENER, banner local-only)
 - [ ] Decidir versionName / versionCode
