@@ -15,6 +15,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -30,13 +33,19 @@ fun OnboardingScreen(
     replay: Boolean = false,
     onFinished: () -> Unit,
 ) {
+    // When replaying from Settings, prefs already mark completed=true. Wait until
+    // reopenFromSettings() clears that flag before treating completed as "finished".
+    var acceptCompletion by remember(replay) { mutableStateOf(!replay) }
     LaunchedEffect(replay) {
-        if (replay) viewModel.reopenFromSettings()
+        if (replay) {
+            viewModel.reopenFromSettings()
+            acceptCompletion = true
+        }
     }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.completed) {
-        if (state.completed) onFinished()
+    LaunchedEffect(state.completed, acceptCompletion) {
+        if (acceptCompletion && state.completed) onFinished()
     }
     if (state.completed) return
 

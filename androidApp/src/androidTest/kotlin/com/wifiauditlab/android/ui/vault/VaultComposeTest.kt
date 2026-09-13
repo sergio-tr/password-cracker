@@ -142,7 +142,9 @@ class VaultComposeTest {
         setVault(repo, vault)
         waitForText("Orden: Alias A-Z")
         composeTestRule.onNodeWithText("Orden: Alias A-Z").performClick()
-        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithText("Vistas recientemente").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText("Vistas recientemente").performClick()
         composeTestRule.waitForIdle()
         waitForText("Orden: Vistas recientemente")

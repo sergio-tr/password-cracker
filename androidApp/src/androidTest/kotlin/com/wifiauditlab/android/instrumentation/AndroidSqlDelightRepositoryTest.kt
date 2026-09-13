@@ -38,8 +38,8 @@ class AndroidSqlDelightRepositoryTest {
     }
 
     private fun openRepo(): Pair<AndroidSqliteDriver, SqlDelightSavedNetworkRepository> {
+        // AndroidSqliteDriver applies Schema on open — do not call Schema.create again.
         val driver = AndroidSqliteDriver(VaultDatabase.Schema, context, dbName)
-        VaultDatabase.Schema.create(driver)
         val repo =
             SqlDelightSavedNetworkRepository(
                 database = VaultDatabase(driver),

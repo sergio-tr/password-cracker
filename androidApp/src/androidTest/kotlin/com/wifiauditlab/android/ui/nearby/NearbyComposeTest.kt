@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -148,8 +149,8 @@ class NearbyComposeTest {
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
         waitForText("Ver análisis de seguridad")
-        composeTestRule.onNodeWithText("Ver análisis de seguridad").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Guardar en el Vault").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ver análisis de seguridad").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Guardar en el Vault").performScrollTo().assertIsDisplayed()
     }
 
     @Test

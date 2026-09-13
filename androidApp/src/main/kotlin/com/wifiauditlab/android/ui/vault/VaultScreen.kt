@@ -3,6 +3,7 @@ package com.wifiauditlab.android.ui.vault
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -161,16 +162,18 @@ private fun SortMenu(
     onSort: (SavedNetworkListSort) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    AssistChip(onClick = { expanded = true }, label = { Text("Orden: ${current.sortLabel()}") })
-    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-        SavedNetworkListSort.entries.forEach { option ->
-            DropdownMenuItem(
-                text = { Text(option.sortLabel()) },
-                onClick = {
-                    onSort(option)
-                    expanded = false
-                },
-            )
+    Box {
+        AssistChip(onClick = { expanded = true }, label = { Text("Orden: ${current.sortLabel()}") })
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            SavedNetworkListSort.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.sortLabel()) },
+                    onClick = {
+                        onSort(option)
+                        expanded = false
+                    },
+                )
+            }
         }
     }
 }

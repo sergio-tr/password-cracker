@@ -52,8 +52,8 @@ class NetworkSecretLifecycleInstrumentedTest {
     }
 
     private fun openStack(): Triple<AndroidSqliteDriver, SqlDelightSavedNetworkRepository, KeystoreSecretVault> {
+        // AndroidSqliteDriver applies Schema on open — do not call Schema.create again.
         val driver = AndroidSqliteDriver(VaultDatabase.Schema, context, dbName)
-        VaultDatabase.Schema.create(driver)
         val repo =
             SqlDelightSavedNetworkRepository(
                 database = VaultDatabase(driver),

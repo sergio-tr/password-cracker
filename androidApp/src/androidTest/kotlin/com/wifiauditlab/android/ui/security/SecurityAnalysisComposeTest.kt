@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
@@ -71,21 +72,22 @@ class SecurityAnalysisComposeTest(
             composeTestRule.onAllNodesWithText(ratingText).fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeTestRule.onNodeWithText("Resumen").assertIsDisplayed()
-        composeTestRule.onNodeWithText(ratingText).assertIsDisplayed()
-        composeTestRule.onNodeWithText(expectedHeadline).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Recomendaciones").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Familia: ${familyLabel(family)}").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Resumen").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(ratingText).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(expectedHeadline).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Familia: ${familyLabel(family)}").performScrollTo().assertIsDisplayed()
 
         if (family == SecurityFamily.WPA2_WPA3_PERSONAL || transition) {
             composeTestRule
                 .onNodeWithText("Transición WPA2/WPA3: la protección real depende del cliente que se conecte.")
+                .performScrollTo()
                 .assertIsDisplayed()
         }
 
-        composeTestRule.onNodeWithText("Mostrar detalles técnicos").performClick()
+        composeTestRule.onNodeWithText("Recomendaciones").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Mostrar detalles técnicos").performScrollTo().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Ocultar detalles técnicos").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ocultar detalles técnicos").performScrollTo().assertIsDisplayed()
         assertTrue(vm.state.value.technicalExpanded)
         assertTrue(vm.state.value.recommendations.isNotEmpty())
     }
