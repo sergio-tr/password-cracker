@@ -2,8 +2,10 @@ package com.wifiauditlab.android.di
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wifiauditlab.android.platform.AndroidCalibrationEnvironmentProvider
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.platform.KeystoreSecretVault
+import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.lab.LabViewModel
 import com.wifiauditlab.android.ui.nearby.NearbyViewModel
@@ -12,6 +14,7 @@ import com.wifiauditlab.android.ui.permissions.AndroidPermissionInventory
 import com.wifiauditlab.android.ui.permissions.PermissionCenterViewModel
 import com.wifiauditlab.android.ui.security.SecurityAnalysisTargetStore
 import com.wifiauditlab.android.ui.security.SecurityAnalysisViewModel
+import com.wifiauditlab.android.ui.settings.SettingsCalibrationViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
@@ -43,7 +46,8 @@ import com.wifiauditlab.assessment.port.OnboardingPreferences
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanner
-import com.wifiauditlab.lab.domain.InMemoryCalibrationStore
+import com.wifiauditlab.lab.domain.CalibrationRepository
+import com.wifiauditlab.lab.domain.engine.CalibrationEnvironmentProvider
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
 import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
@@ -86,16 +90,19 @@ val appModule =
         single<KnownNetworkMatcher> { DefaultKnownNetworkMatcher() }
         single { SecurityAssessmentRegistry.default() }
 
-        // Lab engine
+        // Lab engine + durable calibration
         single<SearchPlanOptimizer> { SearchStrategyRegistry() }
         single<LabSearchEngine> {
             WorkerAwareLabSearchEngine(availableProcessors = Runtime.getRuntime().availableProcessors())
         }
         single<SearchFeasibilityAnalyzer> { DefaultSearchFeasibilityAnalyzer() }
         single<SearchPerformanceEstimator> { CalibratedThroughputEstimator() }
+        single<CalibrationRepository> { SharedPreferencesCalibrationRepository(androidContext()) }
+        single<CalibrationEnvironmentProvider> { AndroidCalibrationEnvironmentProvider(androidContext()) }
         single<SearchCalibrationService> {
             DefaultSearchCalibrationService(
-                store = InMemoryCalibrationStore(),
+                repository = get(),
+                environmentProvider = get(),
                 nowMillis = { System.currentTimeMillis() },
             )
         }
@@ -129,6 +136,7 @@ val appModule =
         viewModel { LabViewModel(get(), get(), get(), get(), calibration = get()) }
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
+        viewModel { SettingsCalibrationViewModel(get(), get()) }
         viewModel {
             PermissionCenterViewModel(
                 inventoryFactory = { permanentDenials ->

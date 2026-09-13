@@ -100,7 +100,12 @@ class LabViewModel(
         val service = calibration
         if (service != null) {
             viewModelScope.launch(searchDispatcher) {
-                val record = service.calibrate(_state.value.config.strategy.id.value)
+                val config = _state.value.config
+                val record =
+                    service.calibrate(
+                        strategyId = config.strategy.id.value,
+                        workerCount = config.workers,
+                    )
                 estimator.refine(record.measuredAttemptsPerSecond)
                 recomputePreview(_state.value.config)
             }

@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,21 +15,30 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onOpenPermissions: () -> Unit = {},
     onReplayOnboarding: () -> Unit = {},
+    calibrationViewModel: SettingsCalibrationViewModel = koinViewModel(),
 ) {
     val capabilities = AndroidPlatformCapabilities()
+    val calibration by calibrationViewModel.state.collectAsStateWithLifecycle()
     Scaffold(topBar = { TopAppBar(title = { Text("Ajustes") }) }) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Card(Modifier.fillMaxWidth()) {
@@ -48,6 +59,10 @@ fun SettingsScreen(
                     }
                 }
             }
+            CalibrationCard(
+                state = calibration,
+                onRecalibrate = calibrationViewModel::recalibrate,
+            )
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Capacidades de la plataforma", fontWeight = FontWeight.SemiBold)
@@ -67,6 +82,31 @@ fun SettingsScreen(
                         "El laboratorio está aislado de las redes reales: sus algoritmos nunca se conectan a un Wi‑Fi.",
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalibrationCard(
+    state: CalibrationSettingsUiState,
+    onRecalibrate: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Performance calibration", fontWeight = FontWeight.SemiBold)
+            Text("Estado: ${state.statusLabel}")
+            Text("Last calibration: ${state.lastCalibrationLabel}")
+            Text("Measured throughput: ${state.throughputLabel}")
+            Text("Sample duration: ${state.sampleDurationLabel}")
+            Text("Fingerprint: ${state.fingerprintLabel}")
+            state.errorMessage?.let { Text(it) }
+            Button(
+                onClick = onRecalibrate,
+                enabled = !state.loading && !state.recalibrating,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (state.recalibrating) "Recalibrating…" else "Recalibrate")
             }
         }
     }

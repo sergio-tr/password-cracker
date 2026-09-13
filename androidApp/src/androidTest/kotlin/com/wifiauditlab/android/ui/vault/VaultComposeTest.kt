@@ -17,6 +17,7 @@ import com.wifiauditlab.android.support.FakeSecretVault
 import com.wifiauditlab.android.support.vaultViewModel
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
+import com.wifiauditlab.assessment.application.SavedNetworkListSort
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
@@ -134,18 +135,18 @@ class VaultComposeTest {
     }
 
     @Test
-    fun sortChip_opensMenu() {
+    fun sortChip_selectsLastSeen() {
         val repo = FakeSavedNetworkRepository()
         val vault = FakeSecretVault()
         seed(repo, vault, "Zeta", "Z", withSecret = false)
         seed(repo, vault, "Alpha", "A", withSecret = false)
 
-        setVault(repo, vault)
+        val vm = setVault(repo, vault)
         waitForText("Alias A-Z")
-        composeTestRule.onNodeWithText("Vistas recientemente").performClick()
-        composeTestRule.waitForIdle()
-        // Chip stays selected/visible; AliasAsc is no longer the only selected sort affordance.
-        composeTestRule.onNodeWithText("Vistas recientemente").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Vistas recientemente").performScrollTo().performClick()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.sort == SavedNetworkListSort.LastSeenDesc
+        }
         composeTestRule.onNodeWithText("Zeta").assertIsDisplayed()
         composeTestRule.onNodeWithText("Alpha").assertIsDisplayed()
     }
