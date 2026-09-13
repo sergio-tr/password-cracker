@@ -9,6 +9,8 @@ import com.wifiauditlab.lab.engine.LabParallelEngineVersion
 import com.wifiauditlab.lab.engine.NeverCancel
 import com.wifiauditlab.lab.engine.WorkerAwareLabSearchEngine
 import com.wifiauditlab.lab.engine.WorkerPoolConfig
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,8 +18,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 
 class AutomaticPasswordAuditPlannerTest {
     private val planner = DefaultAutomaticPasswordAuditPlanner()

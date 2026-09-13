@@ -6,7 +6,6 @@ import com.wifiauditlab.lab.domain.LabSearchPlan
 import com.wifiauditlab.lab.domain.LabSecretPolicy
 import com.wifiauditlab.lab.domain.LengthPolicy
 import com.wifiauditlab.lab.domain.SearchLimits
-import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 import com.wifiauditlab.lab.domain.engine.SearchFeasibility
 import com.wifiauditlab.lab.engine.LabParallelEngineVersion
 import kotlin.jvm.JvmInline
