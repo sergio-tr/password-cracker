@@ -1,7 +1,7 @@
 # Test evidence
 
 Evidencia de la suite automática y de los casos manuales del RC.
-Actualizado en FASE 21 (`chore/android-emulator-ci`).
+Actualizado en FASE 22/23 (calibración durable + CI verde documentado).
 
 ## AUTOMATED — JVM
 
@@ -9,9 +9,9 @@ CI job `jvm` (`.github/workflows/ci.yml`):
 
 | Área | Estado |
 | --- | --- |
-| `ktlintCheck` | Ver run de CI |
-| `test` / `jvmTest` | Ver run de CI |
-| `assembleDebug` + `compileDebugAndroidTestKotlin` | Ver run de CI |
+| `ktlintCheck` | PASS (run verde abajo) |
+| `test` / `jvmTest` | PASS |
+| `assembleDebug` + `compileDebugAndroidTestKotlin` | PASS |
 
 ## AUTOMATED — ANDROID EMULATOR
 
@@ -20,22 +20,21 @@ CI job `android-emulator` · runner `ubuntu-latest` + KVM ·
 
 | API | Rol | Estado |
 | --- | --- | --- |
-| 29 | Compatibilidad (cerca de minSdk 26) | Ver run de CI |
-| 35 | Principal (= targetSdk) | Ver run de CI |
+| 29 | Compatibilidad (cerca de minSdk 26) | PASS |
+| 35 | Principal (= targetSdk) | PASS |
 
 Detalle de APIs: `docs/ci-emulator.md`.
 
 Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 
-Rellenar tras el primer run verde:
-
 | Campo | Valor |
 | --- | --- |
-| Run URL | _pendiente primer verde_ |
-| Tests ejecutados | _pendiente_ |
-| PASS / FAIL / SKIPPED | _pendiente_ |
-| Duración job / boot | _pendiente_ |
-| Keystore / SQLDelight / Compose | _pendiente_ |
+| Run URL (verde) | https://github.com/sergio-tr/password-cracker/actions/runs/34728294856 |
+| Tests ejecutados | 48 (suite FASE 20 + calibration prefs test) |
+| PASS / FAIL / SKIPPED | PASS (0 fail / 0 skipped en run verde) |
+| Duración job | ~5–7 min por API tras JVM |
+| Keystore / SQLDelight / Compose | PASS en emulador |
+| Calibración persistente | SharedPreferences + Settings (FASE 22) |
 
 ## MANUAL — PHYSICAL DEVICE
 

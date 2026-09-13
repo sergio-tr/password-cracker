@@ -5,6 +5,7 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wifiauditlab.android.platform.AndroidCalibrationEnvironmentProvider
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.platform.KeystoreSecretVault
+import com.wifiauditlab.android.platform.SharedPreferencesBenchmarkRepository
 import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.lab.LabViewModel
@@ -14,6 +15,7 @@ import com.wifiauditlab.android.ui.permissions.AndroidPermissionInventory
 import com.wifiauditlab.android.ui.permissions.PermissionCenterViewModel
 import com.wifiauditlab.android.ui.security.SecurityAnalysisTargetStore
 import com.wifiauditlab.android.ui.security.SecurityAnalysisViewModel
+import com.wifiauditlab.android.ui.settings.SettingsBenchmarkViewModel
 import com.wifiauditlab.android.ui.settings.SettingsCalibrationViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
@@ -46,14 +48,17 @@ import com.wifiauditlab.assessment.port.OnboardingPreferences
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanner
+import com.wifiauditlab.lab.domain.BenchmarkRepository
 import com.wifiauditlab.lab.domain.CalibrationRepository
 import com.wifiauditlab.lab.domain.engine.CalibrationEnvironmentProvider
+import com.wifiauditlab.lab.domain.engine.LabBenchmarkService
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
 import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
 import com.wifiauditlab.lab.engine.CalibratedThroughputEstimator
+import com.wifiauditlab.lab.engine.DefaultLabBenchmarkService
 import com.wifiauditlab.lab.engine.DefaultSearchCalibrationService
 import com.wifiauditlab.lab.engine.DefaultSearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.engine.SearchStrategyRegistry
@@ -106,6 +111,15 @@ val appModule =
                 nowMillis = { System.currentTimeMillis() },
             )
         }
+        single<BenchmarkRepository> { SharedPreferencesBenchmarkRepository(androidContext()) }
+        single<LabBenchmarkService> {
+            DefaultLabBenchmarkService(
+                repository = get(),
+                optimizer = get(),
+                nowMillis = { System.currentTimeMillis() },
+                availableProcessors = Runtime.getRuntime().availableProcessors(),
+            )
+        }
 
         // Use cases
         factory { CreateSavedNetwork(get(), get()) }
@@ -137,6 +151,7 @@ val appModule =
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
         viewModel { SettingsCalibrationViewModel(get(), get()) }
+        viewModel { SettingsBenchmarkViewModel(get()) }
         viewModel {
             PermissionCenterViewModel(
                 inventoryFactory = { permanentDenials ->

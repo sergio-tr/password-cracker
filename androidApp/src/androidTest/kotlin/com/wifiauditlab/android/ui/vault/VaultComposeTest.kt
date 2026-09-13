@@ -206,15 +206,21 @@ class VaultComposeTest {
             repo.networks.value.any { it.alias == "Detalle-Edit" }
         }
 
-        composeTestRule.onNodeWithText("Eliminar red y contraseña").performClick()
+        composeTestRule.onNodeWithText("Eliminar red y contraseña").performScrollTo().performClick()
         waitForText("Eliminar red")
-        composeTestRule.onNodeWithText("Cancelar").performClick()
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithText("Cancelar", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("Cancelar", useUnmergedTree = true).performClick()
         composeTestRule.waitForIdle()
         assertTrue(repo.networks.value.isNotEmpty())
 
-        composeTestRule.onNodeWithText("Eliminar red y contraseña").performClick()
+        composeTestRule.onNodeWithText("Eliminar red y contraseña").performScrollTo().performClick()
         waitForText("Eliminar red")
-        composeTestRule.onNodeWithText("Eliminar").performClick()
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithText("Eliminar", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("Eliminar", useUnmergedTree = true).performClick()
         composeTestRule.waitUntil(5_000) { repo.networks.value.isEmpty() }
         waitForText("Aún no has guardado ninguna red. Usa el botón + para añadir una.")
     }

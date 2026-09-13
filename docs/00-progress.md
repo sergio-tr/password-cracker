@@ -29,7 +29,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, STOP, límites, resultado + métricas. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
-| Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Partial**. |
+| Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Resultado del Lab en UI | **Implemented** integrado en la pantalla Lab (`ResultCard`). Ruta propia = Deferred. |
 | Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes. |
 | Onboarding (primera ejecución) | 3 pantallas; Omitir/Continuar; persistido; replay desde Ajustes. |
@@ -46,7 +46,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Área | Notas |
 | --- | --- |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
-| Performance / benchmarks dedicados | Pool medible; sin módulo/dashboard (FASE 23). |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |
 | Visión documental única | Completada en FASE 17 (`docs/12-current-state-audit.md`). |
