@@ -138,6 +138,9 @@ private fun AppRoot() {
                             restoreState = true
                         }
                     },
+                    onOpenPasswordAudit = {
+                        // Full quick-audit UI arrives in a follow-up PR; eligibility gate is live.
+                    },
                 )
             }
             composable(Destination.Vault.route) { VaultScreen() }

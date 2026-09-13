@@ -8,9 +8,16 @@ import com.wifiauditlab.assessment.application.ObserveNearbyNetworks
 import com.wifiauditlab.assessment.application.RecordNearbySightings
 import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
 import com.wifiauditlab.assessment.application.SaveNearbyNetwork
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.connection.CurrentWifiConnection
+import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMatcher
+import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
+import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
+import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
 import com.wifiauditlab.assessment.port.WifiScanState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,27 +35,35 @@ data class NearbyItem(
     val savedNetworkId: SavedNetworkId?,
     val isKnown: Boolean,
     val ambiguous: Boolean,
-)
+    val connectionMatch: NetworkConnectionMatch? = null,
+) {
+    val isCurrentlyConnected: Boolean
+        get() =
+            connectionMatch is NetworkConnectionMatch.Exact ||
+                connectionMatch is NetworkConnectionMatch.Probable
+}
 
 data class NearbyUiState(
     val scanState: WifiScanState = WifiScanState.Idle,
     val items: List<NearbyItem> = emptyList(),
 )
 
-/** Detail of a selected network, with its (async) security assessment. */
+/** Detail of a selected network, with its (async) security assessment and audit eligibility. */
 data class NearbyDetailState(
     val item: NearbyItem,
     val assessment: SecurityAssessment? = null,
     val saved: Boolean = false,
+    val auditEligibility: PasswordAuditEligibility? = null,
 )
 
-private fun NearbyNetwork.toItem(): NearbyItem =
+private fun NearbyNetwork.toItem(connectionMatch: NetworkConnectionMatch?): NearbyItem =
     NearbyItem(
         observation = observation,
         alias = knownAlias,
         savedNetworkId = knownNetworkId,
         isKnown = isKnown,
         ambiguous = isAmbiguous,
+        connectionMatch = connectionMatch,
     )
 
 /**
@@ -62,14 +77,32 @@ class NearbyViewModel(
     private val assessSecurity: AssessNetworkSecurity,
     private val saveNearbyNetwork: SaveNearbyNetwork,
     private val recordNearbySightings: RecordNearbySightings,
+    private val connectionProvider: CurrentWifiConnectionProvider,
+    private val eligibilityChecker: PasswordAuditEligibilityChecker,
+    private val connectionMatcher: NetworkConnectionMatcher = DefaultNetworkConnectionMatcher(),
 ) : ViewModel() {
+    private val latestConnection = MutableStateFlow<CurrentWifiConnection?>(null)
+
     val state: StateFlow<NearbyUiState> =
         observeNearby()
-            .onEach { snapshot -> recordNearbySightings(snapshot.networks) }
+            .onEach { snapshot ->
+                recordNearbySightings(snapshot.networks)
+                latestConnection.value = runCatching { connectionProvider.currentConnection() }.getOrNull()
+            }
             .map { snapshot ->
+                val connection = latestConnection.value
                 NearbyUiState(
                     scanState = snapshot.scanState,
-                    items = snapshot.networks.map { it.toItem() },
+                    items =
+                        snapshot.networks.map { network ->
+                            val match =
+                                connectionMatcher.match(
+                                    observationSsid = network.observation.ssid,
+                                    observationBssid = network.observation.bssid,
+                                    connection = connection,
+                                )
+                            network.toItem(match)
+                        },
                 )
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NearbyUiState())
@@ -85,7 +118,12 @@ class NearbyViewModel(
         _detail.value = NearbyDetailState(item)
         viewModelScope.launch {
             val assessment = assessSecurity(item.observation)
-            _detail.value = _detail.value?.takeIf { it.item == item }?.copy(assessment = assessment)
+            val eligibility = eligibilityChecker.check(item.observation)
+            _detail.value =
+                _detail.value?.takeIf { it.item == item }?.copy(
+                    assessment = assessment,
+                    auditEligibility = eligibility,
+                )
         }
     }
 
