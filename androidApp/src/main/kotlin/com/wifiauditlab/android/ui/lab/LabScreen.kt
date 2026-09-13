@@ -74,13 +74,14 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Spacer(Modifier.height(4.dp))
+            // Outcome first so Cancelled/Found remain visible without scrolling past config.
+            state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
             if (running) {
                 ExecutionStatusCard(state = state)
             } else {
                 ConfigCard(state = state, enabled = true, onChange = viewModel::updateConfig)
                 EstimatesCard(state)
             }
-            state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
             Spacer(Modifier.height(8.dp))
         }
     }

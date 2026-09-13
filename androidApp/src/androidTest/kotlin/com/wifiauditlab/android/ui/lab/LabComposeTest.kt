@@ -223,7 +223,10 @@ class LabComposeTest {
                 vm.state.value.searchState == SearchState.Cancelled
         }
         waitForText("CANCELADO")
+        // Result card is pinned above config after terminal outcomes.
         composeTestRule.onNodeWithText("CANCELADO").assertIsDisplayed()
+        // Start returns to the fixed bar — cancel completed.
+        composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed()
     }
 
     @Test
