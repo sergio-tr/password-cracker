@@ -143,7 +143,7 @@ class LabComposeTest {
         setLab(viewModel(ScriptedEngine(emptyList())))
         composeTestRule.onNodeWithText("Laboratorio sintético").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("Modo guiado del laboratorio").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Modo guiado").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Experimento guiado").assertIsDisplayed()
         // Technical knobs stay collapsed until the user opens advanced options.
         composeTestRule.onNodeWithContentDescription("Opciones avanzadas").performClick()
         composeTestRule.onNodeWithText("Reto").assertIsDisplayed()

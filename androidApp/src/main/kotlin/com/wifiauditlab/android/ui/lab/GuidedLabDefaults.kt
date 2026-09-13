@@ -73,7 +73,7 @@ fun SecurityFamily.guidedLabExplanation(): String =
 
 fun LabNetworkContext?.guidedTitle(): String =
     when {
-        this == null -> "Modo guiado"
+        this == null -> "Experimento guiado"
         securityFamily.supportsSharedPasswordDemo() -> "Demostración de contraseña"
         else -> "Laboratorio genérico"
     }
