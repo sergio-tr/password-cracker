@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.FakeSavedNetworkRepository
 import com.wifiauditlab.android.support.FakeWifiScanner
 import com.wifiauditlab.android.support.nearbyViewModel
@@ -153,8 +154,9 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))))
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        waitForText("Abrir ajustes Wi-Fi")
-        composeTestRule.onNodeWithText("Abrir ajustes Wi-Fi").performScrollTo().assertIsDisplayed()
+        val openWifi = composeTestRule.activity.getString(R.string.audit_open_wifi_settings)
+        waitForText(openWifi)
+        composeTestRule.onNodeWithText(openWifi).performScrollTo().assertIsDisplayed()
         waitForText("Probar en laboratorio")
         composeTestRule.onNodeWithText("Probar en laboratorio").performScrollTo().assertIsDisplayed()
         waitForText("Analizar seguridad")
