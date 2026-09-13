@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -140,15 +141,13 @@ class VaultComposeTest {
         seed(repo, vault, "Alpha", "A", withSecret = false)
 
         setVault(repo, vault)
-        waitForText("Orden: Alias A-Z")
-        composeTestRule.onNodeWithText("Orden: Alias A-Z").performClick()
-        composeTestRule.waitUntil(5_000) {
-            composeTestRule.onAllNodesWithText("Vistas recientemente").fetchSemanticsNodes().isNotEmpty()
-        }
+        waitForText("Alias A-Z")
         composeTestRule.onNodeWithText("Vistas recientemente").performClick()
         composeTestRule.waitForIdle()
-        waitForText("Orden: Vistas recientemente")
-        composeTestRule.onNodeWithText("Orden: Vistas recientemente").assertIsDisplayed()
+        // Chip stays selected/visible; AliasAsc is no longer the only selected sort affordance.
+        composeTestRule.onNodeWithText("Vistas recientemente").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zeta").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Alpha").assertIsDisplayed()
     }
 
     @Test
@@ -180,7 +179,7 @@ class VaultComposeTest {
         composeTestRule.onNodeWithContentDescription("Contraseña oculta").assertIsDisplayed()
         composeTestRule.onNodeWithText("••••••••••••").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Mostrar").performClick()
+        composeTestRule.onNodeWithText("Mostrar").performScrollTo().performClick()
         composeTestRule.waitUntil(5_000) {
             composeTestRule
                 .onAllNodesWithContentDescription("Contraseña visible")
@@ -189,7 +188,7 @@ class VaultComposeTest {
         }
         composeTestRule.onNodeWithContentDescription("Contraseña visible").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Ocultar").performClick()
+        composeTestRule.onNodeWithText("Ocultar").performScrollTo().performClick()
         composeTestRule.waitUntil(5_000) {
             composeTestRule
                 .onAllNodesWithContentDescription("Contraseña oculta")

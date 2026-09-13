@@ -33,19 +33,20 @@ fun OnboardingScreen(
     replay: Boolean = false,
     onFinished: () -> Unit,
 ) {
-    // When replaying from Settings, prefs already mark completed=true. Wait until
-    // reopenFromSettings() clears that flag before treating completed as "finished".
-    var acceptCompletion by remember(replay) { mutableStateOf(!replay) }
+    // Only finish after the user actually completes a session that was shown incomplete.
+    // Replay starts with prefs.completed=true; reopen clears UI completed without finishing.
+    var sawIncomplete by remember { mutableStateOf(false) }
     LaunchedEffect(replay) {
-        if (replay) {
-            viewModel.reopenFromSettings()
-            acceptCompletion = true
-        }
+        if (replay) viewModel.reopenFromSettings()
     }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.completed, acceptCompletion) {
-        if (acceptCompletion && state.completed) onFinished()
+    LaunchedEffect(state.completed) {
+        if (!state.completed) {
+            sawIncomplete = true
+        } else if (sawIncomplete) {
+            onFinished()
+        }
     }
     if (state.completed) return
 
