@@ -9,6 +9,9 @@ import com.wifiauditlab.assessment.domain.audit.PasswordStrengthAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.wifi.WifiBand
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
+import com.wifiauditlab.lab.domain.SearchMetrics
+import com.wifiauditlab.lab.domain.SearchOutcome
+import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.AutomaticPlanExplanation
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
@@ -58,9 +61,19 @@ data class PasswordAuditUiState(
     val feasibilityReason: String? = null,
     val strength: PasswordStrengthAssessment? = null,
     val startBlockedReason: String? = null,
-    val startAcknowledged: Boolean = false,
     val infoMessage: String? = null,
-)
+    val searchState: SearchState = SearchState.Idle,
+    val metrics: SearchMetrics? = null,
+    val outcome: SearchOutcome? = null,
+    val discoveredWithinBudget: Boolean = false,
+    val errorMessage: String? = null,
+) {
+    val isActive: Boolean
+        get() =
+            searchState == SearchState.Preparing ||
+                searchState == SearchState.Running ||
+                searchState == SearchState.Cancelling
+}
 
 fun passwordAuditRequestFromNearby(item: NearbyItem): PasswordAuditRequest {
     val observation = item.observation

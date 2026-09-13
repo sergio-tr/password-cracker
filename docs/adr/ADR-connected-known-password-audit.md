@@ -33,9 +33,9 @@ encontrarla. La red real solo aporta contexto; nunca se autentica contra el AP.
 - Cambiar el target no cambia el espacio de búsqueda planificado.
 - `withKnownSecret` permanece para tests/benchmarks sintéticos; no usarlo para
   auditorías Wi-Fi reales.
-- **Automatic planner implemented.** **Quick Audit UI implemented** (entrada de
-  contraseña / Vault, presets, explicación del plan). Ejecución con STOP y
-  resultado combinado llegan en PRs posteriores.
+- **Automatic planner implemented.** **Quick Audit UI implemented.** **Execution +
+  STOP implemented** (motor local + cancelación cooperativa). Resultado combinado
+  con strength report llega en la PR siguiente.
 
 ## Measured / Estimated / Modelled
 
