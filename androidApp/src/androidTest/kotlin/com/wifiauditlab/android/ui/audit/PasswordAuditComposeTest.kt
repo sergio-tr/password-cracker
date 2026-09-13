@@ -1,14 +1,20 @@
 package com.wifiauditlab.android.ui.audit
 
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.vault.NetworkSecret
+import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
+import com.wifiauditlab.assessment.domain.vault.SecretId
 import com.wifiauditlab.assessment.domain.wifi.NetworkIdentity
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
@@ -23,7 +29,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PasswordAuditComposeTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun missingTargetShowsMessage() {
@@ -39,9 +45,13 @@ class PasswordAuditComposeTest {
                 availableProcessors = 2,
             )
         composeRule.setContent {
-            PasswordAuditScreen(viewModel = vm, onBack = {})
+            WifiAuditLabTheme {
+                PasswordAuditScreen(viewModel = vm, onBack = {})
+            }
         }
-        composeRule.onNodeWithText("No hay una red seleccionada para auditar.", substring = false).assertIsDisplayed()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("audit_missing_target").assertIsDisplayed()
+        composeRule.onNodeWithText("Auditoría rápida").assertIsDisplayed()
     }
 
     private class EmptyRepo : SavedNetworkRepository {
@@ -51,8 +61,7 @@ class PasswordAuditComposeTest {
 
         override suspend fun findByIdentity(identity: NetworkIdentity) = emptyList<SavedWifiNetwork>()
 
-        override suspend fun create(network: com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork) =
-            error("unused")
+        override suspend fun create(network: NewSavedWifiNetwork) = error("unused")
 
         override suspend fun update(network: SavedWifiNetwork) = network
 
@@ -60,16 +69,15 @@ class PasswordAuditComposeTest {
     }
 
     private class EmptyVault : SecretVault {
-        override suspend fun create(secret: com.wifiauditlab.assessment.domain.vault.NetworkSecret) =
-            com.wifiauditlab.assessment.domain.vault.SecretId("x")
+        override suspend fun create(secret: NetworkSecret) = SecretId("x")
 
-        override suspend fun read(id: com.wifiauditlab.assessment.domain.vault.SecretId) = null
+        override suspend fun read(id: SecretId) = null
 
         override suspend fun update(
-            id: com.wifiauditlab.assessment.domain.vault.SecretId,
-            secret: com.wifiauditlab.assessment.domain.vault.NetworkSecret,
+            id: SecretId,
+            secret: NetworkSecret,
         ) = Unit
 
-        override suspend fun delete(id: com.wifiauditlab.assessment.domain.vault.SecretId) = Unit
+        override suspend fun delete(id: SecretId) = Unit
     }
 }

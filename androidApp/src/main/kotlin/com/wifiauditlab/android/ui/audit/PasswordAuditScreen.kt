@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -128,7 +129,11 @@ fun PasswordAuditScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when {
-                state.missingTarget -> Text(stringResource(R.string.audit_missing_target))
+                state.missingTarget ->
+                    Text(
+                        stringResource(R.string.audit_missing_target),
+                        modifier = Modifier.testTag("audit_missing_target"),
+                    )
                 else -> {
                     NetworkBanner(state)
                     if (state.isActive || state.outcome != null) {
