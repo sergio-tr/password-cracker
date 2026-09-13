@@ -32,6 +32,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Modo guiado del Lab | **Implemented** (UX-03): defaults automáticos; opciones técnicas colapsadas; mensaje PSK vs no-PSK. |
 | Red conectada + elegibilidad auditoría | **Implemented** (PR1): conexión actual + eligibility + CTA Auditar. |
 | Aislamiento target de auditoría | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; strength analyzer separado. |
+| Planner automático de auditoría | **Implemented** (PR3): `AutomaticPasswordAuditPlanner` multi-stage, ciego al target; presets Quick/Standard/Deep. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |

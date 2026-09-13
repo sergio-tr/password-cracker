@@ -1,18 +1,49 @@
-# 07 · Synthetic Security Lab
+# 07 · Security Lab
 
-Laboratorio **totalmente desacoplado** de redes reales a nivel de motor. Genera un
-secreto oculto local y estudia algoritmos de exploración del espacio de candidatos.
+Laboratorio de exploración de candidatos **desacoplado de autenticación Wi‑Fi**.
+El Search Engine opera exclusivamente de forma local. Nunca autentica candidatos
+contra una red o AP (sin handshakes, PMKID, deauth ni envío al router).
 
-La UI puede contextualizar el experimento con una red observada (`LabNetworkContext`
-en androidApp): muestra SSID/familia/banda y un banner de «Simulación local», pero
-**nunca** conecta `LabSearchEngine` ni `CandidateSource` a autenticación Wi‑Fi real.
+Puede verificar:
+
+- secrets **sintéticos** de laboratorio (`LabChallenge.withHiddenSecret` /
+  `withKnownSecret` para tests y benchmarks);
+- secrets **reales conocidos** aportados explícitamente por el usuario,
+  encapsulados como verifier local (`EncapsulatedPasswordVerifier` +
+  `LabChallenge.withEncapsulatedVerifier`).
+
+La UI puede contextualizar el experimento con una red observada
+(`LabNetworkContext` en androidApp): muestra SSID/familia/banda y un banner de
+«Simulación local» / auditoría local, pero **nunca** conecta `LabSearchEngine`
+ni `CandidateSource` a autenticación Wi‑Fi real.
+
+Garantía de módulos: `:shared:lab` **no** depende de `:shared:assessment`.
 
 ## Flujo conceptual
 
 ```
-LabChallenge -> SearchPlanOptimizer -> LabSearchPlan -> LabSearchEngine -> LabSearchResult
-                                                            |
-                    CandidateSource / CandidateVerifier / SearchMetricsCollector / CancellationController
+LabChallenge -> SearchPlanOptimizer / AutomaticPasswordAuditPlanner
+        -> LabSearchPlan -> LabSearchEngine -> LabSearchResult
+                                |
+    CandidateSource / CandidateVerifier / SearchMetricsCollector / CancellationController
+```
+
+Pipelines separados para auditoría de contraseña conocida:
+
+```
+Known password
+    |
+    +--------> EncapsulatedPasswordVerifier   (motor)
+    |
+    +--------> SecretStrengthAnalyzer         (assessment; no alimenta al planner)
+
+Network audit context + performance + budget
+        |
+        v
+AutomaticPasswordAuditPlanner  (ciego al target)
+        |
+        v
+PasswordAuditPlan
 ```
 
 ## Interfaces
@@ -32,6 +63,14 @@ interface LabSearchEngine {
         cancellation: CancellationSignal,
     ): Flow<LabSearchEvent>
 }
+
+interface AutomaticPasswordAuditPlanner {
+    fun createPlan(
+        context: PasswordAuditContext,
+        performance: PasswordAuditPerformanceProfile,
+        budget: PasswordAuditBudget,
+    ): PasswordAuditPlanResult
+}
 ```
 
 > Nota de diseño: el `run` conceptual del enunciado se amplió con un
@@ -46,7 +85,9 @@ interface LabSearchEngine {
 ## Aislamiento
 
 - El secreto de `LabChallenge` es privado: no se expone por getters, `toString`,
-  logs ni serialización. La verificación se hace vía `asVerifier()`.
-- Revelar el candidato encontrado en `LabSearchResult` es intencionado: es el
-  objetivo didáctico y se trata de un secreto **sintético**, nunca una credencial
-  real del Vault.
+  logs ni serialización. La verificación se hace vía `asVerifier()` /
+  verifier encapsulado.
+- Revelar el candidato encontrado en un lab **sintético** es intencionado
+  (objetivo didáctico). En auditoría de contraseña conocida, el resultado de
+  «encontrado / no encontrado en presupuesto» se presentará sin confundirlo con
+  un ataque al AP.

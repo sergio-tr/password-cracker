@@ -101,3 +101,24 @@ para comparar en CI local (`SearchEngineV2BenchmarkTest`).
 En esta carga V2 no es peor que V1 (y evita el `drop` O(n)); por eso V2 es el
 default multi-worker. `IndexedSequentialLabSearchEngine` queda opcional para
 comparación; el baseline de corrección sigue siendo `DefaultLabSearchEngine`.
+
+## Planner automático (known-password audit)
+
+`DefaultAutomaticPasswordAuditPlanner` construye un `PasswordAuditPlan` multi-stage
+**ciego al target**: solo recibe `PasswordAuditContext` (aplicabilidad),
+`PasswordAuditPerformanceProfile` y `PasswordAuditBudget` (al menos duración o
+intentos). No puede recibir contraseña, longitud real, ni salida de
+`SecretStrengthAnalyzer`.
+
+- Política progresiva genérica (`GenericProgressiveAuditPolicy`): etapas con
+  alphabets/lengths crecientes; stages 1–5 disjuntos; stage expansivo puede
+  solapar — no se deduplica en memoria; contadores no fingen unicidad.
+- Presupuesto repartido por pesos centralizados (`StageBudgetAllocator`).
+- Workers vía `WorkerPoolConfig.recommendedWorkerCount`; 1 worker → baseline;
+  ≥2 → V2.
+- Distingue `totalCandidateSpace` vs `budgetedAttemptCapacity` y reutiliza
+  `SearchFeasibilityAnalyzer` sobre el espacio presupuestado.
+- `AutomaticPlanExplanation` para UI Quick Audit (sin class names / bucket IDs).
+
+Presets de dominio: Quick / Standard / Deep / Custom. UI Quick Audit = PR
+siguiente.
