@@ -34,8 +34,9 @@ encontrarla. La red real solo aporta contexto; nunca se autentica contra el AP.
 - `withKnownSecret` permanece para tests/benchmarks sintéticos; no usarlo para
   auditorías Wi-Fi reales.
 - **Automatic planner implemented.** **Quick Audit UI implemented.** **Execution +
-  STOP implemented** (motor local + cancelación cooperativa). Resultado combinado
-  con strength report llega en la PR siguiente.
+  STOP implemented.** **Results + strength report implemented**
+  (`PasswordAuditResultComposer`, etiquetas Measured/Estimated/Modelled).
+  Localization/tests finales = PR siguiente.
 
 ## Measured / Estimated / Modelled
 

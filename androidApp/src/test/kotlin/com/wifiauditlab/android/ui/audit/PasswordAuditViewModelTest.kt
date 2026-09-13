@@ -116,6 +116,8 @@ class PasswordAuditViewModelTest {
             assertEquals("", vm.state.value.passwordInput)
             assertNotNull(vm.state.value.strength)
             assertNotNull(vm.state.value.metrics)
+            assertNotNull(vm.state.value.resultReport)
+            assertTrue(vm.state.value.resultReport!!.headline.isNotBlank())
         }
 
     @Test
