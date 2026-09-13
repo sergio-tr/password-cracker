@@ -10,13 +10,16 @@ Modos de verificación:
 
 - **Sintético aleatorio** — `LabChallenge.withHiddenSecret` (secreto oculto
   generado localmente; disponible vía chip en modo guiado o por defecto en Avanzado).
-- **Prototipo guiado (novice)** — modo guiado del Lab arranca en prototipo local
-  (`LocalPrototype`): pasos SSID → seguridad PSK → contraseña → Iniciar; alfabeto
-  y longitud se ajustan automáticamente; workers/estrategia/alfabeto solo en
-  Opciones avanzadas; resumen novice tras Found/Límite/Cancelado.
-- **Prototipo local** — perfil Wi-Fi sintético (SSID, familia PSK, banda/estándar
+- **Prototipo guiado (novice, FIX-04, Partial)** — modo guiado del Lab arranca en
+  prototipo local (`LocalPrototype`): pasos SSID → seguridad PSK → contraseña → Iniciar;
+  alfabeto y longitud se ajustan automáticamente; workers/estrategia/alfabeto solo en
+  Opciones avanzadas; resumen novice tras Found/Límite/Cancelado. Banner «Búsqueda solo
+  local» siempre visible. FIX-03/04 merged, CI green; regresión automática en
+  `ProductRegressionComposeTest` + `LabComposeTest`. **Manual pending user**.
+- **Prototipo local (FIX-03)** — perfil Wi-Fi sintético (SSID, familia PSK, banda/estándar
   opcionales) + contraseña objetivo en memoria; verificación vía
-  `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`.
+  `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`. Sin
+  autenticación contra AP ni handshakes.
 - **Known-password audit** — mismo encapsulado en Password Audit (red real
   conectada); `withKnownSecret` queda reservado a tests/benchmarks.
 

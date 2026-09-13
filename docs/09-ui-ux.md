@@ -29,13 +29,18 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 - **Lab guiado (FIX-04, Partial)**: arranca en prototipo local con pasos en
   lenguaje llano (SSID, WPA2/WPA3, contraseña, Iniciar prueba); alfabeto autoajustado;
   chip «Secreto aleatorio» opcional; resumen novice + aviso local-only al terminar.
-  Pendiente FIX-05 manual.
+  FIX-03/04 merged, CI green; `ProductRegressionComposeTest` cubre SSID visible sin Avanzado.
+  **Manual pending user** — no marcar Implemented.
 - **Quick Audit**: navegación con `ArrowBack` (`Icons.AutoMirrored.Filled.ArrowBack`,
   contentDescription localizado); modo Automático por defecto; duración 30 s / 1 min /
   5 min; Vault con reveal diferido; `saveToVault` OFF; icono `PlayArrow` en INICIAR.
-- **Idioma**: selector en Ajustes (Sistema / Español / English) vía AppCompat
-  per-app language; audit, settings, nav y security analysis localizados.
-  Lab/Nearby/Vault/Onboarding aún hardcoded ES (Partial).
+- **Idioma (FIX-01, Partial)**: selector en Ajustes (Sistema / Español / English) vía AppCompat
+  per-app language + recreate; strings migrados a `values`/`values-en` (Lab, Nearby, Vault,
+  Onboarding, Permissions, Security, Settings). FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green.
+  **Manual pending user** — no marcar Implemented.
+- **Navegación child (FIX-02, Partial)**: `ArrowBack` + CD `navigate_back` en Audit, Security
+  Analysis y Permission Center; iconografía en CTAs primarios. FIX-02 merged [#45](https://github.com/sergio-tr/password-cracker/pull/45).
+  **Manual pending user**.
 - **No bloquear el hilo principal**: la búsqueda corre en `Dispatchers.Default`;
   la UI se actualiza por batch.
 - **Confirmaciones** sólo cuando evitan consecuencias reales (borrar una red).

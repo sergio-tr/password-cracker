@@ -11,7 +11,10 @@ La app tiene dos dominios que jamás deben mezclarse:
 - **Evaluación Wi‑Fi real**: escanear, inspeccionar, clasificar y guardar redes y
   credenciales del entorno del usuario.
 - **Laboratorio de seguridad sintético**: retos con un secreto local oculto,
-  estrategias de búsqueda, métricas, cancelación y límites.
+  estrategias de búsqueda, métricas, cancelación y límites. Desde FIX-03/04
+  incluye un **prototipo de red local** configurable (SSID, PSK, contraseña en
+  memoria) verificado vía `EncapsulatedPasswordVerifier` — siempre local, sin
+  autenticación contra AP.
 
 El motor del laboratorio (`LabSearchEngine`) no debe poder depender de
 `WifiScanner`, `WifiConnectionManager` ni de ninguna API de red de Android, y esa

@@ -28,8 +28,8 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Dominio lab + motor baseline | Lazy, límites, cancelación, métricas, `SearchLifecycle`. |
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
-| Lab desde red cercana | **Partial** (UX-02): CTA + contexto solo lectura; **sin** prototipo de red editable (ver `docs/13-manual-ux-gap-audit.md`). |
-| Modo guiado del Lab | **Partial** (FIX-04): prototipo local por defecto, pasos novice, auto-alfabeto/longitud, resumen local-only; pendiente FIX-05 manual. |
+| Lab desde red cercana | **Partial** (UX-02 + FIX-03/04): CTA + contexto solo lectura + prototipo local en Lab; FIX-03/04 merged, CI green; manual pendiente usuario. |
+| Modo guiado del Lab | **Partial** (FIX-04): prototipo local por defecto, pasos novice, auto-alfabeto/longitud, resumen local-only; FIX-04 merged, CI green; manual pendiente usuario. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
@@ -45,9 +45,9 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
 | Resultado del Lab en UI | **Implemented** integrado en la pantalla Lab (`ResultCard`). Ruta propia = Deferred. |
 | Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes (labels nav localizados; cuerpos de pantallas ver Partial). |
-| Onboarding (primera ejecución) | **Partial**: flujo existe; textos aún hardcoded ES (FIX-01). |
-| Permission Center | **Partial**: inventario OK; UI hardcoded + estados EN; sin ArrowBack (FIX-01/02). |
-| Análisis de seguridad dedicado | **Partial**: pantalla existe; cuerpo mayormente hardcoded ES (FIX-01). |
+| Onboarding (primera ejecución) | **Partial**: flujo existe; strings migrados FIX-01; manual pendiente usuario. |
+| Permission Center | **Partial**: inventario OK; strings + ArrowBack FIX-01/02; manual pendiente usuario. |
+| Análisis de seguridad dedicado | **Partial**: pantalla existe; strings migrados FIX-01; manual pendiente usuario. |
 | Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis, Password Audit) | JUnit + `runTest`. |
 | Compose UI tests (`androidTest`) | Nearby…Lab + **Password Audit** — fakes; **ejecutados en CI emulador** (FASE 21). |
 | Instrumentación Android | SQLDelight / Keystore / lifecycle — **CI emulador** API 29+35. |
@@ -58,9 +58,9 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 
 | Área | Notas |
 | --- | --- |
-| Localización ES/EN (runtime) | **Partial** (FIX-01 en curso): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings migrados a `values`/`values-en`. No marcar Implemented hasta CI+flujo manual (FIX-05). |
-| Navegación Material (child screens) | **Partial** (FIX-02 en curso): ArrowBack en Audit/Security/Permission Center; CD `navigate_back` unificado; iconografía CTAs. Pendiente pase manual (FIX-05). |
-| Prototipo local de red (Lab) | **Partial (FIX-03/04)**: UI prototipo + flujo guiado novice (FIX-04); motor `withEncapsulatedVerifier`. Pendiente FIX-05 manual. |
+| Localización ES/EN (runtime) | **Partial** (FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings en `values`/`values-en`. **No** marcar Implemented hasta pase manual del usuario. |
+| Navegación Material (child screens) | **Partial** (FIX-02 merged [#45](https://github.com/sergio-tr/password-cracker/pull/45), CI green): ArrowBack en Audit/Security/Permission Center; CD `navigate_back` unificado; iconografía CTAs. Manual pendiente usuario. |
+| Prototipo local de red (Lab) | **Partial** (FIX-03 [#46](https://github.com/sergio-tr/password-cracker/pull/46) + FIX-04 [#47](https://github.com/sergio-tr/password-cracker/pull/47) merged, CI green): UI prototipo + flujo guiado novice; motor `withEncapsulatedVerifier`. Manual pendiente usuario. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |
