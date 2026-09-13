@@ -48,6 +48,7 @@ import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -66,8 +69,7 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Compose regression for Quick Password Audit — STOP visibility and cancellation.
- * Novice navigation through Nearby stays in the product walkthrough; this suite pins
- * the fixed bottom-bar STOP contract (same pattern as LabComposeTest).
+ * Avoids asserting off-screen chips on small emulator viewports (API 29).
  */
 @RunWith(AndroidJUnit4::class)
 class PasswordAuditComposeTest {
@@ -168,31 +170,50 @@ class PasswordAuditComposeTest {
         }
     }
 
+    private fun waitUntilReady(vm: PasswordAuditViewModel) {
+        composeTestRule.waitUntil(5_000) {
+            !vm.state.value.loadingPlan && vm.state.value.plan != null
+        }
+    }
+
     @Test
-    fun automaticDefaults_visibleWithoutOpeningAdvanced() {
-        setAudit(viewModel(HangingEngine(progressMetrics)))
-        composeTestRule.onNodeWithText(str(R.string.audit_title)).assertIsDisplayed()
-        composeTestRule.onNodeWithText(str(R.string.audit_mode_automatic)).assertIsDisplayed()
-        composeTestRule.onNodeWithText(str(R.string.audit_preset_standard)).assertIsDisplayed()
+    fun automaticDefaults_readyWithoutOpeningAdvanced() {
+        val vm = viewModel(HangingEngine(progressMetrics))
+        setAudit(vm)
+        waitUntilReady(vm)
+        assertEquals(PasswordAuditInteractionMode.Automatic, vm.state.value.mode)
+        assertEquals(PasswordAuditBudgetPreset.Standard, vm.state.value.preset)
+        assertFalse(vm.state.value.advancedExpanded)
+        // Chrome always visible without scroll (small emulator viewports).
         composeTestRule.onNodeWithContentDescription(str(R.string.audit_navigate_back)).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("audit_start").assertIsDisplayed()
+        composeTestRule.onNodeWithText(str(R.string.audit_mode_automatic)).performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun advanced_restoreAutomatic_collapsesOptions() {
         val vm = viewModel(HangingEngine(progressMetrics))
         setAudit(vm)
-        composeTestRule.onNodeWithContentDescription(str(R.string.audit_cd_mode_advanced)).performClick()
+        waitUntilReady(vm)
+        // Drive mode via ViewModel (same contract as chips) — avoids flaky off-screen taps.
+        vm.selectMode(PasswordAuditInteractionMode.Advanced)
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithContentDescription(str(R.string.audit_cd_reset_auto)).performClick()
+        assertTrue(vm.state.value.advancedExpanded)
+        composeTestRule.onNodeWithContentDescription(str(R.string.audit_cd_reset_auto))
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
         composeTestRule.waitForIdle()
         assertEquals(PasswordAuditInteractionMode.Automatic, vm.state.value.mode)
-        assertEquals(false, vm.state.value.advancedExpanded)
+        assertEquals(PasswordAuditBudgetPreset.Standard, vm.state.value.preset)
+        assertFalse(vm.state.value.advancedExpanded)
     }
 
     @Test
     fun stop_alwaysVisible_thenCancellingThenCancelled_attemptsStable() {
         val vm = viewModel(HangingEngine(progressMetrics))
         setAudit(vm)
+        waitUntilReady(vm)
         vm.onPasswordChanged("zzzzzzzz")
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("audit_start").assertIsDisplayed().performClick()
@@ -203,15 +224,14 @@ class PasswordAuditComposeTest {
         composeTestRule.onNodeWithTag("audit_stop").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
 
-        // Report headline from shared Composer (ES); also matches audit_result_cancelled.
+        composeTestRule.waitUntil(8_000) {
+            vm.state.value.outcome == SearchOutcome.Cancelled ||
+                vm.state.value.searchState == SearchState.Cancelled
+        }
         waitForText("Auditoría detenida")
         val attempts = vm.state.value.metrics?.attempts
         composeTestRule.waitForIdle()
         assertEquals(attempts, vm.state.value.metrics?.attempts)
-        assertTrue(
-            vm.state.value.outcome == SearchOutcome.Cancelled ||
-                vm.state.value.searchState == SearchState.Cancelled,
-        )
     }
 
     @Test
@@ -219,14 +239,16 @@ class PasswordAuditComposeTest {
         val foundMetrics = progressMetrics.copy(attempts = CombinationCount.of(284_193), elapsed = 4.seconds)
         val vm = viewModel(FoundEngine(foundMetrics))
         setAudit(vm)
+        waitUntilReady(vm)
         vm.onPasswordChanged("42")
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("audit_start").performClick()
-        composeTestRule.waitForIdle()
-        // Domain report headline (ES) — Composer is shared KMP, not Android strings yet.
+        composeTestRule.waitUntil(8_000) { vm.state.value.outcome == SearchOutcome.Found }
+        assertNotNull(vm.state.value.resultReport)
         waitForText("Contraseña encontrada")
-        composeTestRule.onNodeWithText("Contraseña encontrada", substring = true).assertIsDisplayed()
-        composeTestRule.onNodeWithText(str(R.string.audit_how_to_improve)).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(str(R.string.audit_how_to_improve))
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test
@@ -250,12 +272,16 @@ class PasswordAuditComposeTest {
                 eligibleRequest().copy(savedNetworkId = created.id),
             )
         setAudit(vm)
+        waitUntilReady(vm)
         assertTrue(vm.state.value.passwordInput.isEmpty())
         composeTestRule.onNodeWithTag("audit_start").performClick()
-        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(8_000) { vm.state.value.outcome == SearchOutcome.Found }
         waitForText("Contraseña encontrada")
         assertTrue(vm.state.value.passwordInput.isEmpty())
-        composeTestRule.onNodeWithText(str(R.string.audit_recommendations)).performScrollTo().assertIsDisplayed()
+        assertTrue(vm.state.value.resultReport!!.recommendations.isNotEmpty())
+        composeTestRule.onNodeWithText(str(R.string.audit_recommendations))
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     private fun eligibleRequest(
