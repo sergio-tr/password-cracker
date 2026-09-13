@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -141,6 +142,10 @@ class LabComposeTest {
     fun configAndFeasibility_areVisible() {
         setLab(viewModel(ScriptedEngine(emptyList())))
         composeTestRule.onNodeWithText("Laboratorio sintético").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Modo guiado del laboratorio").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Experimento guiado").assertIsDisplayed()
+        // Technical knobs stay collapsed until the user opens advanced options.
+        composeTestRule.onNodeWithContentDescription("Opciones avanzadas").performClick()
         composeTestRule.onNodeWithText("Reto").assertIsDisplayed()
         waitForText("Antes de iniciar")
         scrollToText("Antes de iniciar")
@@ -148,6 +153,15 @@ class LabComposeTest {
         scrollToText("Viabilidad: Razonable")
         scrollToText("ok")
         composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Iniciar prueba").assertIsDisplayed()
+    }
+
+    @Test
+    fun guidedMode_hidesTechnicalConfigByDefault() {
+        setLab(viewModel(ScriptedEngine(emptyList())))
+        composeTestRule.onNodeWithContentDescription("Modo guiado del laboratorio").assertIsDisplayed()
+        assertTrue(composeTestRule.onAllNodesWithText("Reto").fetchSemanticsNodes().isEmpty())
+        composeTestRule.onNodeWithText("Iniciar prueba").assertIsDisplayed()
     }
 
     @Test
@@ -155,6 +169,7 @@ class LabComposeTest {
         val vm = viewModel(ScriptedEngine(emptyList()))
         setLab(vm)
         composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("Opciones avanzadas").performClick()
 
         // Clear both limit fields so config becomes invalid.
         composeTestRule.onNodeWithText(vm.state.value.config.maxAttempts!!.toString()).performScrollTo().performTextClearance()

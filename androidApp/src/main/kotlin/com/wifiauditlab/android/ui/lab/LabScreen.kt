@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +65,7 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                 running = running,
                 cancelling = cancelling,
                 canStart = state.configError == null,
+                startLabel = if (state.mode == LabInteractionMode.Guided) "Iniciar prueba" else "Iniciar búsqueda",
                 onStart = viewModel::start,
                 onStop = viewModel::stop,
             )
@@ -84,7 +86,17 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             if (running) {
                 ExecutionStatusCard(state = state)
             } else {
-                ConfigCard(state = state, enabled = true, onChange = viewModel::updateConfig)
+                GuidedModeCard(
+                    state = state,
+                    onExpandAdvanced = { viewModel.setAdvancedExpanded(true) },
+                    onCollapseAdvanced = { viewModel.setAdvancedExpanded(false) },
+                    onResetGuided = viewModel::resetToGuidedDefaults,
+                    onOpenAdvancedMode = { viewModel.setMode(LabInteractionMode.Advanced) },
+                    onOpenGuidedMode = { viewModel.setMode(LabInteractionMode.Guided) },
+                )
+                if (state.mode == LabInteractionMode.Advanced || state.advancedExpanded) {
+                    ConfigCard(state = state, enabled = true, onChange = viewModel::updateConfig)
+                }
                 EstimatesCard(state)
             }
             Spacer(Modifier.height(8.dp))
@@ -113,11 +125,70 @@ private fun NetworkContextBanner(context: LabNetworkContext) {
             }
             context.assessmentSummary?.let { Text(it) }
             Spacer(Modifier.height(4.dp))
+            Text(context.guidedTitle(), fontWeight = FontWeight.SemiBold)
+            Text(context.securityFamily.guidedLabExplanation())
+            Spacer(Modifier.height(4.dp))
             Text("Simulación local", fontWeight = FontWeight.SemiBold)
             Text(
                 "El experimento utiliza la configuración de esta red como contexto, " +
                     "pero no realiza intentos de conexión contra ella.",
             )
+        }
+    }
+}
+
+@Composable
+private fun GuidedModeCard(
+    state: LabUiState,
+    onExpandAdvanced: () -> Unit,
+    onCollapseAdvanced: () -> Unit,
+    onResetGuided: () -> Unit,
+    onOpenAdvancedMode: () -> Unit,
+    onOpenGuidedMode: () -> Unit,
+) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Modo guiado del laboratorio" },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(state.networkContext.guidedTitle(), fontWeight = FontWeight.Bold)
+            if (state.networkContext == null) {
+                Text(
+                    "La aplicación elige automáticamente estrategia, workers y límites " +
+                        "razonables para una demostración sintética.",
+                )
+            } else {
+                Text(state.networkContext.securityFamily.guidedLabExplanation())
+            }
+            state.feasibility?.estimatedDurationRange?.let {
+                Text("Estimación: ${it.toApproximateString()}")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = state.mode == LabInteractionMode.Guided,
+                    onClick = onOpenGuidedMode,
+                    label = { Text("Modo guiado") },
+                )
+                FilterChip(
+                    selected = state.mode == LabInteractionMode.Advanced,
+                    onClick = onOpenAdvancedMode,
+                    label = { Text("Avanzado") },
+                )
+            }
+            if (state.mode == LabInteractionMode.Guided) {
+                TextButton(
+                    onClick = { if (state.advancedExpanded) onCollapseAdvanced() else onExpandAdvanced() },
+                    modifier = Modifier.semantics { contentDescription = "Opciones avanzadas" },
+                ) {
+                    Text(if (state.advancedExpanded) "Ocultar opciones avanzadas" else "Opciones avanzadas")
+                }
+            } else {
+                OutlinedButton(onClick = onResetGuided, modifier = Modifier.fillMaxWidth()) {
+                    Text("Restablecer configuración automática")
+                }
+            }
         }
     }
 }
@@ -131,6 +202,7 @@ private fun LabActionBar(
     running: Boolean,
     cancelling: Boolean,
     canStart: Boolean,
+    startLabel: String,
     onStart: () -> Unit,
     onStop: () -> Unit,
 ) {
@@ -164,7 +236,7 @@ private fun LabActionBar(
                 ) {
                     Icon(Icons.Filled.PlayArrow, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
-                    Text("Iniciar búsqueda")
+                    Text(startLabel)
                 }
             }
         }
