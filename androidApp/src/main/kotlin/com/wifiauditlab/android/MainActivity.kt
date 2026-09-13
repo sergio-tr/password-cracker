@@ -175,7 +175,9 @@ private fun AppRoot() {
                     },
                 )
             }
-            composable(Routes.PERMISSIONS) { PermissionCenterScreen() }
+            composable(Routes.PERMISSIONS) {
+                PermissionCenterScreen(onBack = { navController.popBackStack() })
+            }
             composable(Routes.SECURITY_ANALYSIS) {
                 SecurityAnalysisScreen(onBack = { navController.popBackStack() })
             }

@@ -59,7 +59,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Área | Notas |
 | --- | --- |
 | Localización ES/EN (runtime) | **Partial** (FIX-01 en curso): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings migrados a `values`/`values-en`. No marcar Implemented hasta CI+flujo manual (FIX-05). |
-| Navegación Material (child screens) | **Partial**: Audit/Security con ArrowBack; Permission Center sin flecha; copy uneven. FIX-02. |
+| Navegación Material (child screens) | **Partial** (FIX-02 en curso): ArrowBack en Audit/Security/Permission Center; CD `navigate_back` unificado; iconografía CTAs. Pendiente pase manual (FIX-05). |
 | Prototipo local de red (Lab) | **Partial / ausente en UI**: motor local sí; no hay perfil red + auth + password custom en Lab. FIX-03/04. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |

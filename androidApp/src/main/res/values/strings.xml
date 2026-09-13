@@ -4,8 +4,6 @@
 
     <!-- Password audit (Quick Audit) -->
     <string name="audit_title">Auditar contraseña</string>
-    <string name="audit_back">Atrás</string>
-    <string name="audit_navigate_back">Volver</string>
     <string name="audit_start">INICIAR AUDITORÍA</string>
     <string name="audit_stop">DETENER</string>
     <string name="audit_stopping">Deteniendo…</string>

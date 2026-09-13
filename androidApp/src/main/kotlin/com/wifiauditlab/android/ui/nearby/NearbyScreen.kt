@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiLock
@@ -89,7 +90,15 @@ fun NearbyScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.nearby_refresh)) }
+            ) {
+                Icon(
+                    Icons.Filled.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.nearby_refresh))
+            }
 
             when (val scan = state.scanState) {
                 WifiScanState.PermissionRequired ->
@@ -182,7 +191,7 @@ private fun NetworkCard(
                             leadingIcon = {
                                 Icon(
                                     Icons.Filled.Wifi,
-                                    contentDescription = null,
+                                    contentDescription = connectedCd,
                                     modifier = Modifier.size(16.dp),
                                 )
                             },

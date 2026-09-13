@@ -5,9 +5,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +17,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -367,13 +374,33 @@ private fun SecretSection(
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (revealed == null) {
-            TextButton(onClick = onReveal) { Text(stringResource(R.string.vault_show)) }
+            TextButton(onClick = onReveal) {
+                Icon(Icons.Filled.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(4.dp))
+                Text(stringResource(R.string.vault_show))
+            }
         } else {
-            TextButton(onClick = onHide) { Text(stringResource(R.string.vault_hide)) }
-            TextButton(onClick = onCopy) { Text(stringResource(R.string.vault_copy)) }
+            TextButton(onClick = onHide) {
+                Icon(Icons.Filled.VisibilityOff, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(4.dp))
+                Text(stringResource(R.string.vault_hide))
+            }
+            TextButton(onClick = onCopy) {
+                Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(4.dp))
+                Text(stringResource(R.string.vault_copy))
+            }
         }
-        TextButton(onClick = onReplace) { Text(stringResource(R.string.vault_replace)) }
-        TextButton(onClick = onRemove) { Text(stringResource(R.string.vault_remove)) }
+        TextButton(onClick = onReplace) {
+            Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(4.dp))
+            Text(stringResource(R.string.vault_replace))
+        }
+        TextButton(onClick = onRemove) {
+            Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(4.dp))
+            Text(stringResource(R.string.vault_remove))
+        }
     }
 }
 
