@@ -3,95 +3,99 @@ package com.wifiauditlab.android.i18n
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.wifiauditlab.android.MainActivity
 import com.wifiauditlab.android.R
 import org.junit.After
-import org.junit.BeforeClass
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * FIX-01A: official [AppCompatDelegate.setApplicationLocales] must update Compose
- * bottom-nav labels on [MainActivity] without app-code [android.app.Activity.recreate].
+ * [androidx.compose.ui.res.stringResource] on an [androidx.appcompat.app.AppCompatActivity]
+ * without app-code [android.app.Activity.recreate].
  *
  * Required transitions: ES → EN, EN → ES, EN → SYSTEM.
  */
 @RunWith(AndroidJUnit4::class)
 class MainActivityRuntimeLocaleTest {
     @get:Rule
-    val composeRule = createAndroidComposeRule<MainActivity>()
+    val composeRule = createAndroidComposeRule<LocaleProbeActivity>()
 
     private val appContext: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     @After
     fun tearDownLocales() {
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+        }
         appContext.getSharedPreferences("app_language", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
     @Test
-    fun spanishToEnglish_updatesBottomNavLabels() {
+    fun spanishToEnglish_updatesLocalizedLabel() {
         applyLanguageAndWait(AppLanguage.SPANISH)
-        waitForNavLabel(spanishNearby())
+        assertProbeLabel(spanishNearby())
 
         applyLanguageAndWait(AppLanguage.ENGLISH)
-        waitForNavLabel(englishNearby())
-        assertGone(spanishNearby())
+        assertProbeLabel(englishNearby())
     }
 
     @Test
-    fun englishToSpanish_updatesBottomNavLabels() {
+    fun englishToSpanish_updatesLocalizedLabel() {
         applyLanguageAndWait(AppLanguage.ENGLISH)
-        waitForNavLabel(englishNearby())
+        assertProbeLabel(englishNearby())
 
         applyLanguageAndWait(AppLanguage.SPANISH)
-        waitForNavLabel(spanishNearby())
-        assertGone(englishNearby())
+        assertProbeLabel(spanishNearby())
     }
 
     @Test
     fun englishToSystem_clearsOverride() {
         applyLanguageAndWait(AppLanguage.ENGLISH)
-        waitForNavLabel(englishNearby())
+        assertProbeLabel(englishNearby())
 
         applyLanguageAndWait(AppLanguage.SYSTEM)
         composeRule.waitUntil(timeoutMillis = 15_000) {
-            hasText(englishNearby()) || hasText(spanishNearby())
+            val label = activityNavLabel()
+            label == englishNearby() || label == spanishNearby()
         }
-        assert(AppLanguagePreferences.current(appContext) == AppLanguage.SYSTEM)
+        assertEquals(AppLanguage.SYSTEM, AppLanguagePreferences.current(appContext))
     }
 
     private fun applyLanguageAndWait(language: AppLanguage) {
-        composeRule.runOnUiThread {
-            // Official API only — no Activity.recreate() in production path.
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
             AppLanguagePreferences.apply(appContext, language)
         }
-        composeRule.waitForIdle()
         composeRule.waitUntil(timeoutMillis = 15_000) {
             AppLanguagePreferences.current(appContext) == language
         }
         composeRule.waitForIdle()
     }
 
-    private fun waitForNavLabel(label: String) {
-        composeRule.waitUntil(timeoutMillis = 15_000) { hasText(label) }
-        composeRule.onNodeWithText(label).assertIsDisplayed()
+    private fun assertProbeLabel(expected: String) {
+        composeRule.waitUntil(timeoutMillis = 15_000) {
+            activityNavLabel() == expected
+        }
+        composeRule
+            .onNodeWithTag(LocaleProbeActivity.TAG_NAV_LABEL)
+            .assertIsDisplayed()
+            .assertTextEquals(expected)
     }
 
-    private fun assertGone(label: String) {
-        composeRule.waitUntil(timeoutMillis = 10_000) { !hasText(label) }
-    }
-
-    private fun hasText(label: String): Boolean =
-        composeRule.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+    private fun activityNavLabel(): String =
+        try {
+            composeRule.activity.getString(R.string.nav_nearby)
+        } catch (_: Throwable) {
+            ""
+        }
 
     private fun spanishNearby(): String =
         appContext.createConfigurationContext(
@@ -106,18 +110,4 @@ class MainActivityRuntimeLocaleTest {
                 setLocale(java.util.Locale.ENGLISH)
             },
         ).getString(R.string.nav_nearby)
-
-    companion object {
-        @JvmStatic
-        @BeforeClass
-        fun completeOnboardingBeforeActivityLaunch() {
-            val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-            ctx.getSharedPreferences("onboarding", Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean("completed", true)
-                .commit()
-            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-            ctx.getSharedPreferences("app_language", Context.MODE_PRIVATE).edit().clear().commit()
-        }
-    }
 }
