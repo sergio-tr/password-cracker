@@ -4,6 +4,6 @@
         <activity
             android:name="com.wifiauditlab.android.i18n.LocaleProbeActivity"
             android:exported="false"
-            android:theme="@style/Theme.WifiAuditLab" />
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
     </application>
 </manifest>
