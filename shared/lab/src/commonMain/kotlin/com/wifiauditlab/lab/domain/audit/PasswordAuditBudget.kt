@@ -8,6 +8,11 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Hard budget for a known-password audit. At least one of [maxDuration] /
  * [maxAttempts] must be set — unbounded audits are rejected.
+ *
+ * Quick-audit UI presets (novice):
+ * - [quick]: 30 seconds
+ * - [standard]: 1 minute (default)
+ * - [deep]: 5 minutes
  */
 data class PasswordAuditBudget(
     val maxDuration: Duration? = null,
@@ -31,14 +36,10 @@ data class PasswordAuditBudget(
             PasswordAuditBudget(maxDuration = 30.seconds, preset = PasswordAuditBudgetPreset.Quick)
 
         fun standard(): PasswordAuditBudget =
-            PasswordAuditBudget(maxDuration = 5.minutes, preset = PasswordAuditBudgetPreset.Standard)
+            PasswordAuditBudget(maxDuration = 1.minutes, preset = PasswordAuditBudgetPreset.Standard)
 
         fun deep(): PasswordAuditBudget =
-            PasswordAuditBudget(
-                maxDuration = 15.minutes,
-                maxAttempts = CombinationCount.of(50_000_000),
-                preset = PasswordAuditBudgetPreset.Deep,
-            )
+            PasswordAuditBudget(maxDuration = 5.minutes, preset = PasswordAuditBudgetPreset.Deep)
     }
 }
 

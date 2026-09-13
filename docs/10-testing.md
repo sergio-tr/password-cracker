@@ -29,6 +29,7 @@ Artifacts (siempre / al fallar JVM): reports JUnit/HTML, logcat **sanitizado**
 | Vault DB | SQLDelight JVM | — | `AndroidSqliteDriver` | — |
 | Secretos | Redaction + use cases | Mask UI | `KeystoreSecretVault` + lifecycle | — |
 | Lab | Engine + VM | Fake engine UI | — | Runs largos físicos |
+| Quick Audit | VM (Vault/manual, presets, cancel, eligibility) | — (unit; compose dedicado retirado por flakiness) | — | Flujo físico conectado |
 
 ## Clasificación `androidTest`
 

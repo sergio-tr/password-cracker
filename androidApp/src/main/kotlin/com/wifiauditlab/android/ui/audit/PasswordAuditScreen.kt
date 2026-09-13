@@ -5,23 +5,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -59,12 +69,21 @@ fun PasswordAuditScreen(
     val startLabel = stringResource(R.string.audit_start)
     val stopLabel = stringResource(R.string.audit_stop)
     val stoppingLabel = stringResource(R.string.audit_stopping)
+    val backCd = stringResource(R.string.audit_navigate_back)
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.audit_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.audit_back)) }
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.semantics { contentDescription = backCd },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = backCd,
+                        )
+                    }
                 },
             )
         },
@@ -86,9 +105,11 @@ fun PasswordAuditScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
+                                    .testTag("audit_stop")
                                     .semantics { contentDescription = stopLabel },
                         ) {
                             Icon(Icons.Filled.Stop, contentDescription = null)
+                            Spacer(Modifier.size(8.dp))
                             Text(
                                 if (state.searchState == SearchState.Cancelling) {
                                     stoppingLabel
@@ -104,6 +125,7 @@ fun PasswordAuditScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
+                                    .testTag("audit_start")
                                     .semantics { contentDescription = startLabel },
                         ) {
                             Text(startLabel)
@@ -136,6 +158,9 @@ fun PasswordAuditScreen(
                     )
                 else -> {
                     NetworkBanner(state)
+                    state.connectionLostMessage?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error)
+                    }
                     if (state.isActive || state.outcome != null) {
                         ExecutionStatusCard(state)
                     }
@@ -144,12 +169,16 @@ fun PasswordAuditScreen(
                     }
                     if (!state.isActive) {
                         PasswordSection(state, viewModel)
-                        PresetSection(state, viewModel)
-                        if (state.advancedExpanded || state.preset == PasswordAuditBudgetPreset.Custom) {
+                        ModeSection(state, viewModel)
+                        DurationSection(state, viewModel)
+                        if (state.mode == PasswordAuditInteractionMode.Advanced ||
+                            state.advancedExpanded ||
+                            state.preset == PasswordAuditBudgetPreset.Custom
+                        ) {
                             AdvancedBudgetSection(state, viewModel)
                         }
                     }
-                    PlanSection(state)
+                    PlanSection(state, viewModel)
                     if (state.resultReport == null) {
                         state.strength?.let { StrengthHint(it.summary) }
                     }
@@ -161,22 +190,25 @@ fun PasswordAuditScreen(
 
 @Composable
 private fun NetworkBanner(state: PasswordAuditUiState) {
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth(),
-    ) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(stringResource(R.string.audit_connected_network), style = MaterialTheme.typography.labelMedium)
             Text(state.displayName, fontWeight = FontWeight.Bold)
             if (state.ssidLabel.isNotBlank() && state.ssidLabel != state.displayName) {
                 Text(state.ssidLabel)
             }
             Text(state.familyLabel)
-            Text(state.metaLine, style = MaterialTheme.typography.bodySmall)
+            Text(
+                "● ${state.connectedLabel}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                stringResource(R.string.audit_available),
+                style = MaterialTheme.typography.bodySmall,
+            )
             Text(
                 stringResource(R.string.audit_local_only_banner),
                 style = MaterialTheme.typography.bodySmall,
@@ -186,64 +218,154 @@ private fun NetworkBanner(state: PasswordAuditUiState) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PasswordSection(
     state: PasswordAuditUiState,
     viewModel: PasswordAuditViewModel,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(stringResource(R.string.audit_password_section), fontWeight = FontWeight.SemiBold)
-            Text(
-                stringResource(R.string.audit_password_help),
-                style = MaterialTheme.typography.bodySmall,
+            if (state.vaultSecretAvailable) {
+                SecretSourceRow(
+                    selected = state.secretSource == PasswordAuditSecretSource.Vault,
+                    label = stringResource(R.string.audit_use_vault_saved),
+                    contentDescription = stringResource(R.string.audit_use_vault_saved),
+                    onClick = { viewModel.selectSecretSource(PasswordAuditSecretSource.Vault) },
+                )
+                SecretSourceRow(
+                    selected = state.secretSource == PasswordAuditSecretSource.Manual,
+                    label = stringResource(R.string.audit_enter_other_password),
+                    contentDescription = stringResource(R.string.audit_enter_other_password),
+                    onClick = { viewModel.selectSecretSource(PasswordAuditSecretSource.Manual) },
+                )
+            }
+            if (state.secretSource == PasswordAuditSecretSource.Vault) {
+                Text(
+                    stringResource(R.string.audit_vault_deferred),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            } else {
+                ManualPasswordFields(state, viewModel)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics {
+                                contentDescription = "Guardar en Vault"
+                            },
+                ) {
+                    Checkbox(
+                        checked = state.saveToVault,
+                        onCheckedChange = viewModel::setSaveToVault,
+                    )
+                    Text(stringResource(R.string.audit_save_to_vault))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecretSourceRow(
+    selected: Boolean,
+    label: String,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .semantics { this.contentDescription = contentDescription },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(label)
+    }
+}
+
+@Composable
+private fun ManualPasswordFields(
+    state: PasswordAuditUiState,
+    viewModel: PasswordAuditViewModel,
+) {
+    val passwordCd = stringResource(R.string.audit_password_label)
+    OutlinedTextField(
+        value = state.passwordInput,
+        onValueChange = viewModel::onPasswordChanged,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = passwordCd },
+        label = { Text(passwordCd) },
+        singleLine = true,
+        isError = state.passwordError != null,
+        visualTransformation =
+            if (state.passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+        trailingIcon = {
+            IconButton(onClick = viewModel::togglePasswordVisibility) {
+                Icon(
+                    imageVector =
+                        if (state.passwordVisible) {
+                            Icons.Filled.VisibilityOff
+                        } else {
+                            Icons.Filled.Visibility
+                        },
+                    contentDescription =
+                        if (state.passwordVisible) {
+                            stringResource(R.string.audit_hide)
+                        } else {
+                            stringResource(R.string.audit_show)
+                        },
+                )
+            }
+        },
+        supportingText = {
+            state.passwordError?.let { Text(it) }
+        },
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ModeSection(
+    state: PasswordAuditUiState,
+    viewModel: PasswordAuditViewModel,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.audit_mode), fontWeight = FontWeight.SemiBold)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = state.mode == PasswordAuditInteractionMode.Automatic,
+                onClick = { viewModel.selectMode(PasswordAuditInteractionMode.Automatic) },
+                label = { Text(stringResource(R.string.audit_mode_automatic)) },
+                modifier = Modifier.semantics { contentDescription = "Modo Automático" },
             )
-            val passwordCd = stringResource(R.string.audit_password_label)
-            val vaultCd = stringResource(R.string.audit_use_vault)
-            OutlinedTextField(
-                value = state.passwordInput,
-                onValueChange = viewModel::onPasswordChanged,
+            FilterChip(
+                selected = state.mode == PasswordAuditInteractionMode.Advanced,
+                onClick = { viewModel.selectMode(PasswordAuditInteractionMode.Advanced) },
+                label = { Text(stringResource(R.string.audit_mode_advanced)) },
+                modifier = Modifier.semantics { contentDescription = "Modo Avanzado" },
+            )
+        }
+        if (state.mode == PasswordAuditInteractionMode.Advanced) {
+            OutlinedButton(
+                onClick = viewModel::resetToAutomaticDefaults,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = passwordCd },
-                label = { Text(passwordCd) },
-                singleLine = true,
-                isError = state.passwordError != null,
-                visualTransformation =
-                    if (state.passwordVisible) {
-                        VisualTransformation.None
-                    } else {
-                        PasswordVisualTransformation()
-                    },
-                supportingText = {
-                    when {
-                        state.passwordError != null -> Text(state.passwordError)
-                        state.passwordFromVault -> Text(stringResource(R.string.audit_password_from_vault))
-                    }
-                },
-            )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = viewModel::togglePasswordVisibility) {
-                    Text(if (state.passwordVisible) stringResource(R.string.audit_hide) else stringResource(R.string.audit_show))
-                }
-                if (state.passwordInput.isNotEmpty()) {
-                    TextButton(onClick = viewModel::clearPassword) { Text(stringResource(R.string.audit_clear)) }
-                }
-                if (state.vaultSecretAvailable) {
-                    OutlinedButton(
-                        onClick = viewModel::useVaultPassword,
-                        modifier = Modifier.semantics { contentDescription = vaultCd },
-                    ) {
-                        Text(vaultCd)
-                    }
-                }
+                        .semantics { contentDescription = "Restablecer configuración automática" },
+            ) {
+                Text(stringResource(R.string.audit_reset_automatic))
             }
         }
     }
@@ -251,7 +373,7 @@ private fun PasswordSection(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PresetSection(
+private fun DurationSection(
     state: PasswordAuditUiState,
     viewModel: PasswordAuditViewModel,
 ) {
@@ -282,12 +404,11 @@ private fun PresetSection(
                 )
             }
         }
-        TextButton(
-            onClick = { viewModel.setAdvancedExpanded(!state.advancedExpanded) },
-            modifier = Modifier.semantics { contentDescription = "Opciones avanzadas" },
-        ) {
-            Text(if (state.advancedExpanded) stringResource(R.string.audit_advanced_hide) else stringResource(R.string.audit_advanced_show))
-        }
+        Text(
+            stringResource(R.string.audit_estimation_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -296,18 +417,16 @@ private fun AdvancedBudgetSection(
     state: PasswordAuditUiState,
     viewModel: PasswordAuditViewModel,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Límites personalizados", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.audit_custom_limits), fontWeight = FontWeight.SemiBold)
             OutlinedTextField(
                 value = state.customDurationSeconds,
                 onValueChange = viewModel::onCustomDurationChanged,
-                label = { Text("Duración máxima (segundos)") },
+                label = { Text(stringResource(R.string.audit_custom_duration)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -315,23 +434,24 @@ private fun AdvancedBudgetSection(
             OutlinedTextField(
                 value = state.customMaxAttempts,
                 onValueChange = viewModel::onCustomAttemptsChanged,
-                label = { Text("Intentos máximos (opcional)") },
+                label = { Text(stringResource(R.string.audit_custom_attempts)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedButton(onClick = viewModel::applyCustomBudget) {
-                Text("Aplicar presupuesto")
+                Text(stringResource(R.string.audit_apply_budget))
             }
         }
     }
 }
 
 @Composable
-private fun PlanSection(state: PasswordAuditUiState) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun PlanSection(
+    state: PasswordAuditUiState,
+    viewModel: PasswordAuditViewModel,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -340,27 +460,65 @@ private fun PlanSection(state: PasswordAuditUiState) {
             when {
                 state.loadingPlan -> Text(stringResource(R.string.audit_plan_loading))
                 state.planNotApplicableReason != null -> Text(state.planNotApplicableReason)
-                state.explanation != null -> {
-                    Text(state.explanation.headline, fontWeight = FontWeight.Medium)
-                    state.explanation.details.forEach { Text("· $it") }
-                    state.feasibilityRating?.let { rating ->
+                state.plan != null -> {
+                    Text(stringResource(R.string.audit_plan_auto_config), fontWeight = FontWeight.Medium)
+                    state.novicePlanLines.forEach { Text("· $it") }
+                    FeasibilityBlock(state.feasibilityRating)
+                    TextButton(
+                        onClick = { viewModel.setPlanDetailsExpanded(!state.planDetailsExpanded) },
+                        modifier = Modifier.semantics { contentDescription = "Ver detalles" },
+                    ) {
                         Text(
-                            feasibilityLabel(rating),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary,
+                            if (state.planDetailsExpanded) {
+                                stringResource(R.string.audit_hide_details)
+                            } else {
+                                stringResource(R.string.audit_show_details)
+                            },
                         )
                     }
-                    state.plan?.let { plan ->
-                        Text(
-                            "Espacio total: ${plan.totalCandidateSpace.toAbbreviatedString()} · " +
-                                "Presupuestado: ${plan.budgetedAttemptCapacity?.toAbbreviatedString() ?: "—"}",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                    if (state.planDetailsExpanded) {
+                        state.explanation?.details?.forEach { Text("· $it", style = MaterialTheme.typography.bodySmall) }
+                        state.plan?.let { plan ->
+                            Text(
+                                stringResource(
+                                    R.string.audit_plan_space,
+                                    plan.totalCandidateSpace.toAbbreviatedString(),
+                                    plan.budgetedAttemptCapacity?.toAbbreviatedString() ?: "—",
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                 }
-                else -> Text("Sin plan.")
+                else -> Text(stringResource(R.string.audit_plan_none))
             }
         }
+    }
+}
+
+@Composable
+private fun FeasibilityBlock(rating: FeasibilityRating?) {
+    when (rating) {
+        null -> Unit
+        FeasibilityRating.Reasonable -> Unit
+        FeasibilityRating.Expensive ->
+            Text(
+                stringResource(R.string.audit_feasibility_expensive),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+        FeasibilityRating.Impractical ->
+            Text(
+                stringResource(R.string.audit_feasibility_impractical),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+        FeasibilityRating.Invalid ->
+            Text(
+                stringResource(R.string.audit_feasibility_invalid),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
     }
 }
 
@@ -382,11 +540,33 @@ private fun ExecutionStatusCard(state: PasswordAuditUiState) {
                 color = MaterialTheme.colorScheme.primary,
             )
             if (metrics != null) {
-                MetricRow("Intentos", metrics.attempts.toExactString())
-                MetricRow("Tiempo", formatElapsed(metrics.elapsed.inWholeSeconds))
-                MetricRow("Velocidad", "${(metrics.attemptsPerSecond / 1000).roundToInt()} k/s")
+                MetricRow(stringResource(R.string.audit_metric_attempts), metrics.attempts.toExactString())
+                MetricRow(stringResource(R.string.audit_metric_time), formatElapsed(metrics.elapsed.inWholeSeconds))
+                MetricRow(
+                    stringResource(R.string.audit_metric_speed),
+                    "${(metrics.attemptsPerSecond / 1000).roundToInt()} k/s",
+                )
+                val stageCount = state.plan?.stages?.size
+                if (stageCount != null && stageCount > 0) {
+                    val stageIndex =
+                        ((metrics.currentBucketIndex * stageCount) / metrics.totalBuckets.coerceAtLeast(1))
+                            .coerceIn(0, stageCount - 1) + 1
+                    MetricRow(
+                        stringResource(R.string.audit_metric_stage),
+                        stringResource(R.string.audit_metric_stage_of, stageIndex, stageCount),
+                    )
+                }
                 metrics.processedPercentage?.let {
-                    MetricRow("Progreso", "${(it * 1000).roundToInt() / 10.0} %")
+                    MetricRow(
+                        stringResource(R.string.audit_metric_budget),
+                        "${(it * 1000).roundToInt() / 10.0} %",
+                    )
+                }
+                metrics.estimatedRemaining?.let {
+                    MetricRow(
+                        stringResource(R.string.audit_metric_remaining),
+                        formatElapsed(it.inWholeSeconds),
+                    )
                 }
                 if (progress != null) {
                     LinearProgressIndicator(
@@ -397,7 +577,7 @@ private fun ExecutionStatusCard(state: PasswordAuditUiState) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             } else {
-                Text("Preparando…")
+                Text(stringResource(R.string.audit_preparing))
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
@@ -428,8 +608,8 @@ private fun AuditResultReportCard(state: PasswordAuditUiState) {
             } else {
                 Text(resultHeadline(state))
                 state.metrics?.let { m ->
-                    MetricRow("Intentos", m.attempts.toExactString())
-                    MetricRow("Tiempo", formatElapsed(m.elapsed.inWholeSeconds))
+                    MetricRow(stringResource(R.string.audit_metric_attempts), m.attempts.toExactString())
+                    MetricRow(stringResource(R.string.audit_metric_time), formatElapsed(m.elapsed.inWholeSeconds))
                 }
             }
             state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -465,17 +645,18 @@ private fun executionHeadline(state: SearchState): String =
         SearchState.Preparing -> "Preparando…"
         SearchState.Running -> "Auditando localmente…"
         SearchState.Cancelling -> "Deteniendo…"
-        else -> state.name
+        SearchState.Cancelled -> "Detenida"
+        SearchState.Completed -> "Completada"
+        SearchState.LimitReached -> "Límite alcanzado"
+        SearchState.Failed -> "Error"
+        SearchState.Idle -> ""
     }
 
 private fun resultHeadline(state: PasswordAuditUiState): String =
     when (state.outcome) {
-        SearchOutcome.Found ->
-            "La contraseña conocida se descubrió dentro del presupuesto (verificación local)."
-        SearchOutcome.LimitReached ->
-            "No se descubrió dentro del límite configurado."
-        SearchOutcome.NotFound ->
-            "Se agotó el espacio presupuestado sin descubrir la contraseña."
+        SearchOutcome.Found -> "Contraseña encontrada dentro del presupuesto (verificación local)."
+        SearchOutcome.LimitReached -> "No se descubrió dentro del límite configurado."
+        SearchOutcome.NotFound -> "Se agotó el espacio presupuestado sin descubrir la contraseña."
         SearchOutcome.Cancelled -> "Auditoría detenida por el usuario."
         SearchOutcome.Failed -> "La auditoría falló."
         null -> ""
@@ -484,23 +665,14 @@ private fun resultHeadline(state: PasswordAuditUiState): String =
 private fun formatElapsed(seconds: Long): String {
     val m = seconds / 60
     val s = seconds % 60
-    return if (m > 0) "${m}m ${s}s" else "${s}s"
+    return "%02d:%02d".format(m, s)
 }
 
 @Composable
 private fun StrengthHint(summary: String) {
     Text(
-        "Análisis estructural (independiente del plan): $summary",
+        stringResource(R.string.audit_strength_hint, summary),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
-
-private fun feasibilityLabel(rating: FeasibilityRating): String =
-    when (rating) {
-        FeasibilityRating.Reasonable -> "Viabilidad del presupuesto: razonable"
-        FeasibilityRating.Expensive -> "Viabilidad del presupuesto: costosa"
-        FeasibilityRating.Impractical ->
-            "Viabilidad del presupuesto: poco práctica (el límite detiene la búsqueda)"
-        FeasibilityRating.Invalid -> "Viabilidad: inválida"
-    }

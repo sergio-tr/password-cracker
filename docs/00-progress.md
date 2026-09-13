@@ -33,7 +33,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Red conectada + elegibilidad auditoría | **Implemented** (PR1): conexión actual + eligibility + CTA Auditar. |
 | Aislamiento target de auditoría | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; strength analyzer separado. |
 | Planner automático de auditoría | **Implemented** (PR3): `AutomaticPasswordAuditPlanner` multi-stage, ciego al target; presets Quick/Standard/Deep. |
-| Quick Audit UI | **Implemented** (PR4): pantalla Auditoría rápida; presets + explicación; Vault/manual. |
+| Quick Audit UI | **Implemented** (PR4): pantalla Auditar contraseña; origen Vault/manual (Vault diferido); duración 30s/1min/5min; modo Automático; save-to-Vault OFF. |
 | Ejecución auditoría + STOP | **Implemented** (PR5): Search Engine local + DETENER; verifier encapsulado; sin auth al AP. |
 | Informe resultado + strength | **Implemented** (PR6): `PasswordAuditResultComposer` + UI Medido/Estimado/Modelado. |
 | Auditoría known-password (localización + docs) | **Implemented** (PR7): strings ES/EN, walkthrough; ViewModel tests cubren missing-target. |

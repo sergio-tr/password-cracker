@@ -3,7 +3,10 @@ package com.wifiauditlab.android.ui.audit
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
+import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
@@ -15,7 +18,12 @@ import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
 import com.wifiauditlab.assessment.domain.wifi.NetworkIdentity
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.assessment.domain.wifi.Ssid
+import com.wifiauditlab.assessment.domain.wifi.WifiBand
+import com.wifiauditlab.assessment.domain.wifi.WifiChannel
+import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
+import com.wifiauditlab.assessment.domain.wifi.WifiSignal
+import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.lab.domain.SearchOutcome
@@ -64,18 +72,37 @@ class PasswordAuditViewModelTest {
             val vm = viewModel(store = PasswordAuditTargetStore())
             assertTrue(vm.state.value.missingTarget)
             assertFalse(vm.state.value.loadingPlan)
+            assertEquals(PasswordAuditScreenPhase.Invalid, vm.state.value.phase)
         }
 
     @Test
-    fun standardPresetProducesPlanExplanation() =
+    fun standardPresetIsDefaultOneMinuteAutomaticPlan() =
         runTest {
             val vm = viewModel(request = eligibleRequest())
             val state = vm.state.value
             assertFalse(state.loadingPlan)
             assertNotNull(state.plan)
-            assertEquals("Modo automático", state.explanation?.headline)
-            assertTrue(state.explanation!!.details.isNotEmpty())
+            assertEquals("Configuración automática", state.explanation?.headline)
+            assertTrue(state.explanation!!.details.any { it.contains("procesos de búsqueda") })
             assertEquals(PasswordAuditBudgetPreset.Standard, state.preset)
+            assertEquals(PasswordAuditInteractionMode.Automatic, state.mode)
+            assertFalse(state.advancedExpanded)
+            assertEquals(PasswordAuditScreenPhase.Ready, state.phase)
+        }
+
+    @Test
+    fun wpa3EligibleProducesPlan() =
+        runTest {
+            val vm =
+                viewModel(
+                    request =
+                        eligibleRequest(
+                            family = SecurityFamily.WPA3_PERSONAL,
+                            keyManagements = setOf("SAE"),
+                        ),
+                )
+            assertNotNull(vm.state.value.plan)
+            assertNull(vm.state.value.planNotApplicableReason)
         }
 
     @Test
@@ -94,9 +121,84 @@ class PasswordAuditViewModelTest {
     fun startRequiresPassword() =
         runTest {
             val vm = viewModel(request = eligibleRequest())
+            assertEquals("Falta la contraseña conocida.", vm.state.value.startBlockedReason)
             vm.onStartAuditClicked()
-            assertEquals("Introduce o recupera la contraseña conocida.", vm.state.value.passwordError)
+            assertEquals("Introduce o selecciona la contraseña conocida.", vm.state.value.passwordError)
             assertEquals(SearchState.Idle, vm.state.value.searchState)
+        }
+
+    @Test
+    fun saveToVaultDefaultsOff() =
+        runTest {
+            val vm = viewModel(request = eligibleRequest())
+            assertFalse(vm.state.value.saveToVault)
+        }
+
+    @Test
+    fun vaultSourceDoesNotPopulatePasswordField() =
+        runTest {
+            val created =
+                CreateSavedNetwork(repo, vault)(
+                    NewSavedWifiNetwork(
+                        alias = "Casa",
+                        ssid = "HOME_WIFI",
+                        securityFamily = SecurityFamily.WPA2_PERSONAL,
+                        knownBssids = setOf(Bssid.of("11:22:33:44:55:66")),
+                    ),
+                    NetworkSecret("vault-pass"),
+                )
+            val vm = viewModel(request = eligibleRequest().copy(savedNetworkId = created.id))
+            assertTrue(vm.state.value.vaultSecretAvailable)
+            assertEquals(PasswordAuditSecretSource.Vault, vm.state.value.secretSource)
+            assertEquals("", vm.state.value.passwordInput)
+            assertNull(vm.state.value.startBlockedReason)
+        }
+
+    @Test
+    fun vaultSourceFindsPasswordWithoutShowingIt() =
+        runTest {
+            val created =
+                CreateSavedNetwork(repo, vault)(
+                    NewSavedWifiNetwork(
+                        alias = "Casa",
+                        ssid = "HOME_WIFI",
+                        securityFamily = SecurityFamily.WPA2_PERSONAL,
+                        knownBssids = setOf(Bssid.of("11:22:33:44:55:66")),
+                    ),
+                    NetworkSecret("42"),
+                )
+            val vm = viewModel(request = eligibleRequest().copy(savedNetworkId = created.id))
+            vm.onCustomDurationChanged("30")
+            vm.onCustomAttemptsChanged("20000")
+            vm.applyCustomBudget()
+            advanceUntilIdle()
+            assertEquals("", vm.state.value.passwordInput)
+            vm.onStartAuditClicked()
+            advanceUntilIdle()
+            assertEquals(SearchOutcome.Found, vm.state.value.outcome)
+            assertEquals("", vm.state.value.passwordInput)
+        }
+
+    @Test
+    fun manualSecretEnablesStart() =
+        runTest {
+            val vm = viewModel(request = eligibleRequest())
+            vm.onPasswordChanged("secret")
+            assertNull(vm.state.value.startBlockedReason)
+            assertEquals(PasswordAuditSecretSource.Manual, vm.state.value.secretSource)
+        }
+
+    @Test
+    fun resetAutomaticCollapsesAdvanced() =
+        runTest {
+            val vm = viewModel(request = eligibleRequest())
+            vm.selectMode(PasswordAuditInteractionMode.Advanced)
+            vm.selectPreset(PasswordAuditBudgetPreset.Custom)
+            assertTrue(vm.state.value.advancedExpanded)
+            vm.resetToAutomaticDefaults()
+            assertEquals(PasswordAuditInteractionMode.Automatic, vm.state.value.mode)
+            assertEquals(PasswordAuditBudgetPreset.Standard, vm.state.value.preset)
+            assertFalse(vm.state.value.advancedExpanded)
         }
 
     @Test
@@ -124,7 +226,6 @@ class PasswordAuditViewModelTest {
     fun stopCancelsActiveAudit() =
         runTest {
             val vm = viewModel(request = eligibleRequest())
-            // Huge space relative to tiny progress — cancel before finish.
             vm.selectPreset(PasswordAuditBudgetPreset.Deep)
             advanceUntilIdle()
             vm.onPasswordChanged("zzzzzzzz")
@@ -162,31 +263,29 @@ class PasswordAuditViewModelTest {
                 )
             assertNull(vm.state.value.plan)
             assertNotNull(vm.state.value.planNotApplicableReason)
+            assertEquals(PasswordAuditScreenPhase.Invalid, vm.state.value.phase)
         }
 
     @Test
-    fun vaultPasswordPopulatesField() =
+    fun connectionLostBlocksStart() =
         runTest {
-            val created =
-                CreateSavedNetwork(repo, vault)(
-                    NewSavedWifiNetwork(
-                        alias = "Casa",
-                        ssid = "HOME_WIFI",
-                        securityFamily = SecurityFamily.WPA2_PERSONAL,
-                        knownBssids = setOf(Bssid.of("11:22:33:44:55:66")),
-                    ),
-                    NetworkSecret("vault-pass"),
+            val observation = sampleObservation()
+            val vm =
+                viewModel(
+                    request = eligibleRequest().copy(observation = observation),
+                    eligibility = { PasswordAuditEligibility.NotCurrentlyConnected },
                 )
-            val vm = viewModel(request = eligibleRequest().copy(savedNetworkId = created.id))
-            assertTrue(vm.state.value.vaultSecretAvailable)
-            vm.useVaultPassword()
-            assertEquals("vault-pass", vm.state.value.passwordInput)
-            assertTrue(vm.state.value.passwordFromVault)
+            vm.onPasswordChanged("secret")
+            vm.onStartAuditClicked()
+            advanceUntilIdle()
+            assertNotNull(vm.state.value.connectionLostMessage)
+            assertEquals(SearchState.Idle, vm.state.value.searchState)
         }
 
     private fun viewModel(
         store: PasswordAuditTargetStore = PasswordAuditTargetStore().also { it.set(eligibleRequest()) },
         request: PasswordAuditRequest? = null,
+        eligibility: (suspend (WifiObservation) -> PasswordAuditEligibility)? = null,
     ): PasswordAuditViewModel {
         val target =
             if (request != null) {
@@ -194,11 +293,21 @@ class PasswordAuditViewModelTest {
             } else {
                 store
             }
+        val checker =
+            eligibility?.let { block ->
+                object : PasswordAuditEligibilityChecker {
+                    override suspend fun check(observation: WifiObservation): PasswordAuditEligibility =
+                        block(observation)
+                }
+            }
         return PasswordAuditViewModel(
             targetStore = target,
             planner = DefaultAutomaticPasswordAuditPlanner(),
             getSavedNetwork = GetSavedNetwork(repo),
             revealSecret = RevealSavedNetworkSecret(repo, vault),
+            updateSecret = UpdateSavedNetworkSecret(repo, vault),
+            createSavedNetwork = CreateSavedNetwork(repo, vault),
+            eligibilityChecker = checker,
             engine = DefaultLabSearchEngine(),
             calibration = null,
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
@@ -207,7 +316,10 @@ class PasswordAuditViewModelTest {
         )
     }
 
-    private fun eligibleRequest(): PasswordAuditRequest =
+    private fun eligibleRequest(
+        family: SecurityFamily = SecurityFamily.WPA2_PERSONAL,
+        keyManagements: Set<String> = setOf("WPA_PSK"),
+    ): PasswordAuditRequest =
         PasswordAuditRequest(
             network =
                 PasswordAuditNetworkContext(
@@ -216,8 +328,8 @@ class PasswordAuditViewModelTest {
                     bssid = Bssid.of("11:22:33:44:55:66"),
                     securityProfile =
                         WifiSecurityProfile(
-                            family = SecurityFamily.WPA2_PERSONAL,
-                            keyManagements = setOf("WPA_PSK"),
+                            family = family,
+                            keyManagements = keyManagements,
                             managementFrameProtection = ManagementFrameProtection.CAPABLE,
                             isTransitionMode = false,
                             rawCapabilities = null,
@@ -226,6 +338,28 @@ class PasswordAuditViewModelTest {
                     band = null,
                 ),
             savedNetworkId = null,
+            observation = sampleObservation(family, keyManagements),
+        )
+
+    private fun sampleObservation(
+        family: SecurityFamily = SecurityFamily.WPA2_PERSONAL,
+        keyManagements: Set<String> = setOf("WPA_PSK"),
+    ): WifiObservation =
+        WifiObservation(
+            ssid = Ssid("HOME_WIFI"),
+            bssid = Bssid.of("11:22:33:44:55:66"),
+            signal = WifiSignal(-50),
+            channel = WifiChannel(36, WifiBand.GHZ_5, 5180),
+            standard = WifiStandard.WIFI_5,
+            securityProfile =
+                WifiSecurityProfile(
+                    family = family,
+                    keyManagements = keyManagements,
+                    managementFrameProtection = ManagementFrameProtection.CAPABLE,
+                    isTransitionMode = false,
+                    rawCapabilities = null,
+                ),
+            observedAtEpochMillis = 0L,
         )
 
     private class FakeRepo : SavedNetworkRepository {

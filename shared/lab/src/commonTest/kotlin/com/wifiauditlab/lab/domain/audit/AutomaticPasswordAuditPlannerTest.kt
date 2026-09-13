@@ -194,9 +194,10 @@ class AutomaticPasswordAuditPlannerTest {
     @Test
     fun explanation_is_novice_friendly() {
         val plan = ready(planner.createPlan(eligibleContext, basePerformance, PasswordAuditBudget.standard()))
-        assertEquals("Modo automático", plan.explanation.headline)
-        assertTrue(plan.explanation.details.any { it.contains("workers") })
+        assertEquals("Configuración automática", plan.explanation.headline)
+        assertTrue(plan.explanation.details.any { it.contains("procesos de búsqueda") })
         assertTrue(plan.explanation.details.any { it.contains("etapas") })
+        assertFalse(plan.explanation.details.any { it.contains("workers", ignoreCase = true) })
         assertFalse(plan.explanation.details.any { it.contains("DynamicRange") })
         assertFalse(plan.explanation.details.any { it.contains("SearchBucket") })
     }

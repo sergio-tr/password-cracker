@@ -2,13 +2,19 @@ package com.wifiauditlab.android.ui.audit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
+import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultComposer
 import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.supportsSharedPasswordAudit
 import com.wifiauditlab.assessment.domain.audit.unsupportedAuditReason
+import com.wifiauditlab.assessment.domain.vault.NetworkSecret
+import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -24,6 +30,7 @@ import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
 import com.wifiauditlab.lab.domain.engine.CancellationController
+import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
 import com.wifiauditlab.lab.engine.WorkerAwareLabSearchEngine
@@ -38,8 +45,9 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Quick Audit: password entry, automatic plan, and **local** search execution.
+ * Quick Audit: password source, automatic plan, and **local** search execution.
  * Never authenticates candidates against a router/AP.
+ * Vault plaintext is revealed only at start (not held in the UI field by default).
  * Strength analysis never feeds the planner.
  */
 class PasswordAuditViewModel(
@@ -47,6 +55,9 @@ class PasswordAuditViewModel(
     private val planner: AutomaticPasswordAuditPlanner,
     private val getSavedNetwork: GetSavedNetwork,
     private val revealSecret: RevealSavedNetworkSecret,
+    private val updateSecret: UpdateSavedNetworkSecret,
+    private val createSavedNetwork: CreateSavedNetwork,
+    private val eligibilityChecker: PasswordAuditEligibilityChecker? = null,
     private val engine: LabSearchEngine,
     private val calibration: SearchCalibrationService? = null,
     private val strengthAnalyzer: SecretStrengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
@@ -80,16 +91,45 @@ class PasswordAuditViewModel(
                 metaLine = current.network.metaLine(),
                 savedNetworkId = current.savedNetworkId,
                 loadingPlan = true,
+                saveToVault = false,
+                mode = PasswordAuditInteractionMode.Automatic,
+                preset = PasswordAuditBudgetPreset.Standard,
             )
         viewModelScope.launch(ioDispatcher) {
             val vaultAvailable =
                 current.savedNetworkId?.let { id ->
                     getSavedNetwork(id)?.hasSecret == true
                 } == true
-            _state.update { it.copy(vaultSecretAvailable = vaultAvailable) }
+            _state.update {
+                it.copy(
+                    vaultSecretAvailable = vaultAvailable,
+                    secretSource =
+                        if (vaultAvailable) {
+                            PasswordAuditSecretSource.Vault
+                        } else {
+                            PasswordAuditSecretSource.Manual
+                        },
+                )
+            }
             calibratedThroughput = calibration?.lastRecord()?.measuredAttemptsPerSecond
             rebuildPlan()
         }
+    }
+
+    fun selectSecretSource(source: PasswordAuditSecretSource) {
+        if (_state.value.isActive) return
+        _state.update {
+            it.copy(
+                secretSource = source,
+                passwordError = null,
+                infoMessage = null,
+                // Never leave vault plaintext lingering when switching away.
+                passwordInput = if (source == PasswordAuditSecretSource.Vault) "" else it.passwordInput,
+                passwordVisible = false,
+                saveToVault = if (source == PasswordAuditSecretSource.Vault) false else it.saveToVault,
+            )
+        }
+        refreshStartGate()
     }
 
     fun onPasswordChanged(value: String) {
@@ -97,7 +137,7 @@ class PasswordAuditViewModel(
         _state.update {
             it.copy(
                 passwordInput = value,
-                passwordFromVault = false,
+                secretSource = PasswordAuditSecretSource.Manual,
                 passwordError = null,
                 infoMessage = null,
                 strength = if (value.isNotEmpty()) strengthAnalyzer.analyze(value) else null,
@@ -107,6 +147,7 @@ class PasswordAuditViewModel(
     }
 
     fun togglePasswordVisibility() {
+        if (_state.value.secretSource != PasswordAuditSecretSource.Manual) return
         _state.update { it.copy(passwordVisible = !it.passwordVisible) }
     }
 
@@ -115,7 +156,6 @@ class PasswordAuditViewModel(
         _state.update {
             it.copy(
                 passwordInput = "",
-                passwordFromVault = false,
                 passwordVisible = false,
                 passwordError = null,
                 strength = null,
@@ -125,36 +165,36 @@ class PasswordAuditViewModel(
         refreshStartGate()
     }
 
-    fun useVaultPassword() {
+    fun setSaveToVault(checked: Boolean) {
         if (_state.value.isActive) return
-        val id = _state.value.savedNetworkId ?: return
-        viewModelScope.launch(ioDispatcher) {
-            val plaintext = revealSecret(id)
-            if (plaintext.isNullOrEmpty()) {
-                _state.update {
-                    it.copy(passwordError = "No se pudo leer la contraseña del Vault.")
-                }
-                return@launch
-            }
-            _state.update {
-                it.copy(
-                    passwordInput = plaintext,
-                    passwordFromVault = true,
-                    passwordError = null,
-                    strength = strengthAnalyzer.analyze(plaintext),
-                    infoMessage = null,
-                )
-            }
-            refreshStartGate()
-        }
+        if (_state.value.secretSource != PasswordAuditSecretSource.Manual) return
+        _state.update { it.copy(saveToVault = checked) }
     }
 
-    fun selectPreset(preset: PasswordAuditBudgetPreset) {
+    fun selectMode(mode: PasswordAuditInteractionMode) {
         if (_state.value.isActive) return
         _state.update {
             it.copy(
-                preset = preset,
-                advancedExpanded = preset == PasswordAuditBudgetPreset.Custom || it.advancedExpanded,
+                mode = mode,
+                advancedExpanded = mode == PasswordAuditInteractionMode.Advanced,
+                infoMessage = null,
+            )
+        }
+        if (mode == PasswordAuditInteractionMode.Automatic) {
+            resetToAutomaticDefaults()
+        }
+    }
+
+    fun resetToAutomaticDefaults() {
+        if (_state.value.isActive) return
+        _state.update {
+            it.copy(
+                mode = PasswordAuditInteractionMode.Automatic,
+                preset = PasswordAuditBudgetPreset.Standard,
+                advancedExpanded = false,
+                customDurationSeconds = "60",
+                customMaxAttempts = "",
+                planDetailsExpanded = false,
                 infoMessage = null,
             )
         }
@@ -162,7 +202,35 @@ class PasswordAuditViewModel(
     }
 
     fun setAdvancedExpanded(expanded: Boolean) {
-        _state.update { it.copy(advancedExpanded = expanded) }
+        _state.update {
+            it.copy(
+                advancedExpanded = expanded,
+                mode =
+                    if (expanded) {
+                        PasswordAuditInteractionMode.Advanced
+                    } else {
+                        PasswordAuditInteractionMode.Automatic
+                    },
+            )
+        }
+    }
+
+    fun setPlanDetailsExpanded(expanded: Boolean) {
+        _state.update { it.copy(planDetailsExpanded = expanded) }
+    }
+
+    fun selectPreset(preset: PasswordAuditBudgetPreset) {
+        if (_state.value.isActive) return
+        _state.update {
+            it.copy(
+                preset = preset,
+                advancedExpanded =
+                    preset == PasswordAuditBudgetPreset.Custom ||
+                        it.mode == PasswordAuditInteractionMode.Advanced,
+                infoMessage = null,
+            )
+        }
+        rebuildPlan()
     }
 
     fun onCustomDurationChanged(value: String) {
@@ -177,62 +245,114 @@ class PasswordAuditViewModel(
 
     fun applyCustomBudget() {
         if (_state.value.isActive) return
-        _state.update { it.copy(preset = PasswordAuditBudgetPreset.Custom) }
+        _state.update {
+            it.copy(
+                preset = PasswordAuditBudgetPreset.Custom,
+                mode = PasswordAuditInteractionMode.Advanced,
+                advancedExpanded = true,
+            )
+        }
         rebuildPlan()
     }
 
     /**
      * Starts a **local** search via [EncapsulatedPasswordVerifier]. Never talks to the AP.
+     * Vault secrets are revealed only here, then discarded from UI state.
      */
     fun onStartAuditClicked() {
         if (_state.value.isActive) return
-        val password = _state.value.passwordInput
-        if (password.isEmpty()) {
+        val snapshot = _state.value
+        if (!snapshot.hasSecretReady) {
             _state.update {
-                it.copy(passwordError = "Introduce o recupera la contraseña conocida.")
+                it.copy(passwordError = "Introduce o selecciona la contraseña conocida.")
             }
             return
         }
-        val plan = _state.value.plan
+        val plan = snapshot.plan
         if (plan == null) {
             _state.update {
                 it.copy(startBlockedReason = "No hay un plan automático válido para esta red.")
             }
             return
         }
-
-        val strength = strengthAnalyzer.analyze(password)
-        val verifier = EncapsulatedPasswordVerifier.encapsulate(password)
-        val challenge =
-            LabChallenge.withEncapsulatedVerifier(
-                policy = plan.blindChallengePolicy,
-                verifier = verifier,
-                seed = plan.searchPlan.seed,
-            )
-        applyEngineSelection(plan)
-
-        val controller = CancellationController()
-        cancellation = controller
-
-        _state.update {
-            it.copy(
-                passwordInput = "",
-                passwordVisible = false,
-                passwordFromVault = false,
-                passwordError = null,
-                strength = strength,
-                infoMessage = null,
-                searchState = SearchState.Preparing,
-                metrics = null,
-                outcome = null,
-                discoveredWithinBudget = false,
-                errorMessage = null,
-                resultReport = null,
-            )
+        if (snapshot.feasibilityRating == FeasibilityRating.Invalid) {
+            _state.update {
+                it.copy(startBlockedReason = "La configuración actual no es válida para iniciar.")
+            }
+            return
         }
 
         searchJob =
             viewModelScope.launch(ioDispatcher) {
+                val req = request
+                if (req != null && eligibilityChecker != null && req.observation != null) {
+                    when (eligibilityChecker.check(req.observation)) {
+                        is PasswordAuditEligibility.EligibleConnectedNetwork -> Unit
+                        PasswordAuditEligibility.NotCurrentlyConnected -> {
+                            _state.update {
+                                it.copy(
+                                    connectionLostMessage =
+                                        "No estás conectado a esta red. " +
+                                            "Conéctate primero para realizar una auditoría local.",
+                                    startBlockedReason = "Se ha perdido la conexión a esta red.",
+                                )
+                            }
+                            return@launch
+                        }
+                        else -> {
+                            _state.update {
+                                it.copy(
+                                    startBlockedReason =
+                                        "Esta red ya no es elegible para una auditoría de contraseña.",
+                                )
+                            }
+                            return@launch
+                        }
+                    }
+                }
+
+                val password =
+                    resolvePasswordForStart() ?: run {
+                        _state.update {
+                            it.copy(passwordError = "No se pudo obtener la contraseña conocida.")
+                        }
+                        return@launch
+                    }
+
+                if (snapshot.saveToVault && snapshot.secretSource == PasswordAuditSecretSource.Manual) {
+                    persistSecretBestEffort(password)
+                }
+
+                val strength = strengthAnalyzer.analyze(password)
+                val verifier = EncapsulatedPasswordVerifier.encapsulate(password)
+                val challenge =
+                    LabChallenge.withEncapsulatedVerifier(
+                        policy = plan.blindChallengePolicy,
+                        verifier = verifier,
+                        seed = plan.searchPlan.seed,
+                    )
+                applyEngineSelection(plan)
+
+                val controller = CancellationController()
+                cancellation = controller
+
+                _state.update {
+                    it.copy(
+                        passwordInput = "",
+                        passwordVisible = false,
+                        passwordError = null,
+                        strength = strength,
+                        infoMessage = null,
+                        connectionLostMessage = null,
+                        searchState = SearchState.Preparing,
+                        metrics = null,
+                        outcome = null,
+                        discoveredWithinBudget = false,
+                        errorMessage = null,
+                        resultReport = null,
+                    )
+                }
+
                 engine.run(challenge, plan.searchPlan, plan.searchLimits, controller).collect { event ->
                     _state.update { current -> current.reduce(event) }
                 }
@@ -243,6 +363,50 @@ class PasswordAuditViewModel(
         if (!_state.value.isActive) return
         _state.update { it.copy(searchState = SearchState.Cancelling) }
         cancellation?.cancel()
+    }
+
+    private suspend fun resolvePasswordForStart(): String? {
+        val ui = _state.value
+        return when (ui.secretSource) {
+            PasswordAuditSecretSource.Vault -> {
+                val id = ui.savedNetworkId ?: return null
+                revealSecret(id)?.takeIf { it.isNotEmpty() }
+            }
+            PasswordAuditSecretSource.Manual -> ui.passwordInput.takeIf { it.isNotEmpty() }
+        }
+    }
+
+    private suspend fun persistSecretBestEffort(password: String) {
+        val req = request ?: return
+        try {
+            val existingId = _state.value.savedNetworkId
+            if (existingId != null) {
+                updateSecret(existingId, NetworkSecret(password))
+            } else {
+                val created =
+                    createSavedNetwork(
+                        NewSavedWifiNetwork(
+                            alias = req.network.displayName,
+                            ssid = req.network.ssid.value,
+                            securityFamily = req.network.securityProfile.family,
+                            knownBssids = setOfNotNull(req.network.bssid),
+                        ),
+                        NetworkSecret(password),
+                    )
+                _state.update {
+                    it.copy(
+                        savedNetworkId = created.id,
+                        vaultSecretAvailable = true,
+                        saveToVault = false,
+                    )
+                }
+                request = req.copy(savedNetworkId = created.id)
+            }
+        } catch (_: Throwable) {
+            _state.update {
+                it.copy(infoMessage = "La auditoría continúa; no se pudo guardar en el Vault.")
+            }
+        }
     }
 
     private fun applyEngineSelection(plan: PasswordAuditPlan) {
@@ -291,7 +455,7 @@ class PasswordAuditViewModel(
                     searchState = SearchState.Failed,
                     metrics = event.metrics ?: metrics,
                     outcome = SearchOutcome.Failed,
-                    errorMessage = event.message,
+                    errorMessage = "La auditoría se detuvo por un error.",
                 ).withResultReport(cancelled = false, failed = true)
         }
 
@@ -403,8 +567,12 @@ class PasswordAuditViewModel(
             val reason =
                 when {
                     current.isActive -> null
-                    current.passwordInput.isEmpty() -> "Falta la contraseña conocida."
+                    !current.hasSecretReady -> "Falta la contraseña conocida."
                     current.plan == null -> current.planNotApplicableReason ?: "Sin plan automático."
+                    current.feasibilityRating == FeasibilityRating.Invalid ->
+                        "La configuración actual no es válida para iniciar."
+                    current.connectionLostMessage != null ->
+                        "Se ha perdido la conexión a esta red."
                     else -> null
                 }
             current.copy(startBlockedReason = reason)
@@ -414,7 +582,9 @@ class PasswordAuditViewModel(
     override fun onCleared() {
         cancellation?.cancel()
         searchJob?.cancel()
-        clearPassword()
+        _state.update {
+            it.copy(passwordInput = "", passwordVisible = false)
+        }
         super.onCleared()
     }
 }

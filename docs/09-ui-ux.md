@@ -12,7 +12,7 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (config + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red). |
+| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (config + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red), **Auditar contraseña** (Quick Audit). |
 | Deferred | Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
 
 ## Principios aplicados
@@ -23,9 +23,12 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
   modelan como enums/sealed, no como múltiples booleans.
 - **Secretos ocultos** por defecto (`••••••••••••`); revelar es una acción explícita.
 - **Cancelación siempre visible**: el botón `DETENER` vive en una barra de
-  acciones fija (fuera del scroll) mientras el laboratorio ejecuta; al pulsar
-  pasa a `Deteniendo…` (deshabilitado) y termina en `CANCELADO`. La cancelación
-  es prácticamente inmediata.
+  acciones fija (fuera del scroll) mientras el laboratorio **o** la auditoría
+  rápida ejecutan; al pulsar pasa a `Deteniendo…` (deshabilitado) y termina en
+  `CANCELADO`. La cancelación es prácticamente inmediata.
+- **Quick Audit**: navegación con `ArrowBack` (sin botón textual «Atrás»);
+  modo Automático por defecto; duración 30 s / 1 min / 5 min; Vault diferido;
+  `saveToVault` OFF.
 - **No bloquear el hilo principal**: la búsqueda corre en `Dispatchers.Default`;
   la UI se actualiza por batch.
 - **Confirmaciones** sólo cuando evitan consecuencias reales (borrar una red).

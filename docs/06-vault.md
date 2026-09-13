@@ -63,3 +63,13 @@ usuario. `RecordSavedNetworkSighting` fusiona el BSSID observado y actualiza
 `lastSeenAtEpochMillis` (con intervalo mínimo para no reescribir en bucle).
 `SaveNearbyNetwork` crea una red nueva o actualiza la coincidencia Exact/Probable
 en lugar de duplicarla.
+
+## Quick Audit y el Vault
+
+En **Auditar contraseña**, si existe secreto:
+
+- la opción por defecto es **Usar contraseña guardada**;
+- el plaintext **no** se muestra en la UI; se revela solo al iniciar;
+- **Introducir otra contraseña** permite override manual;
+- **Guardar en el Vault** está OFF por defecto y nunca almacena automáticamente.
+

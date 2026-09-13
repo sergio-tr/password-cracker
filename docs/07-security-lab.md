@@ -91,3 +91,16 @@ interface AutomaticPasswordAuditPlanner {
   (objetivo didáctico). En auditoría de contraseña conocida, el resultado de
   «encontrado / no encontrado en presupuesto» se presentará sin confundirlo con
   un ataque al AP.
+
+## Quick Audit UI
+
+Flujo novice (sin opciones avanzadas):
+
+```text
+Cercanas → red conectada elegible → Auditar contraseña
+→ Vault o manual → Automático → duración 1 min → INICIAR
+```
+
+Presupuestos UI: 30 s / 1 min / 5 min / Personalizado (default **1 min**).
+El modo Avanzado está colapsado; incluye «Restablecer configuración automática».
+

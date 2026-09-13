@@ -120,6 +120,7 @@ intentos). No puede recibir contraseña, longitud real, ni salida de
   `SearchFeasibilityAnalyzer` sobre el espacio presupuestado.
 - `AutomaticPlanExplanation` para UI Quick Audit (sin class names / bucket IDs).
 
-Presets de dominio: Quick / Standard / Deep / Custom. UI Quick Audit =
-`PasswordAuditScreen` con ejecución local, STOP e informe combinado
-(walkthrough: `docs/13-known-password-audit-walkthrough.md`).
+Presets de dominio: Quick (30 s) / Standard (1 min, default) / Deep (5 min) / Custom.
+UI Quick Audit = `PasswordAuditScreen` con ejecución local, STOP e informe
+combinado (walkthrough: `docs/13-known-password-audit-walkthrough.md`).
+Explicación novice: «procesos de búsqueda» / etapas / límite — sin nombres internos.
