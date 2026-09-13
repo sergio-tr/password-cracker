@@ -150,27 +150,13 @@ private fun VaultControls(
                     label = { Text(option.filterLabel()) },
                 )
             }
-            SortMenu(current = state.sort, onSort = onSort)
-        }
-    }
-}
-
-@Composable
-private fun SortMenu(
-    current: SavedNetworkListSort,
-    onSort: (SavedNetworkListSort) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    AssistChip(onClick = { expanded = true }, label = { Text("Orden: ${current.sortLabel()}") })
-    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-        SavedNetworkListSort.entries.forEach { option ->
-            DropdownMenuItem(
-                text = { Text(option.sortLabel()) },
-                onClick = {
-                    onSort(option)
-                    expanded = false
-                },
-            )
+            SavedNetworkListSort.entries.forEach { option ->
+                FilterChip(
+                    selected = state.sort == option,
+                    onClick = { onSort(option) },
+                    label = { Text(option.sortLabel()) },
+                )
+            }
         }
     }
 }

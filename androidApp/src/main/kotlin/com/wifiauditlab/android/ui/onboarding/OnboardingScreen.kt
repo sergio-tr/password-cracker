@@ -15,6 +15,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -30,13 +33,20 @@ fun OnboardingScreen(
     replay: Boolean = false,
     onFinished: () -> Unit,
 ) {
+    // Only finish after the user actually completes a session that was shown incomplete.
+    // Replay starts with prefs.completed=true; reopen clears UI completed without finishing.
+    var sawIncomplete by remember { mutableStateOf(false) }
     LaunchedEffect(replay) {
         if (replay) viewModel.reopenFromSettings()
     }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.completed) {
-        if (state.completed) onFinished()
+        if (!state.completed) {
+            sawIncomplete = true
+        } else if (sawIncomplete) {
+            onFinished()
+        }
     }
     if (state.completed) return
 

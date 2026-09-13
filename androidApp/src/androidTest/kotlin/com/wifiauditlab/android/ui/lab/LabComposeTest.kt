@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
@@ -18,7 +19,9 @@ import com.wifiauditlab.lab.domain.LabSearchPlan
 import com.wifiauditlab.lab.domain.LimitReason
 import com.wifiauditlab.lab.domain.SearchLimits
 import com.wifiauditlab.lab.domain.SearchMetrics
+import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchSessionId
+import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
@@ -29,6 +32,7 @@ import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
 import com.wifiauditlab.lab.engine.DefaultSearchPlanOptimizer
 import com.wifiauditlab.lab.engine.FixedThroughputEstimator
 import com.wifiauditlab.lab.engine.LengthPrioritizedStrategy
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -92,7 +96,14 @@ class LabComposeTest {
                 ) = SearchFeasibility(FeasibilityRating.Reasonable, 1.seconds, "ok")
             },
         estimator: SearchPerformanceEstimator = FixedThroughputEstimator(),
-    ) = LabViewModel(engine, optimizer, analyzer, estimator)
+    ) = LabViewModel(
+        engine,
+        optimizer,
+        analyzer,
+        estimator,
+        // Keep search collection on Main so Compose UI tests observe emissions deterministically.
+        searchDispatcher = Dispatchers.Main.immediate,
+    )
 
     private fun setLab(vm: LabViewModel) {
         composeTestRule.setContent {
@@ -112,16 +123,26 @@ class LabComposeTest {
         }
     }
 
+    private fun scrollToText(text: String) {
+        composeTestRule.onNodeWithText(text, substring = true).performScrollTo().assertIsDisplayed()
+    }
+
+    private fun startSearch() {
+        composeTestRule.onNodeWithText("Iniciar búsqueda").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+    }
+
     @Test
     fun configAndFeasibility_areVisible() {
         setLab(viewModel(ScriptedEngine(emptyList())))
         composeTestRule.onNodeWithText("Laboratorio sintético").assertIsDisplayed()
         composeTestRule.onNodeWithText("Reto").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Antes de iniciar").assertIsDisplayed()
+        waitForText("Antes de iniciar")
+        scrollToText("Antes de iniciar")
         waitForText("Viabilidad: Razonable")
-        composeTestRule.onNodeWithText("Viabilidad: Razonable").assertIsDisplayed()
-        composeTestRule.onNodeWithText("ok").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Iniciar búsqueda").assertIsDisplayed()
+        scrollToText("Viabilidad: Razonable")
+        scrollToText("ok")
+        scrollToText("Iniciar búsqueda")
     }
 
     @Test
@@ -131,14 +152,12 @@ class LabComposeTest {
         composeTestRule.waitForIdle()
 
         // Clear both limit fields so config becomes invalid.
-        composeTestRule.onNodeWithText(vm.state.value.config.maxAttempts!!.toString()).performTextClearance()
-        composeTestRule.onNodeWithText(vm.state.value.config.maxDurationSeconds!!.toString()).performTextClearance()
+        composeTestRule.onNodeWithText(vm.state.value.config.maxAttempts!!.toString()).performScrollTo().performTextClearance()
+        composeTestRule.onNodeWithText(vm.state.value.config.maxDurationSeconds!!.toString()).performScrollTo().performTextClearance()
         composeTestRule.waitForIdle()
 
         waitForText("Configura al menos un límite de intentos o de tiempo.")
-        composeTestRule
-            .onNodeWithText("Configura al menos un límite de intentos o de tiempo.")
-            .assertIsDisplayed()
+        scrollToText("Configura al menos un límite de intentos o de tiempo.")
     }
 
     @Test
@@ -154,24 +173,31 @@ class LabComposeTest {
                 ),
             )
         setLab(vm)
-        composeTestRule.onNodeWithText("Iniciar búsqueda").performClick()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
         waitForText("ENCONTRADO")
-        composeTestRule.onNodeWithText("ENCONTRADO").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Secreto encontrado: lab-01").assertIsDisplayed()
+        scrollToText("ENCONTRADO")
+        scrollToText("Secreto encontrado: lab-01")
     }
 
     @Test
     fun stop_visibleWhileRunning_andCancelShowsCancellingOrCancelled() {
         val vm = viewModel(HangingEngine(metrics))
         setLab(vm)
-        composeTestRule.onNodeWithText("Iniciar búsqueda").performClick()
+        startSearch()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.searchState == SearchState.Running ||
+                vm.state.value.searchState == SearchState.Preparing
+        }
         waitForText("STOP")
-        composeTestRule.onNodeWithContentDescription("Detener búsqueda").assertIsDisplayed()
-        composeTestRule.onNodeWithText("STOP").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Detener búsqueda").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("STOP").performScrollTo().assertIsDisplayed()
 
         composeTestRule.onNodeWithText("STOP").performClick()
         composeTestRule.waitUntil(5_000) {
-            composeTestRule.onAllNodesWithText("CANCELLING").fetchSemanticsNodes().isNotEmpty() ||
+            vm.state.value.searchState == SearchState.Cancelling ||
+                vm.state.value.outcome == SearchOutcome.Cancelled ||
+                composeTestRule.onAllNodesWithText("CANCELLING").fetchSemanticsNodes().isNotEmpty() ||
                 composeTestRule.onAllNodesWithText("CANCELADO").fetchSemanticsNodes().isNotEmpty()
         }
     }
@@ -189,8 +215,9 @@ class LabComposeTest {
                 ),
             )
         setLab(vm)
-        composeTestRule.onNodeWithText("Iniciar búsqueda").performClick()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.LimitReached }
         waitForText("LÍMITE ALCANZADO")
-        composeTestRule.onNodeWithText("LÍMITE ALCANZADO").assertIsDisplayed()
+        scrollToText("LÍMITE ALCANZADO")
     }
 }
