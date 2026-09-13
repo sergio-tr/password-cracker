@@ -72,5 +72,17 @@
     <string name="audit_not_connected_title">No estás conectado a esta red.</string>
     <string name="audit_not_connected_body">Conéctate primero para realizar una auditoría local.</string>
     <string name="audit_open_wifi_settings">Abrir ajustes Wi-Fi</string>
+    <string name="audit_observed_resistance">Resistencia observada</string>
+    <string name="audit_split_config">Configuración Wi-Fi</string>
+    <string name="audit_split_password">Contraseña</string>
+    <string name="audit_recommendations">Recomendaciones</string>
+    <string name="audit_how_to_improve">Cómo mejorarla</string>
+    <string name="audit_improve_step1">Accede a la configuración de tu router.</string>
+    <string name="audit_improve_step2">Cambia la contraseña Wi-Fi.</string>
+    <string name="audit_improve_step3">Reconecta este dispositivo.</string>
+    <string name="audit_improve_step4">Vuelve a ejecutar la auditoría.</string>
+    <string name="audit_limit_survived">La contraseña resistió el presupuesto de búsqueda seleccionado.</string>
+    <string name="audit_exhausted_model">No encontrada dentro del modelo probado (no implica que no exista).</string>
+    <string name="audit_cancelled_incomplete">No se ha emitido una conclusión completa porque la prueba fue cancelada.</string>
     <string name="audit_connected_now">Conectado</string>
 </resources>

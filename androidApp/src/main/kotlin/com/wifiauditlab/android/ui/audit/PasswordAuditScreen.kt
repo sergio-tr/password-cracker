@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.domain.audit.EvidenceQuality
+import com.wifiauditlab.assessment.domain.audit.PasswordSearchOutcomeKind
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
@@ -611,13 +612,69 @@ private fun AuditResultReportCard(
             Text(stringResource(R.string.audit_report_title), fontWeight = FontWeight.Bold)
             if (report != null) {
                 Text(report.headline, fontWeight = FontWeight.SemiBold)
-                Text(report.resistanceLabel, color = MaterialTheme.colorScheme.secondary)
-                report.details.forEach { Text("· $it", style = MaterialTheme.typography.bodySmall) }
-                report.evidenceNotes.forEach { (quality, note) ->
-                    Text(
-                        "${evidenceLabel(quality)}: $note",
-                        style = MaterialTheme.typography.bodySmall,
+                Text(
+                    stringResource(R.string.audit_observed_resistance),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                Text(
+                    report.passwordResistanceLabel.uppercase(),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                report.performanceMetrics.forEach { metric ->
+                    MetricRow(
+                        "${evidenceLabel(metric.quality)} · ${metric.label}",
+                        metric.value,
                     )
+                }
+                outcomeHint(report.searchOutcome)?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall)
+                }
+
+                Spacer(Modifier.size(4.dp))
+                Text(stringResource(R.string.audit_split_config), fontWeight = FontWeight.SemiBold)
+                Text(
+                    report.networkConfigLabel ?: state.familyLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(stringResource(R.string.audit_split_password), fontWeight = FontWeight.SemiBold)
+                Text(
+                    report.passwordResistanceLabel.uppercase(),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+
+                if (report.recommendations.isNotEmpty()) {
+                    Spacer(Modifier.size(4.dp))
+                    Text(stringResource(R.string.audit_recommendations), fontWeight = FontWeight.SemiBold)
+                    report.recommendations.forEach { Text("· ${it.text}") }
+                }
+
+                OutlinedButton(
+                    onClick = viewModel::toggleImproveGuide,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.audit_how_to_improve))
+                }
+                if (state.improveGuideExpanded) {
+                    Text("1. ${stringResource(R.string.audit_improve_step1)}")
+                    Text("2. ${stringResource(R.string.audit_improve_step2)}")
+                    Text("3. ${stringResource(R.string.audit_improve_step3)}")
+                    Text("4. ${stringResource(R.string.audit_improve_step4)}")
+                }
+
+                TextButton(onClick = viewModel::toggleResultDetails) {
+                    Text(
+                        if (state.resultDetailsExpanded) {
+                            stringResource(R.string.audit_hide_details)
+                        } else {
+                            stringResource(R.string.audit_show_details)
+                        },
+                    )
+                }
+                if (state.resultDetailsExpanded) {
+                    report.classificationNotes.forEach {
+                        Text("· $it", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             } else {
                 Text(resultHeadline(state))
@@ -644,6 +701,18 @@ private fun AuditResultReportCard(
         }
     }
 }
+
+@Composable
+private fun outcomeHint(outcome: PasswordSearchOutcomeKind): String? =
+    when (outcome) {
+        is PasswordSearchOutcomeKind.LimitReached ->
+            stringResource(R.string.audit_limit_survived)
+        is PasswordSearchOutcomeKind.Exhausted ->
+            stringResource(R.string.audit_exhausted_model)
+        is PasswordSearchOutcomeKind.Cancelled ->
+            stringResource(R.string.audit_cancelled_incomplete)
+        else -> null
+    }
 
 @Composable
 private fun evidenceLabel(quality: EvidenceQuality): String =

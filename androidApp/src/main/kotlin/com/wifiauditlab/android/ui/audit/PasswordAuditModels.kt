@@ -7,6 +7,7 @@ import com.wifiauditlab.android.ui.security.familyLabel
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultReport
 import com.wifiauditlab.assessment.domain.audit.PasswordStrengthAssessment
+import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.wifi.WifiBand
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
@@ -98,6 +99,9 @@ data class PasswordAuditUiState(
     val errorMessage: String? = null,
     val errorDetails: String? = null,
     val showErrorDetails: Boolean = false,
+    val networkAssessment: SecurityAssessment? = null,
+    val improveGuideExpanded: Boolean = false,
+    val resultDetailsExpanded: Boolean = false,
     val resultReport: PasswordAuditResultReport? = null,
 ) {
     val isActive: Boolean

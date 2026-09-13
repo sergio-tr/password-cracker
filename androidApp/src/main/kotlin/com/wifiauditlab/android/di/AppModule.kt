@@ -190,6 +190,7 @@ val appModule =
                 updateSecret = get(),
                 createSavedNetwork = get(),
                 eligibilityChecker = get(),
+                assessNetworkSecurity = get(),
                 engine = get(),
                 calibration = get(),
                 strengthAnalyzer = get(),

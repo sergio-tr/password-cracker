@@ -25,6 +25,7 @@ enum class PasswordResistanceRating {
     LOW,
     MODERATE,
     HIGH,
+    VERY_HIGH,
     UNKNOWN,
 }
 
@@ -45,8 +46,8 @@ fun interface SecretStrengthAnalyzer {
 }
 
 /**
- * Heuristic structure analyzer. Deliberately shallow: length + character-class diversity.
- * Does not claim attacker time; does not adjust search ordering.
+ * Heuristic structure analyzer. Considers length, character-class diversity,
+ * repetition and simple sequences. Does not claim attacker time; does not adjust search ordering.
  */
 class HeuristicSecretStrengthAnalyzer : SecretStrengthAnalyzer {
     override fun analyze(plaintext: String): PasswordStrengthAssessment {
@@ -58,17 +59,28 @@ class HeuristicSecretStrengthAnalyzer : SecretStrengthAnalyzer {
                 plaintext.any { it.isUpperCase() },
                 plaintext.any { !it.isLetterOrDigit() },
             ).count { it }
+        val hasHeavyRepetition = hasHeavyRepetition(plaintext)
+        val hasSimpleSequence = hasSimpleSequence(plaintext)
         val rating =
             when {
-                length < 8 -> PasswordResistanceRating.VERY_LOW
+                length < 8 || hasHeavyRepetition || (hasSimpleSequence && length < 12) ->
+                    PasswordResistanceRating.VERY_LOW
                 length < 10 && classes <= 2 -> PasswordResistanceRating.LOW
                 length < 12 && classes <= 2 -> PasswordResistanceRating.MODERATE
-                length >= 12 && classes >= 3 -> PasswordResistanceRating.HIGH
+                length >= 16 && classes >= 3 && !hasHeavyRepetition && !hasSimpleSequence ->
+                    PasswordResistanceRating.VERY_HIGH
+                length >= 12 && classes >= 3 && !hasHeavyRepetition -> PasswordResistanceRating.HIGH
                 length >= 10 -> PasswordResistanceRating.MODERATE
                 else -> PasswordResistanceRating.LOW
             }
+        val flags =
+            buildList {
+                if (hasHeavyRepetition) add("repetición")
+                if (hasSimpleSequence) add("secuencia simple")
+            }
+        val flagText = if (flags.isEmpty()) "" else " · Señales: ${flags.joinToString(", ")}"
         val summary =
-            "Longitud $length · $classes clases de caracteres. " +
+            "Longitud $length · $classes clases de caracteres$flagText. " +
                 "Este análisis estructural no prioriza la búsqueda que intenta descubrir el secreto."
         return PasswordStrengthAssessment(
             rating = rating,
@@ -77,5 +89,40 @@ class HeuristicSecretStrengthAnalyzer : SecretStrengthAnalyzer {
             summary = summary,
             measuredSearch = false,
         )
+    }
+
+    private fun hasHeavyRepetition(value: String): Boolean {
+        if (value.length < 3) return false
+        if (value.toSet().size == 1) return true
+        var maxRun = 1
+        var cur = 1
+        for (i in 1 until value.length) {
+            if (value[i] == value[i - 1]) {
+                cur++
+                maxRun = maxOf(maxRun, cur)
+            } else {
+                cur = 1
+            }
+        }
+        return maxRun >= 4 || (value.length >= 6 && value.toSet().size <= 2)
+    }
+
+    private fun hasSimpleSequence(value: String): Boolean {
+        val lower = value.lowercase()
+        val sequences =
+            listOf(
+                "0123456789",
+                "9876543210",
+                "abcdefghijklmnopqrstuvwxyz",
+                "zyxwvutsrqponmlkjihgfedcba",
+                "qwertyuiop",
+                "asdfghjkl",
+            )
+        return sequences.any { seq ->
+            seq.windowed(4).any { lower.contains(it) } ||
+                lower.windowed(4).any { window ->
+                    seq.contains(window)
+                }
+        }
     }
 }

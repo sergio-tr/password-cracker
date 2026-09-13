@@ -25,8 +25,9 @@ encontrarla. La red real solo aporta contexto; nunca se autentica contra el AP.
    `ArrowBack`; opciones avanzadas colapsadas + restablecer.
 5. **Execution + STOP** (PR5): motor local + cancelación cooperativa;
    DETENER en bottomBar; métricas agregadas; `onCleared` cancela.
-6. **Results + strength** (PR6): `PasswordAuditResultComposer` con
-   Measured / Estimated / Modelled.
+6. **Results + strength** (PR6): `WifiPasswordAuditResult` con config vs
+   contraseña separados, recomendaciones defensivas y evidencia
+   Measured / Estimated / Modelled. Historial de runs = follow-up.
 7. **Localization + docs** (PR7): strings ES/EN + walkthrough.
 
 El motor verifica candidatos solo vía `CandidateVerifier`; no hay handshakes,
