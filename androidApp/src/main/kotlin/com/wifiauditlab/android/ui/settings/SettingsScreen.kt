@@ -2,6 +2,8 @@ package com.wifiauditlab.android.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -17,13 +20,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wifiauditlab.android.R
+import com.wifiauditlab.android.i18n.AppLanguagePreferences
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     onOpenPermissions: () -> Unit = {},
@@ -31,10 +38,14 @@ fun SettingsScreen(
     calibrationViewModel: SettingsCalibrationViewModel = koinViewModel(),
     benchmarkViewModel: SettingsBenchmarkViewModel = koinViewModel(),
 ) {
+    val context = LocalContext.current
+    val currentLanguage = AppLanguagePreferences.currentTag(context)
+    val yesLabel = stringResource(R.string.settings_yes)
+    val noLabel = stringResource(R.string.settings_no)
     val capabilities = AndroidPlatformCapabilities()
     val calibration by calibrationViewModel.state.collectAsStateWithLifecycle()
     val benchmarks by benchmarkViewModel.state.collectAsStateWithLifecycle()
-    Scaffold(topBar = { TopAppBar(title = { Text("Ajustes") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) }) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -45,19 +56,42 @@ fun SettingsScreen(
         ) {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Permisos y servicios", fontWeight = FontWeight.SemiBold)
-                    Text("Revisa permisos requeridos, servicios del sistema y capacidades opcionales.")
-                    Button(onClick = onOpenPermissions, modifier = Modifier.fillMaxWidth()) {
-                        Text("Abrir centro de permisos")
+                    Text(stringResource(R.string.settings_language), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_language_help))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LanguageChip(
+                            selected = currentLanguage == AppLanguagePreferences.SYSTEM,
+                            label = stringResource(R.string.settings_language_system),
+                            onClick = { AppLanguagePreferences.apply(context, AppLanguagePreferences.SYSTEM) },
+                        )
+                        LanguageChip(
+                            selected = currentLanguage == AppLanguagePreferences.SPANISH,
+                            label = stringResource(R.string.settings_language_es),
+                            onClick = { AppLanguagePreferences.apply(context, AppLanguagePreferences.SPANISH) },
+                        )
+                        LanguageChip(
+                            selected = currentLanguage == AppLanguagePreferences.ENGLISH,
+                            label = stringResource(R.string.settings_language_en),
+                            onClick = { AppLanguagePreferences.apply(context, AppLanguagePreferences.ENGLISH) },
+                        )
                     }
                 }
             }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Onboarding", fontWeight = FontWeight.SemiBold)
-                    Text("Vuelve a ver la introducción de Cercanas, Vault y Laboratorio.")
+                    Text(stringResource(R.string.settings_permissions), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_permissions_help))
+                    Button(onClick = onOpenPermissions, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.settings_open_permissions))
+                    }
+                }
+            }
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.settings_onboarding), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_onboarding_help))
                     OutlinedButton(onClick = onReplayOnboarding, modifier = Modifier.fillMaxWidth()) {
-                        Text("Mostrar introducción")
+                        Text(stringResource(R.string.settings_show_onboarding))
                     }
                 }
             }
@@ -73,26 +107,58 @@ fun SettingsScreen(
             )
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Capacidades de la plataforma", fontWeight = FontWeight.SemiBold)
-                    Text("Descubrimiento de redes cercanas: ${capabilities.nearbyWifiDiscovery.toYesNo()}")
-                    Text("Inspección de la red actual: ${capabilities.currentWifiInspection.toYesNo()}")
-                    Text("Almacenamiento seguro de secretos: ${capabilities.secureSecretStorage.toYesNo()}")
-                    Text("Geolocalización: ${capabilities.geolocation.toYesNo()}")
+                    Text(stringResource(R.string.settings_capabilities), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(
+                            R.string.settings_cap_nearby,
+                            capabilities.nearbyWifiDiscovery.toYesNo(yesLabel, noLabel),
+                        ),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.settings_cap_current,
+                            capabilities.currentWifiInspection.toYesNo(yesLabel, noLabel),
+                        ),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.settings_cap_secrets,
+                            capabilities.secureSecretStorage.toYesNo(yesLabel, noLabel),
+                        ),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.settings_cap_geo,
+                            capabilities.geolocation.toYesNo(yesLabel, noLabel),
+                        ),
+                    )
                 }
             }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Qué hace esta app", fontWeight = FontWeight.SemiBold)
-                    Text("Cercanas — descubre redes Wi‑Fi reales y evalúa su seguridad.")
-                    Text("Guardadas — el Vault: alias, ubicación y contraseña cifrada.")
-                    Text("Laboratorio — busca secretos sintéticos con límites y un botón STOP.")
-                    Text(
-                        "El laboratorio está aislado de las redes reales: sus algoritmos nunca se conectan a un Wi‑Fi.",
-                    )
+                    Text(stringResource(R.string.settings_about), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_about_nearby))
+                    Text(stringResource(R.string.settings_about_vault))
+                    Text(stringResource(R.string.settings_about_lab))
+                    Text(stringResource(R.string.settings_about_audit))
+                    Text(stringResource(R.string.settings_about_engine))
                 }
             }
         }
     }
+}
+
+@Composable
+private fun LanguageChip(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+    )
 }
 
 @Composable
@@ -182,4 +248,7 @@ private fun CalibrationCard(
     }
 }
 
-private fun Boolean.toYesNo(): String = if (this) "Sí" else "No"
+private fun Boolean.toYesNo(
+    yes: String,
+    no: String,
+): String = if (this) yes else no

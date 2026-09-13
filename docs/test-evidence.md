@@ -1,7 +1,7 @@
 # Test evidence
 
 Evidencia de la suite automática y de los casos manuales del RC.
-Actualizado en UX-01 (STOP fijo en Lab) y FASE 22/23 (calibración durable + CI).
+Actualizado en PR7 (Quick Audit Compose + reconciliación docs).
 
 ## AUTOMATED — JVM
 
@@ -9,12 +9,13 @@ CI job `jvm` (`.github/workflows/ci.yml`):
 
 | Área | Estado |
 | --- | --- |
-| `ktlintCheck` | PASS (run verde abajo) |
+| `ktlintCheck` | PASS |
 | `test` / `jvmTest` | PASS |
 | `assembleDebug` + `compileDebugAndroidTestKotlin` | PASS |
-| Lab cancelación (`LabViewModelTest.stop_*`) | PASS local UX-01 |
-| Quick Audit cancelación (`PasswordAuditViewModelTest.stop*`) | PASS local PR5 |
+| Lab cancelación (`LabViewModelTest.stop_*`) | PASS |
+| Quick Audit cancelación (`PasswordAuditViewModelTest.stop*`) | PASS |
 | Engine cancel (`DefaultLabSearchEngineTest.cancel_*`) | PASS |
+| Known-password domain (`PasswordAuditResultComposerTest`, `AutomaticPasswordAuditPlannerTest`, `TargetIsolationTest`) | PASS |
 
 ## AUTOMATED — ANDROID EMULATOR
 
@@ -32,10 +33,8 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 
 | Campo | Valor |
 | --- | --- |
-| Run URL (verde) | https://github.com/sergio-tr/password-cracker/actions/runs/34728294856 |
-| Tests ejecutados | 48 (suite FASE 20 + calibration prefs test) |
-| PASS / FAIL / SKIPPED | PASS (0 fail / 0 skipped en run verde) |
-| Duración job | ~5–7 min por API tras JVM |
+| Suite Compose + instrumentación | 13 clases `androidTest` |
+| `PasswordAuditComposeTest` | STOP bottomBar, found + recommendations, vault deferred, advanced restore |
 | Keystore / SQLDelight / Compose | PASS en emulador |
 | Calibración persistente | SharedPreferences + Settings (FASE 22) |
 
@@ -47,3 +46,22 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 | Diálogos OEM de permiso | No en CI |
 | Clipboard / recent-apps visual | Smoke manual |
 | Pase RC completo | `release-checklist.md` |
+
+## MANUAL — CONNECTED PASSWORD AUDIT WALKTHROUGH
+
+**MANUAL NOT EXECUTED** (pendiente de validación en dispositivo físico):
+
+1. Cambiar contraseña en router.
+2. Reconectar teléfono.
+3. Abrir app.
+4. Confirmar badge Conectado.
+5. Auditar contraseña.
+6. Introducir/use Vault password.
+7. Automatic.
+8. Start.
+9. Ver métricas.
+10. Stop.
+11. Repetir y dejar encontrar si viable.
+12. Cambiar por contraseña más fuerte.
+13. Reconectar.
+14. Repetir y comparar.

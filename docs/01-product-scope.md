@@ -10,21 +10,35 @@ Aplicación Android didáctica de auditoría Wi-Fi que permite:
 - Identificar redes previamente guardadas (matching robusto, no por BSSID único).
 - Guardar redes conocidas con alias y ubicación descriptiva.
 - Gestionar de forma segura credenciales introducidas por el usuario (Vault, CRUD).
+- **Auditar la resistencia de una contraseña Wi-Fi conocida** (Quick Audit): el
+  Search Engine local mide cuánto tarda en encontrarla dentro de un presupuesto;
+  la red real solo aporta contexto y elegibilidad — nunca se autentica contra el AP.
 - Disponer de un **laboratorio sintético** para estudiar algoritmos de exploración
   de espacios de búsqueda, con progreso en tiempo real, límites y cancelación.
 
 ## Dos dominios, una frontera dura
 
-| Real Wi-Fi Assessment | Synthetic Security Lab |
+| Real Wi-Fi Assessment | Search Engine (local) |
 | --- | --- |
-| Escanea redes reales | Crea desafíos sintéticos |
-| Inspecciona metadatos de Android | Genera un secreto oculto local |
-| Identifica y evalúa seguridad | Ejecuta estrategias de búsqueda |
-| Guarda redes y credenciales | Recopila métricas, para por tiempo/intentos, se cancela |
+| Escanea redes reales | Verifica candidatos solo en memoria local |
+| Inspecciona metadatos de Android | Puede usar challenges sintéticos o contraseña conocida del usuario |
+| Identifica y evalúa seguridad | Ejecuta estrategias de búsqueda con límites y cancelación |
+| Guarda redes y credenciales | Recopila métricas; nunca envía candidatos al router |
 
-**Prohibido**: conectar un generador de candidatos o un `LabSearchEngine` a una
-red Wi-Fi real. La arquitectura impide que el laboratorio dependa de
-`WifiScanner`, `WifiConnectionManager` o cualquier API Android de red.
+**Prohibido**: conectar un generador de candidatos o un `LabSearchEngine` a
+autenticación Wi-Fi real. La arquitectura impide que el laboratorio dependa de
+APIs de conexión Android para verificar candidatos.
+
+## Known-password audit (producto)
+
+Flujo novice: red conectada elegible → Auditar contraseña → Vault o manual →
+Automático → INICIAR → métricas → DETENER o fin de presupuesto → informe.
+
+- El motor es **exclusivamente local** (`EncapsulatedPasswordVerifier`).
+- El planner es **ciego al target** (`AutomaticPasswordAuditPlanner`).
+- El informe **separa** configuración Wi‑Fi y resistencia de contraseña
+  (`WifiPasswordAuditResult`).
+- Historial de runs comparables = follow-up; no forma parte del alcance actual.
 
 ## No-objetivos
 

@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -54,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.domain.audit.EvidenceQuality
 import com.wifiauditlab.assessment.domain.audit.PasswordSearchOutcomeKind
+import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
@@ -139,6 +142,8 @@ fun PasswordAuditScreen(
                                         .testTag("audit_start")
                                         .semantics { contentDescription = startLabel },
                             ) {
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                                Spacer(Modifier.size(8.dp))
                                 Text(startLabel)
                             }
                             state.startBlockedReason?.let {
@@ -262,14 +267,13 @@ private fun PasswordSection(
                 )
             } else {
                 ManualPasswordFields(state, viewModel)
+                val saveVaultCd = stringResource(R.string.audit_cd_save_vault)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .semantics {
-                                contentDescription = "Guardar en Vault"
-                            },
+                            .semantics { contentDescription = saveVaultCd },
                 ) {
                     Checkbox(
                         checked = state.saveToVault,
@@ -353,6 +357,9 @@ private fun ModeSection(
     state: PasswordAuditUiState,
     viewModel: PasswordAuditViewModel,
 ) {
+    val modeAutoCd = stringResource(R.string.audit_cd_mode_auto)
+    val modeAdvancedCd = stringResource(R.string.audit_cd_mode_advanced)
+    val resetAutoCd = stringResource(R.string.audit_cd_reset_auto)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.audit_mode), fontWeight = FontWeight.SemiBold)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -360,13 +367,13 @@ private fun ModeSection(
                 selected = state.mode == PasswordAuditInteractionMode.Automatic,
                 onClick = { viewModel.selectMode(PasswordAuditInteractionMode.Automatic) },
                 label = { Text(stringResource(R.string.audit_mode_automatic)) },
-                modifier = Modifier.semantics { contentDescription = "Modo Automático" },
+                modifier = Modifier.semantics { contentDescription = modeAutoCd },
             )
             FilterChip(
                 selected = state.mode == PasswordAuditInteractionMode.Advanced,
                 onClick = { viewModel.selectMode(PasswordAuditInteractionMode.Advanced) },
                 label = { Text(stringResource(R.string.audit_mode_advanced)) },
-                modifier = Modifier.semantics { contentDescription = "Modo Avanzado" },
+                modifier = Modifier.semantics { contentDescription = modeAdvancedCd },
             )
         }
         if (state.mode == PasswordAuditInteractionMode.Advanced) {
@@ -375,7 +382,7 @@ private fun ModeSection(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "Restablecer configuración automática" },
+                        .semantics { contentDescription = resetAutoCd },
             ) {
                 Text(stringResource(R.string.audit_reset_automatic))
             }
@@ -405,14 +412,12 @@ private fun DurationSection(
                         PasswordAuditBudgetPreset.Deep -> stringResource(R.string.audit_preset_deep)
                         PasswordAuditBudgetPreset.Custom -> stringResource(R.string.audit_preset_custom)
                     }
+                val presetCd = stringResource(R.string.audit_cd_preset, label)
                 FilterChip(
                     selected = state.preset == preset,
                     onClick = { viewModel.selectPreset(preset) },
                     label = { Text(label) },
-                    modifier =
-                        Modifier.semantics {
-                            contentDescription = "Preset $label"
-                        },
+                    modifier = Modifier.semantics { contentDescription = presetCd },
                 )
             }
         }
@@ -463,6 +468,7 @@ private fun PlanSection(
     state: PasswordAuditUiState,
     viewModel: PasswordAuditViewModel,
 ) {
+    val showDetailsCd = stringResource(R.string.audit_cd_show_details)
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(16.dp),
@@ -478,7 +484,7 @@ private fun PlanSection(
                     FeasibilityBlock(state.feasibilityRating)
                     TextButton(
                         onClick = { viewModel.setPlanDetailsExpanded(!state.planDetailsExpanded) },
-                        modifier = Modifier.semantics { contentDescription = "Ver detalles" },
+                        modifier = Modifier.semantics { contentDescription = showDetailsCd },
                     ) {
                         Text(
                             if (state.planDetailsExpanded) {
@@ -538,11 +544,12 @@ private fun FeasibilityBlock(rating: FeasibilityRating?) {
 private fun ExecutionStatusCard(state: PasswordAuditUiState) {
     val metrics = state.metrics
     val progress = metrics?.processedPercentage?.toFloat()?.coerceIn(0f, 1f)
+    val statusCd = stringResource(R.string.audit_cd_status)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Estado de la auditoría" },
+                .semantics { contentDescription = statusCd },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(executionHeadline(state.searchState), fontWeight = FontWeight.Bold)
@@ -552,7 +559,10 @@ private fun ExecutionStatusCard(state: PasswordAuditUiState) {
                 color = MaterialTheme.colorScheme.primary,
             )
             if (metrics != null) {
-                MetricRow(stringResource(R.string.audit_metric_attempts), metrics.attempts.toExactString())
+                MetricRow(
+                    stringResource(R.string.audit_metric_attempts),
+                    attemptsCountLabel(metrics.attempts),
+                )
                 MetricRow(stringResource(R.string.audit_metric_time), formatElapsed(metrics.elapsed.inWholeSeconds))
                 MetricRow(
                     stringResource(R.string.audit_metric_speed),
@@ -602,11 +612,12 @@ private fun AuditResultReportCard(
     viewModel: PasswordAuditViewModel,
 ) {
     val report = state.resultReport
+    val reportCd = stringResource(R.string.audit_cd_report)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Informe de auditoría" },
+                .semantics { contentDescription = reportCd },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.audit_report_title), fontWeight = FontWeight.Bold)
@@ -679,7 +690,10 @@ private fun AuditResultReportCard(
             } else {
                 Text(resultHeadline(state))
                 state.metrics?.let { m ->
-                    MetricRow(stringResource(R.string.audit_metric_attempts), m.attempts.toExactString())
+                    MetricRow(
+                        stringResource(R.string.audit_metric_attempts),
+                        attemptsCountLabel(m.attempts),
+                    )
                     MetricRow(stringResource(R.string.audit_metric_time), formatElapsed(m.elapsed.inWholeSeconds))
                 }
             }
@@ -723,6 +737,16 @@ private fun evidenceLabel(quality: EvidenceQuality): String =
     }
 
 @Composable
+private fun attemptsCountLabel(attempts: CombinationCount): String {
+    val count = attempts.toLongOrNull()?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt()
+    return if (count != null) {
+        pluralStringResource(R.plurals.audit_attempts_count, count, count)
+    } else {
+        attempts.toExactString()
+    }
+}
+
+@Composable
 private fun MetricRow(
     label: String,
     value: String,
@@ -737,25 +761,27 @@ private fun MetricRow(
     }
 }
 
+@Composable
 private fun executionHeadline(state: SearchState): String =
     when (state) {
-        SearchState.Preparing -> "Preparando…"
-        SearchState.Running -> "Auditando localmente…"
-        SearchState.Cancelling -> "Deteniendo…"
-        SearchState.Cancelled -> "Detenida"
-        SearchState.Completed -> "Completada"
-        SearchState.LimitReached -> "Límite alcanzado"
-        SearchState.Failed -> "Error"
+        SearchState.Preparing -> stringResource(R.string.audit_state_preparing)
+        SearchState.Running -> stringResource(R.string.audit_state_running)
+        SearchState.Cancelling -> stringResource(R.string.audit_state_cancelling)
+        SearchState.Cancelled -> stringResource(R.string.audit_state_cancelled)
+        SearchState.Completed -> stringResource(R.string.audit_state_completed)
+        SearchState.LimitReached -> stringResource(R.string.audit_state_limit)
+        SearchState.Failed -> stringResource(R.string.audit_state_failed)
         SearchState.Idle -> ""
     }
 
+@Composable
 private fun resultHeadline(state: PasswordAuditUiState): String =
     when (state.outcome) {
-        SearchOutcome.Found -> "Contraseña encontrada (verificación local)."
-        SearchOutcome.LimitReached -> "No se descubrió dentro del límite configurado."
-        SearchOutcome.NotFound -> "Se agotó el espacio presupuestado sin descubrir la contraseña."
-        SearchOutcome.Cancelled -> "Auditoría detenida por el usuario."
-        SearchOutcome.Failed -> "La auditoría falló."
+        SearchOutcome.Found -> stringResource(R.string.audit_result_found)
+        SearchOutcome.LimitReached -> stringResource(R.string.audit_result_limit)
+        SearchOutcome.NotFound -> stringResource(R.string.audit_result_exhausted)
+        SearchOutcome.Cancelled -> stringResource(R.string.audit_result_cancelled)
+        SearchOutcome.Failed -> stringResource(R.string.audit_result_failed)
         null -> ""
     }
 

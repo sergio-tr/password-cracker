@@ -125,6 +125,28 @@ UI Quick Audit = `PasswordAuditScreen` con ejecución local, STOP e informe
 combinado (walkthrough: `docs/13-known-password-audit-walkthrough.md`).
 Explicación novice: «procesos de búsqueda» / etapas / límite — sin nombres internos.
 
-Cancelación cooperativa del motor: `CancellationController` detiene scheduler y
-workers; tests en `DefaultLabSearchEngineTest.cancel_*` y
-`PasswordAuditViewModelTest.stop*`.
+## Known-password audit path
+
+```text
+Password (Vault reveal / manual)
+    → EncapsulatedPasswordVerifier.encapsulate(secret)
+    → LabChallenge.withEncapsulatedVerifier(policy, verifier)
+    → AutomaticPasswordAuditPlanner.createPlan(context, performance, budget)
+    → WorkerAwareLabSearchEngine.run(…, cancellation)
+    → PasswordAuditResultComposer → WifiPasswordAuditResult
+```
+
+El planner y el engine **nunca** reciben la contraseña ni salida de
+`SecretStrengthAnalyzer`.
+
+## STOP (auditoría y lab)
+
+Cancelación cooperativa: `CancellationController` detiene scheduler y workers.
+
+```text
+UI bottomBar DETENER → ViewModel.stop → CancellationController → Cancelled
+```
+
+Tests: `DefaultLabSearchEngineTest.cancel_*`, `PasswordAuditViewModelTest.stop*`,
+`PasswordAuditComposeTest.stop_alwaysVisible_thenCancellingThenCancelled_attemptsStable`.
+Latencia ~200–250 ms (`progressInterval`); intentos congelados tras cancelar.

@@ -3,6 +3,7 @@ package com.wifiauditlab.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -21,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -56,11 +58,15 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Destination(val route: String, val label: String, val icon: ImageVector) {
-    Nearby("nearby", "Cercanas", Icons.Filled.Wifi),
-    Vault("vault", "Guardadas", Icons.Filled.Lock),
-    Lab("lab", "Laboratorio", Icons.Filled.Science),
-    Settings("settings", "Ajustes", Icons.Filled.Settings),
+private enum class Destination(
+    val route: String,
+    @StringRes val labelRes: Int,
+    val icon: ImageVector,
+) {
+    Nearby("nearby", R.string.nav_nearby, Icons.Filled.Wifi),
+    Vault("vault", R.string.nav_vault, Icons.Filled.Lock),
+    Lab("lab", R.string.nav_lab, Icons.Filled.Science),
+    Settings("settings", R.string.nav_settings, Icons.Filled.Settings),
 }
 
 private object Routes {
@@ -111,8 +117,13 @@ private fun AppRoot() {
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(destination.icon, contentDescription = destination.label) },
-                            label = { Text(destination.label) },
+                            icon = {
+                                Icon(
+                                    destination.icon,
+                                    contentDescription = stringResource(destination.labelRes),
+                                )
+                            },
+                            label = { Text(stringResource(destination.labelRes)) },
                         )
                     }
                 }

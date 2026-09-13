@@ -49,5 +49,13 @@ Clasificación de resistencia (`VERY_LOW`…`VERY_HIGH` / `UNKNOWN`): combina
 resultado de búsqueda, intentos, presupuesto y estructura. Criterios documentados
 en `PasswordAuditResultComposer`. Nunca afirma seguridad absoluta.
 
+Cada métrica del informe lleva `EvidenceQuality`:
+
+| Calidad | Significado |
+| --- | --- |
+| **Measured** | Medido en la ejecución local (intentos, tiempo, velocidad). |
+| **Estimated** | Derivado de calibración o presupuesto del dispositivo. |
+| **Modelled** | Inferencia estructural (`SecretStrengthAnalyzer`); no implica tiempo real de atacante. |
+
 Comparar auditorías anteriores (historial sin secretos) = **follow-up**; no
 bloquea este resultado.

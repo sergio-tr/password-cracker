@@ -31,11 +31,12 @@ de negocio relevante dentro de ViewModels.
 
 - `:shared:core`: kernel de value objects (`CombinationCount`, `PlatformCapabilities`).
 - `:shared:assessment`: dominio **Real Wi-Fi Assessment** (Wi-Fi, seguridad, matcher,
-  Vault) + casos de uso + puertos.
+  Vault, auditoría de contraseña) + casos de uso + puertos.
 - `:shared:persistence`: adaptador SQLDelight de `SavedNetworkRepository`
   (depende de `:shared:assessment`; el dominio no ve SQLDelight).
-- `:shared:lab`: dominio **Synthetic Security Lab** (motor, planificador, límites,
-  métricas, viabilidad). Depende **sólo** de `:shared:core`.
+- `:shared:lab`: dominio **Search Engine local** (motor, planificador, límites,
+  métricas, viabilidad, `EncapsulatedPasswordVerifier`,
+  `AutomaticPasswordAuditPlanner`). Depende **sólo** de `:shared:core`.
 - `:androidApp`: adaptadores e infraestructura Android + UI.
 
 ## Garantía de la frontera Real/Lab
@@ -44,6 +45,21 @@ de negocio relevante dentro de ViewModels.
 `:shared:assessment` ni hacia Android. Por tanto es **imposible**, en tiempo de
 compilación, que `LabSearchEngine` referencie `WifiScanner` o cualquier API de
 red. La frontera no se apoya en disciplina de código sino en el grafo de módulos.
+
+El Search Engine funciona exclusivamente de forma local: puede utilizarse con
+challenges sintéticos o con contraseñas conocidas encapsuladas; nunca envía
+candidatos a redes externas ni autentica contra access points.
+
+## Known-password audit (componentes)
+
+| Componente | Módulo | Rol |
+| --- | --- | --- |
+| `CurrentWifiConnectionProvider` | assessment + androidApp | Detección de red conectada |
+| `PasswordAuditEligibilityChecker` | assessment | Elegibilidad (PSK personal) |
+| `EncapsulatedPasswordVerifier` | lab | Target aislado; verificación local |
+| `AutomaticPasswordAuditPlanner` | lab | Plan multi-stage ciego al secreto |
+| `PasswordAuditResultComposer` | assessment | `WifiPasswordAuditResult`; config vs resistencia |
+| `SecretStrengthAnalyzer` | assessment | Análisis estructural; **no** alimenta al planner |
 
 ## Capacidades de plataforma
 

@@ -69,7 +69,9 @@ en lugar de duplicarla.
 En **Auditar contraseña**, si existe secreto:
 
 - la opción por defecto es **Usar contraseña guardada**;
-- el plaintext **no** se muestra en la UI; se revela solo al iniciar;
+- el plaintext **no** se muestra en la UI; **reveal diferido** — `RevealSavedNetworkSecret`
+  se invoca solo al pulsar INICIAR, en memoria de proceso;
+- el campo de contraseña permanece vacío durante la configuración;
 - **Introducir otra contraseña** permite override manual;
 - **Guardar en el Vault** está OFF por defecto y nunca almacena automáticamente.
 
