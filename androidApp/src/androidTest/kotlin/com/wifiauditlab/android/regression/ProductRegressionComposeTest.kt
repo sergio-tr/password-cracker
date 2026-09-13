@@ -106,7 +106,17 @@ class ProductRegressionComposeTest {
                 .fetchSemanticsNodes()
                 .isEmpty(),
         )
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_start_test)).assertIsDisplayed()
+        // Configure phase: primary CTA is Crear y probar; START is deferred until Ready.
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_create_and_test))
+            .performScrollTo()
+            .assertIsDisplayed()
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.lab_start_test))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 
     @Test
