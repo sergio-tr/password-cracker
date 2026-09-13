@@ -1,5 +1,6 @@
 package com.wifiauditlab.android.ui.permissions
 
+import com.wifiauditlab.android.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -17,29 +18,29 @@ class PermissionCenterViewModelTest {
                         wifiStatus == PermissionStatus.Granted ->
                             PermissionItem(
                                 id = "wifi_discovery",
-                                name = "Wi‑Fi discovery",
+                                nameRes = R.string.permissions_wifi_discovery,
                                 kind = PermissionKind.RequiredPermission,
                                 status = PermissionStatus.Granted,
-                                rationale = "scan",
+                                rationaleRes = R.string.permissions_wifi_rationale_tiramisu,
                                 action = PermissionAction.None,
                             )
                         "NEARBY_WIFI_DEVICES" in permanentlyDenied ||
                             "ACCESS_FINE_LOCATION" in permanentlyDenied ->
                             PermissionItem(
                                 id = "wifi_discovery",
-                                name = "Wi‑Fi discovery",
+                                nameRes = R.string.permissions_wifi_discovery,
                                 kind = PermissionKind.RequiredPermission,
                                 status = PermissionStatus.PermanentlyDenied,
-                                rationale = "scan",
+                                rationaleRes = R.string.permissions_wifi_rationale_tiramisu,
                                 action = PermissionAction.OpenAppSettings,
                             )
                         else ->
                             PermissionItem(
                                 id = "wifi_discovery",
-                                name = "Wi‑Fi discovery",
+                                nameRes = R.string.permissions_wifi_discovery,
                                 kind = PermissionKind.RequiredPermission,
                                 status = wifiStatus,
-                                rationale = "scan",
+                                rationaleRes = R.string.permissions_wifi_rationale_tiramisu,
                                 action =
                                     if (wifiStatus == PermissionStatus.Missing) {
                                         PermissionAction.Request
@@ -51,10 +52,10 @@ class PermissionCenterViewModelTest {
                 val location =
                     PermissionItem(
                         id = "location_services",
-                        name = "Location services",
+                        nameRes = R.string.permissions_location_services,
                         kind = PermissionKind.SystemService,
                         status = locationStatus,
-                        rationale = "location",
+                        rationaleRes = R.string.permissions_location_rationale,
                         action =
                             if (locationStatus == PermissionStatus.Disabled) {
                                 PermissionAction.OpenLocationSettings

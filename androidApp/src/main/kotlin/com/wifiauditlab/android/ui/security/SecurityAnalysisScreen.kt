@@ -66,8 +66,8 @@ fun SecurityAnalysisScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when {
-                state.missingTarget -> Text("No hay una red seleccionada para analizar.")
-                state.loading -> Text("Analizando seguridad…")
+                state.missingTarget -> Text(stringResource(R.string.security_missing_target))
+                state.loading -> Text(stringResource(R.string.security_analyzing))
                 else -> {
                     Text(state.displayName, fontWeight = FontWeight.Bold)
                     if (state.ssidLabel.isNotBlank() && state.ssidLabel != state.displayName) {
@@ -95,11 +95,12 @@ fun SecurityAnalysisScreen(
 
 @Composable
 private fun SummarySection(assessment: SecurityAssessment) {
-    AnalysisCard(title = "Resumen") {
+    val ratingContentDescription = stringResource(R.string.security_cd_rating)
+    AnalysisCard(title = stringResource(R.string.security_summary)) {
         Text(
-            ratingLabel(assessment.rating),
+            stringResource(ratingLabelRes(assessment.rating)),
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.semantics { contentDescription = "Security rating" },
+            modifier = Modifier.semantics { contentDescription = ratingContentDescription },
         )
         Text(assessment.headline, fontWeight = FontWeight.Medium)
     }
@@ -107,33 +108,38 @@ private fun SummarySection(assessment: SecurityAssessment) {
 
 @Composable
 private fun WhatThisMeansSection(assessment: SecurityAssessment) {
-    AnalysisCard(title = "Qué significa") {
+    AnalysisCard(title = stringResource(R.string.security_what_means)) {
         Text(assessment.plainExplanation)
     }
 }
 
 @Composable
 private fun AuthenticationSection(auth: AuthenticationSummary) {
-    AnalysisCard(title = "Autenticación") {
-        Text("Familia: ${auth.familyLabel}")
-        Text(auth.modeLabel)
-        Text("Cifrado / key mgmt: ${auth.encryptionLabel}")
-        auth.pmfLabel?.let { Text(it) }
-        auth.transitionLabel?.let { Text(it) }
+    val encryption =
+        auth.encryptionDynamic
+            ?: auth.encryptionLabelRes?.let { stringResource(it) }
+                .orEmpty()
+    AnalysisCard(title = stringResource(R.string.security_authentication)) {
+        Text(stringResource(R.string.security_family, stringResource(auth.familyLabelRes)))
+        Text(stringResource(auth.modeLabelRes))
+        Text(stringResource(R.string.security_encryption, encryption))
+        auth.pmfLabelRes?.let { Text(stringResource(it)) }
+        auth.transitionLabelRes?.let { Text(stringResource(it)) }
     }
 }
 
 @Composable
 private fun FindingsSection(assessment: SecurityAssessment) {
-    AnalysisCard(title = "Hallazgos") {
+    AnalysisCard(title = stringResource(R.string.security_findings)) {
         if (assessment.findings.isEmpty()) {
-            Text("No hay hallazgos adicionales.")
+            Text(stringResource(R.string.security_no_findings))
         } else {
             assessment.findings.forEach { finding ->
+                val findingContentDescription = stringResource(R.string.security_cd_finding, finding.title)
                 Text(
-                    "${severityLabel(finding.severity)} · ${finding.title}",
+                    stringResource(R.string.security_finding, severityLabel(finding.severity), finding.title),
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.semantics { contentDescription = "Finding ${finding.title}" },
+                    modifier = Modifier.semantics { contentDescription = findingContentDescription },
                 )
                 Text(finding.explanation)
             }
@@ -142,12 +148,12 @@ private fun FindingsSection(assessment: SecurityAssessment) {
 }
 
 @Composable
-private fun RecommendationsSection(recommendations: List<String>) {
-    AnalysisCard(title = "Recomendaciones") {
+private fun RecommendationsSection(recommendations: List<Int>) {
+    AnalysisCard(title = stringResource(R.string.security_recommendations)) {
         if (recommendations.isEmpty()) {
-            Text("Sin recomendaciones adicionales.")
+            Text(stringResource(R.string.security_no_recommendations))
         } else {
-            recommendations.forEach { tip -> Text("• $tip") }
+            recommendations.forEach { tipRes -> Text("• ${stringResource(tipRes)}") }
         }
     }
 }
@@ -158,9 +164,15 @@ private fun TechnicalDetailsSection(
     expanded: Boolean,
     onToggle: () -> Unit,
 ) {
-    AnalysisCard(title = "Detalles técnicos") {
+    AnalysisCard(title = stringResource(R.string.security_technical)) {
         OutlinedButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
-            Text(if (expanded) "Ocultar detalles técnicos" else "Mostrar detalles técnicos")
+            Text(
+                if (expanded) {
+                    stringResource(R.string.security_technical_hide)
+                } else {
+                    stringResource(R.string.security_technical_show)
+                },
+            )
         }
         if (expanded) {
             Text(assessment.technicalSummary)
@@ -181,11 +193,12 @@ private fun AnalysisCard(
     }
 }
 
+@Composable
 private fun severityLabel(severity: Severity): String =
     when (severity) {
-        Severity.INFO -> "Info"
-        Severity.LOW -> "Baja"
-        Severity.MEDIUM -> "Media"
-        Severity.HIGH -> "Alta"
-        Severity.CRITICAL -> "Crítica"
+        Severity.INFO -> stringResource(R.string.security_severity_info)
+        Severity.LOW -> stringResource(R.string.security_severity_low)
+        Severity.MEDIUM -> stringResource(R.string.security_severity_medium)
+        Severity.HIGH -> stringResource(R.string.security_severity_high)
+        Severity.CRITICAL -> stringResource(R.string.security_severity_critical)
     }

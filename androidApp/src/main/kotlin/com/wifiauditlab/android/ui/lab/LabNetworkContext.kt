@@ -1,7 +1,7 @@
 package com.wifiauditlab.android.ui.lab
 
 import com.wifiauditlab.android.ui.nearby.NearbyItem
-import com.wifiauditlab.android.ui.security.familyLabel
+import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.assessment.domain.wifi.WifiBand
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
@@ -38,12 +38,13 @@ class LabNetworkContextStore {
     }
 }
 
-fun LabNetworkContext.familyDisplayLabel(): String = familyLabel(securityFamily)
+fun LabNetworkContext.familyDisplayLabel(resolveString: (Int) -> String): String =
+    resolveString(familyLabelRes(securityFamily))
 
-fun LabNetworkContext.metaLine(): String =
+fun LabNetworkContext.metaLine(resolveString: (Int) -> String): String =
     listOfNotNull(
         wifiStandard?.let { standardLabel(it) },
-        band?.let { bandDisplayLabel(it) },
+        band?.let { resolveString(bandDisplayLabelRes(it)) },
     ).joinToString(" · ").ifEmpty { "—" }
 
 fun labNetworkContextFromNearby(
@@ -73,10 +74,11 @@ fun standardLabel(standard: WifiStandard): String =
         WifiStandard.UNKNOWN -> "Wi-Fi"
     }
 
-fun bandDisplayLabel(band: WifiBand): String =
+@androidx.annotation.StringRes
+fun bandDisplayLabelRes(band: WifiBand): Int =
     when (band) {
-        WifiBand.GHZ_2_4 -> "2,4 GHz"
-        WifiBand.GHZ_5 -> "5 GHz"
-        WifiBand.GHZ_6 -> "6 GHz"
-        WifiBand.UNKNOWN -> "Banda desconocida"
+        WifiBand.GHZ_2_4 -> com.wifiauditlab.android.R.string.nearby_band_2_4
+        WifiBand.GHZ_5 -> com.wifiauditlab.android.R.string.nearby_band_5
+        WifiBand.GHZ_6 -> com.wifiauditlab.android.R.string.nearby_band_6
+        WifiBand.UNKNOWN -> com.wifiauditlab.android.R.string.lab_band_unknown
     }

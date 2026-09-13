@@ -28,8 +28,8 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Dominio lab + motor baseline | Lazy, límites, cancelación, métricas, `SearchLifecycle`. |
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
-| Lab desde red cercana | **Implemented** (UX-02): CTA + `LabNetworkContext`; sin auth a AP. |
-| Modo guiado del Lab | **Implemented** (UX-03): defaults automáticos; opciones técnicas colapsadas; mensaje PSK vs no-PSK. |
+| Lab desde red cercana | **Partial** (UX-02): CTA + contexto solo lectura; **sin** prototipo de red editable (ver `docs/13-manual-ux-gap-audit.md`). |
+| Modo guiado del Lab | **Partial** (UX-03): defaults por familia observada; no sustituye prototipo local configurable. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
@@ -44,10 +44,10 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
 | Resultado del Lab en UI | **Implemented** integrado en la pantalla Lab (`ResultCard`). Ruta propia = Deferred. |
-| Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes. |
-| Onboarding (primera ejecución) | 3 pantallas; Omitir/Continuar; persistido; replay desde Ajustes. |
-| Permission Center | Requerido / servicio / opcional; request contextual; Abrir ajustes. |
-| Análisis de seguridad dedicado | Resumen, significado, autenticación, hallazgos, recomendaciones defensivas, detalles técnicos. |
+| Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes (labels nav localizados; cuerpos de pantallas ver Partial). |
+| Onboarding (primera ejecución) | **Partial**: flujo existe; textos aún hardcoded ES (FIX-01). |
+| Permission Center | **Partial**: inventario OK; UI hardcoded + estados EN; sin ArrowBack (FIX-01/02). |
+| Análisis de seguridad dedicado | **Partial**: pantalla existe; cuerpo mayormente hardcoded ES (FIX-01). |
 | Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis, Password Audit) | JUnit + `runTest`. |
 | Compose UI tests (`androidTest`) | Nearby…Lab + **Password Audit** — fakes; **ejecutados en CI emulador** (FASE 21). |
 | Instrumentación Android | SQLDelight / Keystore / lifecycle — **CI emulador** API 29+35. |
@@ -58,7 +58,9 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 
 | Área | Notas |
 | --- | --- |
-| Localización ES/EN | **Partial** (PR7): selector de idioma en Ajustes (`AppCompatDelegate.setApplicationLocales`); audit/settings/nav/security analysis localizados (`values` + `values-en`). Compose de **Lab**, **Nearby**, **Vault** y **Onboarding** sigue con strings hardcoded en ES. Mensajes dinámicos del `PasswordAuditViewModel` (errores/bloqueos) también en ES hardcoded. |
+| Localización ES/EN (runtime) | **Partial** (FIX-01 en curso): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings migrados a `values`/`values-en`. No marcar Implemented hasta CI+flujo manual (FIX-05). |
+| Navegación Material (child screens) | **Partial**: Audit/Security con ArrowBack; Permission Center sin flecha; copy uneven. FIX-02. |
+| Prototipo local de red (Lab) | **Partial / ausente en UI**: motor local sí; no hay perfil red + auth + password custom en Lab. FIX-03/04. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |
@@ -72,7 +74,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
 | Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |
 | Biometría Vault + hardening | FASE 26–27. |
-| Localización completa Lab/Nearby/Vault/Onboarding | Extraer strings restantes a recursos. |
-| Observabilidad local + evidence RC + release eng. | FASE 28–30. |
-| UX final pass | FASE 31 (sin features grandes). |
+| Observabilidad local + evidence RC + release eng. | Bloqueado hasta FIX-01…05. |
+| Biometría / iOS / release eng. | Bloqueado por prioridad UX (manual gap audit). |
 | Targets iOS reales | Requiere macOS/Xcode; ver `docs/11-ios-readiness.md` (FASE 32). |

@@ -1,9 +1,9 @@
 package com.wifiauditlab.android
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -47,7 +47,11 @@ import com.wifiauditlab.android.ui.vault.VaultScreen
 import com.wifiauditlab.assessment.port.OnboardingPreferences
 import org.koin.compose.koinInject
 
-class MainActivity : ComponentActivity() {
+/**
+ * [AppCompatActivity] is required so [androidx.appcompat.app.AppCompatDelegate.setApplicationLocales]
+ * updates the Activity configuration that Compose [stringResource] reads.
+ */
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

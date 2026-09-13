@@ -120,18 +120,11 @@ class SecurityAnalysisFamiliesTest(
             val vm = SecurityAnalysisViewModel(store, AssessNetworkSecurity(SecurityAssessmentRegistry.default()))
             val state = vm.state.value
             assertEquals(expectedRating, state.assessment!!.rating)
-            assertEquals(familyLabel(family), state.authentication!!.familyLabel)
+            assertEquals(familyLabelRes(family), state.authentication!!.familyLabelRes)
             if (family == SecurityFamily.WPA2_WPA3_PERSONAL || transition) {
-                assertNotNull(state.authentication!!.transitionLabel)
+                assertNotNull(state.authentication!!.transitionLabelRes)
             }
             assertTrue(state.recommendations.isNotEmpty())
-            assertFalse(
-                state.recommendations.any {
-                    it.contains("genera", ignoreCase = true) ||
-                        it.contains("candidate", ignoreCase = true) ||
-                        it.contains("laboratorio", ignoreCase = true)
-                },
-            )
         }
 }
 

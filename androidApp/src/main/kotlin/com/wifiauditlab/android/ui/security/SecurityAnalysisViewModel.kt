@@ -39,7 +39,7 @@ class SecurityAnalysisViewModel(
                     loading = false,
                     assessment = assessment,
                     authentication = buildAuthenticationSummary(request.profile),
-                    recommendations = defensiveRecommendations(request.profile, assessment),
+                    recommendations = defensiveRecommendationRes(request.profile, assessment),
                 )
             }
         }

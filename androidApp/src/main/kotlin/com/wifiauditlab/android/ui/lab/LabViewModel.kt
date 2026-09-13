@@ -1,7 +1,9 @@
 package com.wifiauditlab.android.ui.lab
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wifiauditlab.android.R
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -34,19 +36,25 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
-enum class AlphabetChoice(val label: String, val alphabet: Alphabet) {
-    DIGITS("Dígitos (0-9)", Alphabet.DIGITS),
-    LOWERCASE("Minúsculas (a-z)", Alphabet.LOWERCASE),
-    LOWER_ALPHANUMERIC("Alfanumérico (a-z, 0-9)", Alphabet.LOWER_ALPHANUMERIC),
-    ALPHANUMERIC("Alfanumérico (a-z, A-Z, 0-9)", Alphabet.ALPHANUMERIC),
+enum class AlphabetChoice(
+    @StringRes val labelRes: Int,
+    val alphabet: Alphabet,
+) {
+    DIGITS(R.string.lab_alphabet_digits, Alphabet.DIGITS),
+    LOWERCASE(R.string.lab_alphabet_lowercase, Alphabet.LOWERCASE),
+    LOWER_ALPHANUMERIC(R.string.lab_alphabet_lower_alphanumeric, Alphabet.LOWER_ALPHANUMERIC),
+    ALPHANUMERIC(R.string.lab_alphabet_alphanumeric, Alphabet.ALPHANUMERIC),
 }
 
-enum class StrategyChoice(val label: String, val id: SearchStrategyId) {
-    UNIFORM("Uniforme", UniformBaselineStrategy.ID),
-    LENGTH("Longitud primero", LengthPrioritizedStrategy.ID),
-    TIERED("Alfabeto por capas", TieredAlphabetStrategy.ID),
-    WEIGHTED("Probabilidad sintética", SyntheticProbabilityWeightedStrategy.ID),
-    ADAPTIVE("Adaptativa", AdaptiveSyntheticStrategy.ID),
+enum class StrategyChoice(
+    @StringRes val labelRes: Int,
+    val id: SearchStrategyId,
+) {
+    UNIFORM(R.string.lab_strategy_uniform, UniformBaselineStrategy.ID),
+    LENGTH(R.string.lab_strategy_length, LengthPrioritizedStrategy.ID),
+    TIERED(R.string.lab_strategy_tiered, TieredAlphabetStrategy.ID),
+    WEIGHTED(R.string.lab_strategy_weighted, SyntheticProbabilityWeightedStrategy.ID),
+    ADAPTIVE(R.string.lab_strategy_adaptive, AdaptiveSyntheticStrategy.ID),
 }
 
 data class LabConfig(
@@ -76,7 +84,7 @@ data class LabUiState(
     val metrics: SearchMetrics? = null,
     val outcome: SearchOutcome? = null,
     val foundCandidate: String? = null,
-    val configError: String? = null,
+    @StringRes val configErrorRes: Int? = null,
     val errorMessage: String? = null,
 )
 
@@ -166,9 +174,9 @@ class LabViewModel(
             it.copy(
                 estimatedCombinations = plan.searchSpace,
                 feasibility = limits?.let { l -> analyzer.analyze(plan, l, estimator) },
-                configError =
+                configErrorRes =
                     if (limits == null) {
-                        "Configura al menos un límite de intentos o de tiempo."
+                        R.string.lab_err_limits_required
                     } else {
                         null
                     },
@@ -180,7 +188,7 @@ class LabViewModel(
         val config = _state.value.config
         val limits =
             runCatching { buildLimits(config) }.getOrNull() ?: run {
-                _state.update { it.copy(configError = "Configura al menos un límite de intentos o de tiempo.") }
+                _state.update { it.copy(configErrorRes = R.string.lab_err_limits_required) }
                 return
             }
         val challenge = buildChallenge(config)

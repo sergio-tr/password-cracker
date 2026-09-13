@@ -2,6 +2,7 @@ package com.wifiauditlab.android.ui.audit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
@@ -46,6 +47,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
+fun interface UiStrings {
+    fun get(
+        id: Int,
+        vararg args: Any,
+    ): String
+}
+
 /**
  * Quick Audit: password source, automatic plan, and **local** search execution.
  * Never authenticates candidates against a router/AP.
@@ -66,6 +74,7 @@ class PasswordAuditViewModel(
     private val strengthAnalyzer: SecretStrengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
     private val availableProcessors: Int = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val uiStrings: UiStrings,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PasswordAuditUiState())
     val state: StateFlow<PasswordAuditUiState> = _state.asStateFlow()
@@ -91,8 +100,8 @@ class PasswordAuditViewModel(
             PasswordAuditUiState(
                 displayName = current.network.displayName,
                 ssidLabel = current.network.ssid.toString(),
-                familyLabel = current.network.familyDisplayLabel(),
-                metaLine = current.network.metaLine(),
+                familyLabel = current.network.familyDisplayLabel { uiStrings.get(it) },
+                metaLine = current.network.metaLine { uiStrings.get(it) },
                 savedNetworkId = current.savedNetworkId,
                 loadingPlan = true,
                 saveToVault = false,
@@ -273,20 +282,20 @@ class PasswordAuditViewModel(
         val snapshot = _state.value
         if (!snapshot.hasSecretReady) {
             _state.update {
-                it.copy(passwordError = "Introduce o selecciona la contraseña conocida.")
+                it.copy(passwordError = uiStrings.get(R.string.audit_err_missing_password))
             }
             return
         }
         val plan = snapshot.plan
         if (plan == null) {
             _state.update {
-                it.copy(startBlockedReason = "No hay un plan automático válido para esta red.")
+                it.copy(startBlockedReason = uiStrings.get(R.string.audit_err_no_valid_plan))
             }
             return
         }
         if (snapshot.feasibilityRating == FeasibilityRating.Invalid) {
             _state.update {
-                it.copy(startBlockedReason = "La configuración actual no es válida para iniciar.")
+                it.copy(startBlockedReason = uiStrings.get(R.string.audit_err_invalid_config))
             }
             return
         }
@@ -300,10 +309,8 @@ class PasswordAuditViewModel(
                         PasswordAuditEligibility.NotCurrentlyConnected -> {
                             _state.update {
                                 it.copy(
-                                    connectionLostMessage =
-                                        "No estás conectado a esta red. " +
-                                            "Conéctate primero para realizar una auditoría local.",
-                                    startBlockedReason = "Se ha perdido la conexión a esta red.",
+                                    connectionLostMessage = uiStrings.get(R.string.audit_err_not_connected),
+                                    startBlockedReason = uiStrings.get(R.string.audit_err_connection_lost),
                                 )
                             }
                             return@launch
@@ -311,8 +318,7 @@ class PasswordAuditViewModel(
                         else -> {
                             _state.update {
                                 it.copy(
-                                    startBlockedReason =
-                                        "Esta red ya no es elegible para una auditoría de contraseña.",
+                                    startBlockedReason = uiStrings.get(R.string.audit_err_no_longer_eligible),
                                 )
                             }
                             return@launch
@@ -323,7 +329,7 @@ class PasswordAuditViewModel(
                 val password =
                     resolvePasswordForStart() ?: run {
                         _state.update {
-                            it.copy(passwordError = "No se pudo obtener la contraseña conocida.")
+                            it.copy(passwordError = uiStrings.get(R.string.audit_err_password_unavailable))
                         }
                         return@launch
                     }
@@ -433,7 +439,7 @@ class PasswordAuditViewModel(
             }
         } catch (_: Throwable) {
             _state.update {
-                it.copy(infoMessage = "La auditoría continúa; no se pudo guardar en el Vault.")
+                it.copy(infoMessage = uiStrings.get(R.string.audit_err_vault_save_failed))
             }
         }
     }
@@ -484,7 +490,7 @@ class PasswordAuditViewModel(
                     searchState = SearchState.Failed,
                     metrics = event.metrics ?: metrics,
                     outcome = SearchOutcome.Failed,
-                    errorMessage = "La auditoría se detuvo por un error.",
+                    errorMessage = uiStrings.get(R.string.audit_err_audit_failed),
                     errorDetails = sanitizeError(event.message),
                     showErrorDetails = false,
                 ).withResultReport(cancelled = false, failed = true)
@@ -526,8 +532,7 @@ class PasswordAuditViewModel(
                             loadingPlan = false,
                             plan = null,
                             explanation = null,
-                            planNotApplicableReason =
-                                "Define al menos una duración o un límite de intentos.",
+                            planNotApplicableReason = uiStrings.get(R.string.audit_err_budget_required),
                         )
                     }
                     refreshStartGate()
@@ -606,12 +611,12 @@ class PasswordAuditViewModel(
             val reason =
                 when {
                     current.isActive -> null
-                    !current.hasSecretReady -> "Falta la contraseña conocida."
-                    current.plan == null -> current.planNotApplicableReason ?: "Sin plan automático."
+                    !current.hasSecretReady -> uiStrings.get(R.string.audit_err_password_required)
+                    current.plan == null -> current.planNotApplicableReason ?: uiStrings.get(R.string.audit_err_no_plan)
                     current.feasibilityRating == FeasibilityRating.Invalid ->
-                        "La configuración actual no es válida para iniciar."
+                        uiStrings.get(R.string.audit_err_invalid_config)
                     current.connectionLostMessage != null ->
-                        "Se ha perdido la conexión a esta red."
+                        uiStrings.get(R.string.audit_err_connection_lost)
                     else -> null
                 }
             current.copy(startBlockedReason = reason)

@@ -1,9 +1,9 @@
 package com.wifiauditlab.android.ui.audit
 
-import com.wifiauditlab.android.ui.lab.bandDisplayLabel
+import com.wifiauditlab.android.ui.lab.bandDisplayLabelRes
 import com.wifiauditlab.android.ui.lab.standardLabel
 import com.wifiauditlab.android.ui.nearby.NearbyItem
-import com.wifiauditlab.android.ui.security.familyLabel
+import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultReport
 import com.wifiauditlab.assessment.domain.audit.PasswordStrengthAssessment
@@ -156,12 +156,13 @@ fun passwordAuditRequestFromNearby(item: NearbyItem): PasswordAuditRequest {
     )
 }
 
-fun PasswordAuditNetworkContext.familyDisplayLabel(): String = familyLabel(securityProfile.family)
+fun PasswordAuditNetworkContext.familyDisplayLabel(resolveString: (Int) -> String): String =
+    resolveString(familyLabelRes(securityProfile.family))
 
-fun PasswordAuditNetworkContext.metaLine(): String =
+fun PasswordAuditNetworkContext.metaLine(resolveString: (Int) -> String): String =
     listOfNotNull(
         wifiStandard?.let { standardLabel(it) },
-        band?.let { bandDisplayLabel(it) },
+        band?.let { resolveString(bandDisplayLabelRes(it)) },
     ).joinToString(" · ").ifEmpty { "—" }
 
 fun PasswordAuditBudgetPreset.chipLabel(): String =

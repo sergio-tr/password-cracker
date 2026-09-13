@@ -19,11 +19,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wifiauditlab.android.R
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,8 +35,6 @@ fun OnboardingScreen(
     replay: Boolean = false,
     onFinished: () -> Unit,
 ) {
-    // Track an interactive incomplete session so replay does not fire onFinished from the
-    // initial prefs.completed=true before reopenFromSettings() runs.
     var sessionActive by remember { mutableStateOf(false) }
     LaunchedEffect(replay) {
         if (replay) {
@@ -55,29 +55,44 @@ fun OnboardingScreen(
     if (state.completed) return
 
     val page = state.page
-    Scaffold(topBar = { TopAppBar(title = { Text("Bienvenida") }) }) { padding ->
+    val progressCd = stringResource(R.string.onboarding_cd_progress)
+    val skipCd = stringResource(R.string.onboarding_cd_skip)
+    val continueCd = stringResource(R.string.onboarding_cd_continue)
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_title)) }) }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                "Paso ${state.pageIndex + 1} de ${OnboardingPage.entries.size}",
-                modifier = Modifier.semantics { contentDescription = "Progreso de onboarding" },
+                stringResource(
+                    R.string.onboarding_progress,
+                    state.pageIndex + 1,
+                    OnboardingPage.entries.size,
+                ),
+                modifier = Modifier.semantics { contentDescription = progressCd },
             )
-            Text(page.title, fontWeight = FontWeight.Bold)
-            Text(page.body)
+            Text(stringResource(page.titleRes), fontWeight = FontWeight.Bold)
+            Text(stringResource(page.bodyRes))
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(
                     onClick = { viewModel.skip() },
-                    modifier = Modifier.weight(1f).semantics { contentDescription = "Omitir onboarding" },
-                ) { Text("Omitir") }
+                    modifier = Modifier.weight(1f).semantics { contentDescription = skipCd },
+                ) { Text(stringResource(R.string.onboarding_skip)) }
                 Button(
                     onClick = { viewModel.next() },
-                    modifier = Modifier.weight(1f).semantics { contentDescription = "Continuar onboarding" },
-                ) { Text(if (state.isLast) "Empezar" else "Continuar") }
+                    modifier = Modifier.weight(1f).semantics { contentDescription = continueCd },
+                ) {
+                    Text(
+                        if (state.isLast) {
+                            stringResource(R.string.onboarding_start)
+                        } else {
+                            stringResource(R.string.onboarding_continue)
+                        },
+                    )
+                }
             }
         }
     }

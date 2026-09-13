@@ -32,6 +32,8 @@ class NearbyComposeTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
+    private val activity get() = composeTestRule.activity
+
     private fun setNearby(
         scanner: FakeWifiScanner,
         repo: FakeSavedNetworkRepository = FakeSavedNetworkRepository(),
@@ -64,14 +66,15 @@ class NearbyComposeTest {
     @Test
     fun loading_showsScanningMessage() {
         setNearby(FakeWifiScanner(WifiScanState.Loading))
-        composeTestRule.onNodeWithText("Escaneando…").assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.nearby_scanning)).assertIsDisplayed()
     }
 
     @Test
     fun emptyResults_showsEmptyMessage() {
         setNearby(FakeWifiScanner(WifiScanState.Results(emptyList())))
-        waitForText("No se han encontrado redes todavía.")
-        composeTestRule.onNodeWithText("No se han encontrado redes todavía.").assertIsDisplayed()
+        val emptyMessage = activity.getString(R.string.nearby_empty)
+        waitForText(emptyMessage)
+        composeTestRule.onNodeWithText(emptyMessage).assertIsDisplayed()
     }
 
     @Test
@@ -79,7 +82,7 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))))
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Desconocida").assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.nearby_unknown)).assertIsDisplayed()
     }
 
     @Test
@@ -101,25 +104,27 @@ class NearbyComposeTest {
         )
         waitForText("Casa")
         composeTestRule.onNodeWithText("Casa").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Guardada").assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.nearby_saved)).assertIsDisplayed()
     }
 
     @Test
     fun permissionRequired_showsGrantPrompt() {
         setNearby(FakeWifiScanner(WifiScanState.PermissionRequired))
         composeTestRule
-            .onNodeWithText("Necesitamos permiso para descubrir redes. Pulsa Actualizar para concederlo.")
+            .onNodeWithText(activity.getString(R.string.nearby_permission_required))
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Conceder permiso").assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.nearby_grant_permission)).assertIsDisplayed()
     }
 
     @Test
     fun locationDisabled_showsLocationPrompt() {
         setNearby(FakeWifiScanner(WifiScanState.LocationServicesDisabled))
         composeTestRule
-            .onNodeWithText("Activa la ubicación del dispositivo para poder escanear redes Wi-Fi.")
+            .onNodeWithText(activity.getString(R.string.nearby_location_disabled))
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Abrir ajustes de ubicación").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.nearby_open_location_settings))
+            .assertIsDisplayed()
     }
 
     @Test
@@ -127,24 +132,26 @@ class NearbyComposeTest {
         setNearby(
             FakeWifiScanner(WifiScanState.Throttled(listOf(observation(ssid = "Cafe")))),
         )
-        waitForText("Escaneo limitado temporalmente. Se muestran los últimos resultados.")
-        composeTestRule
-            .onNodeWithText("Escaneo limitado temporalmente. Se muestran los últimos resultados.")
-            .assertIsDisplayed()
+        val throttledMessage = activity.getString(R.string.nearby_throttled)
+        waitForText(throttledMessage)
+        composeTestRule.onNodeWithText(throttledMessage).assertIsDisplayed()
         composeTestRule.onNodeWithText("Cafe").assertIsDisplayed()
     }
 
     @Test
     fun scannerError_showsErrorMessage() {
-        setNearby(FakeWifiScanner(WifiScanState.Error("timeout de laboratorio")))
-        composeTestRule.onNodeWithText("Error al escanear: timeout de laboratorio").assertIsDisplayed()
+        val errorDetail = "timeout de laboratorio"
+        setNearby(FakeWifiScanner(WifiScanState.Error(errorDetail)))
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.nearby_scan_error, errorDetail))
+            .assertIsDisplayed()
     }
 
     @Test
     fun refresh_delegatesToScanner() {
         val scanner = FakeWifiScanner(WifiScanState.Idle)
         setNearby(scanner)
-        composeTestRule.onNodeWithText("Actualizar").performClick()
+        composeTestRule.onNodeWithText(activity.getString(R.string.nearby_refresh)).performClick()
         composeTestRule.waitUntil(5_000) { scanner.refreshCount >= 1 }
         assertEquals(1, scanner.refreshCount)
     }
@@ -154,15 +161,18 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))))
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        val openWifi = composeTestRule.activity.getString(R.string.audit_open_wifi_settings)
+        val openWifi = activity.getString(R.string.audit_open_wifi_settings)
         waitForText(openWifi)
         composeTestRule.onNodeWithText(openWifi).performScrollTo().assertIsDisplayed()
-        waitForText("Probar en laboratorio")
-        composeTestRule.onNodeWithText("Probar en laboratorio").performScrollTo().assertIsDisplayed()
-        waitForText("Analizar seguridad")
-        composeTestRule.onNodeWithText("Analizar seguridad").performScrollTo().assertIsDisplayed()
-        waitForText("Guardar en el Vault")
-        composeTestRule.onNodeWithText("Guardar en el Vault").performScrollTo().assertIsDisplayed()
+        val openLab = activity.getString(R.string.nearby_open_lab)
+        waitForText(openLab)
+        composeTestRule.onNodeWithText(openLab).performScrollTo().assertIsDisplayed()
+        val analyzeSecurity = activity.getString(R.string.nearby_analyze_security)
+        waitForText(analyzeSecurity)
+        composeTestRule.onNodeWithText(analyzeSecurity).performScrollTo().assertIsDisplayed()
+        val saveVault = activity.getString(R.string.nearby_save_vault)
+        waitForText(saveVault)
+        composeTestRule.onNodeWithText(saveVault).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -171,13 +181,17 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))), repo)
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        waitForText("Alias")
-        composeTestRule.onNodeWithText("Alias").performScrollTo().performTextClearance()
-        composeTestRule.onNodeWithText("Alias").performTextInput("Lab-Casa")
-        composeTestRule.onNodeWithText("Guardar en el Vault").performScrollTo().performClick()
+        val aliasLabel = activity.getString(R.string.nearby_label_alias)
+        waitForText(aliasLabel)
+        composeTestRule.onNodeWithText(aliasLabel).performScrollTo().performTextClearance()
+        composeTestRule.onNodeWithText(aliasLabel).performTextInput("Lab-Casa")
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.nearby_save_vault))
+            .performScrollTo()
+            .performClick()
         composeTestRule.waitUntil(5_000) { repo.networks.value.isNotEmpty() }
         assertEquals("Lab-Casa", repo.networks.value.single().alias)
-        waitForText("Guardada en el Vault.")
+        waitForText(activity.getString(R.string.nearby_vault_saved_confirm))
     }
 
     @Test
@@ -189,8 +203,9 @@ class NearbyComposeTest {
         )
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        waitForText("Analizar seguridad")
-        composeTestRule.onNodeWithText("Analizar seguridad").performClick()
+        val analyzeSecurity = activity.getString(R.string.nearby_analyze_security)
+        waitForText(analyzeSecurity)
+        composeTestRule.onNodeWithText(analyzeSecurity).performClick()
         composeTestRule.waitUntil(5_000) { opened != null }
         assertTrue(opened!!.observation.ssid.value == "Home")
     }
@@ -204,8 +219,9 @@ class NearbyComposeTest {
         )
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        waitForText("Probar en laboratorio")
-        composeTestRule.onNodeWithText("Probar en laboratorio").performClick()
+        val openLab = activity.getString(R.string.nearby_open_lab)
+        waitForText(openLab)
+        composeTestRule.onNodeWithText(openLab).performClick()
         composeTestRule.waitUntil(5_000) { opened != null }
         assertTrue(opened!!.observation.ssid.value == "Home")
     }

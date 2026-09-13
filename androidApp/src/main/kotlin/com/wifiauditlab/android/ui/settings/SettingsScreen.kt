@@ -170,57 +170,79 @@ private fun BenchmarksCard(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Lab benchmarking", fontWeight = FontWeight.SemiBold)
-            Text("Estado: ${state.statusLabel}")
+            Text(stringResource(R.string.settings_bench_title), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.settings_bench_status, state.statusLabel))
             state.comparison?.let { comparison ->
-                Text("Baseline throughput: ${formatRate(comparison.baselineThroughput)}")
-                Text("Parallel throughput: ${formatRate(comparison.parallelThroughput)}")
-                Text("Speedup: ${comparison.speedup?.let { String.format("%.2fx", it) } ?: "—"}")
+                Text(stringResource(R.string.settings_bench_baseline, formatRate(comparison.baselineThroughput)))
+                Text(stringResource(R.string.settings_bench_parallel, formatRate(comparison.parallelThroughput)))
                 Text(
-                    "Worker efficiency: ${comparison.workerEfficiency?.let { String.format("%.2f", it) } ?: "—"}",
+                    stringResource(
+                        R.string.settings_bench_speedup,
+                        comparison.speedup?.let { String.format("%.2fx", it) } ?: "—",
+                    ),
+                )
+                Text(
+                    stringResource(
+                        R.string.settings_bench_efficiency,
+                        comparison.workerEfficiency?.let { String.format("%.2f", it) } ?: "—",
+                    ),
                 )
             }
             if (state.history.isNotEmpty()) {
-                Text("Historical runs (latest ${state.history.take(5).size}):")
+                Text(stringResource(R.string.settings_bench_history, state.history.take(5).size))
                 state.history.take(5).forEach { run ->
                     Text(
-                        "· ${run.challengeProfile} · w=${run.workerCount} · " +
-                            "${formatRate(run.attemptsPerSecond)} · ${run.terminalResult}",
+                        stringResource(
+                            R.string.settings_bench_run_line,
+                            run.challengeProfile,
+                            run.workerCount,
+                            formatRate(run.attemptsPerSecond),
+                            run.terminalResult,
+                        ),
                     )
                 }
             }
             state.exportJson?.let {
-                Text("Export JSON ready (${it.length} chars, sanitized — no secrets).")
+                Text(stringResource(R.string.settings_bench_export_json, it.length))
             }
             state.exportCsv?.let {
-                Text("Export CSV ready (${it.lineSequence().count()} lines, sanitized).")
+                Text(stringResource(R.string.settings_bench_export_csv, it.lineSequence().count()))
             }
             state.errorMessage?.let { Text(it) }
             Button(
                 onClick = onRunSuite,
                 enabled = !state.running,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(if (state.running) "Running…" else "Run benchmark suite") }
+            ) {
+                Text(
+                    if (state.running) {
+                        stringResource(R.string.settings_bench_running)
+                    } else {
+                        stringResource(R.string.settings_bench_run_suite)
+                    },
+                )
+            }
             OutlinedButton(
                 onClick = onCompare,
                 enabled = !state.running,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Compare baseline vs 4 workers") }
+            ) { Text(stringResource(R.string.settings_bench_compare)) }
             OutlinedButton(
                 onClick = onClear,
                 enabled = !state.running,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Clear benchmark history") }
+            ) { Text(stringResource(R.string.settings_bench_clear)) }
         }
     }
 }
 
+@Composable
 private fun formatRate(value: Double?): String =
     when {
         value == null -> "—"
-        value >= 1_000_000 -> String.format("%.2f M/s", value / 1_000_000.0)
-        value >= 1_000 -> String.format("%.1f k/s", value / 1_000.0)
-        else -> String.format("%.0f /s", value)
+        value >= 1_000_000 -> stringResource(R.string.settings_bench_rate_m, value / 1_000_000.0)
+        value >= 1_000 -> stringResource(R.string.settings_bench_rate_k, value / 1_000.0)
+        else -> stringResource(R.string.settings_bench_rate_raw, value)
     }
 
 @Composable
@@ -230,19 +252,25 @@ private fun CalibrationCard(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Performance calibration", fontWeight = FontWeight.SemiBold)
-            Text("Estado: ${state.statusLabel}")
-            Text("Last calibration: ${state.lastCalibrationLabel}")
-            Text("Measured throughput: ${state.throughputLabel}")
-            Text("Sample duration: ${state.sampleDurationLabel}")
-            Text("Fingerprint: ${state.fingerprintLabel}")
+            Text(stringResource(R.string.settings_cal_title), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.settings_cal_status, state.statusLabel))
+            Text(stringResource(R.string.settings_cal_last, state.lastCalibrationLabel))
+            Text(stringResource(R.string.settings_cal_throughput, state.throughputLabel))
+            Text(stringResource(R.string.settings_cal_sample, state.sampleDurationLabel))
+            Text(stringResource(R.string.settings_cal_fingerprint, state.fingerprintLabel))
             state.errorMessage?.let { Text(it) }
             Button(
                 onClick = onRecalibrate,
                 enabled = !state.loading && !state.recalibrating,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (state.recalibrating) "Recalibrating…" else "Recalibrate")
+                Text(
+                    if (state.recalibrating) {
+                        stringResource(R.string.settings_cal_recalibrating)
+                    } else {
+                        stringResource(R.string.settings_cal_recalibrate)
+                    },
+                )
             }
         }
     }

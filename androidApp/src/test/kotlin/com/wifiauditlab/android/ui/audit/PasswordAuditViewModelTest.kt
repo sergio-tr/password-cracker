@@ -1,5 +1,6 @@
 package com.wifiauditlab.android.ui.audit
 
+import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
@@ -383,8 +384,35 @@ class PasswordAuditViewModelTest {
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
             availableProcessors = 4,
             ioDispatcher = dispatcher,
+            uiStrings = spanishUiStrings,
         )
     }
+
+    private val spanishUiStrings =
+        UiStrings { id, _ ->
+            when (id) {
+                R.string.audit_err_missing_password -> "Introduce o selecciona la contraseña conocida."
+                R.string.audit_err_password_required -> "Falta la contraseña conocida."
+                R.string.audit_err_no_valid_plan -> "No hay un plan automático válido para esta red."
+                R.string.audit_err_invalid_config -> "La configuración actual no es válida para iniciar."
+                R.string.audit_err_not_connected ->
+                    "No estás conectado a esta red. Conéctate primero para realizar una auditoría local."
+                R.string.audit_err_connection_lost -> "Se ha perdido la conexión a esta red."
+                R.string.audit_err_no_longer_eligible -> "Esta red ya no es elegible para una auditoría de contraseña."
+                R.string.audit_err_password_unavailable -> "No se pudo obtener la contraseña conocida."
+                R.string.audit_err_vault_save_failed -> "La auditoría continúa; no se pudo guardar en el Vault."
+                R.string.audit_err_audit_failed -> "La auditoría se detuvo por un error."
+                R.string.audit_err_budget_required -> "Define al menos una duración o un límite de intentos."
+                R.string.audit_err_no_plan -> "Sin plan automático."
+                R.string.security_family_open -> "Abierta (Open)"
+                R.string.security_family_wpa2 -> "WPA2-Personal"
+                R.string.security_family_wpa3 -> "WPA3-Personal"
+                R.string.security_family_wpa2_wpa3 -> "WPA2/WPA3-Personal (transición)"
+                R.string.nearby_band_2_4 -> "2,4 GHz"
+                R.string.nearby_band_5 -> "5 GHz"
+                else -> error("Missing Spanish test string for resource id=$id")
+            }
+        }
 
     private fun eligibleRequest(
         family: SecurityFamily = SecurityFamily.WPA2_PERSONAL,
