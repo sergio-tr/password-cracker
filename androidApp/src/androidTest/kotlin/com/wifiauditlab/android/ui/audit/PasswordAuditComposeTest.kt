@@ -147,11 +147,6 @@ class PasswordAuditComposeTest {
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
             availableProcessors = 4,
             ioDispatcher = Dispatchers.Main.immediate,
-            uiStrings =
-                UiStrings { id, args ->
-                    val context = composeTestRule.activity
-                    if (args.isEmpty()) context.getString(id) else context.getString(id, *args)
-                },
         )
     }
 
@@ -233,7 +228,7 @@ class PasswordAuditComposeTest {
             vm.state.value.outcome == SearchOutcome.Cancelled ||
                 vm.state.value.searchState == SearchState.Cancelled
         }
-        waitForText("Auditoría detenida")
+        waitForText(str(R.string.audit_result_cancelled))
         val attempts = vm.state.value.metrics?.attempts
         composeTestRule.waitForIdle()
         assertEquals(attempts, vm.state.value.metrics?.attempts)
@@ -250,7 +245,7 @@ class PasswordAuditComposeTest {
         composeTestRule.onNodeWithTag("audit_start").performClick()
         composeTestRule.waitUntil(8_000) { vm.state.value.outcome == SearchOutcome.Found }
         assertNotNull(vm.state.value.resultReport)
-        waitForText("Contraseña encontrada")
+        waitForText(str(R.string.audit_outcome_found))
         composeTestRule.onNodeWithText(str(R.string.audit_how_to_improve))
             .performScrollTo()
             .assertIsDisplayed()
@@ -281,7 +276,7 @@ class PasswordAuditComposeTest {
         assertTrue(vm.state.value.passwordInput.isEmpty())
         composeTestRule.onNodeWithTag("audit_start").performClick()
         composeTestRule.waitUntil(8_000) { vm.state.value.outcome == SearchOutcome.Found }
-        waitForText("Contraseña encontrada")
+        waitForText(str(R.string.audit_outcome_found))
         assertTrue(vm.state.value.passwordInput.isEmpty())
         assertTrue(vm.state.value.resultReport!!.recommendations.isNotEmpty())
         composeTestRule.onNodeWithText(str(R.string.audit_recommendations))

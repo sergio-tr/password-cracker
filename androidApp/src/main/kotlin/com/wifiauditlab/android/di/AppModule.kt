@@ -10,7 +10,6 @@ import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
 import com.wifiauditlab.android.ui.audit.PasswordAuditViewModel
-import com.wifiauditlab.android.ui.audit.UiStrings
 import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
 import com.wifiauditlab.android.ui.lab.LabViewModel
 import com.wifiauditlab.android.ui.nearby.NearbyViewModel
@@ -183,7 +182,6 @@ val appModule =
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
         viewModel {
-            val context = androidContext()
             PasswordAuditViewModel(
                 targetStore = get(),
                 planner = get(),
@@ -196,32 +194,10 @@ val appModule =
                 engine = get(),
                 calibration = get(),
                 strengthAnalyzer = get(),
-                uiStrings =
-                    UiStrings { id, args ->
-                        if (args.isEmpty()) {
-                            context.getString(id)
-                        } else {
-                            context.getString(id, *args)
-                        }
-                    },
             )
         }
-        viewModel {
-            val context = androidContext()
-            val uiStrings =
-                UiStrings { id, args ->
-                    if (args.isEmpty()) context.getString(id) else context.getString(id, *args)
-                }
-            SettingsCalibrationViewModel(get(), get(), uiStrings = uiStrings)
-        }
-        viewModel {
-            val context = androidContext()
-            val uiStrings =
-                UiStrings { id, args ->
-                    if (args.isEmpty()) context.getString(id) else context.getString(id, *args)
-                }
-            SettingsBenchmarkViewModel(get(), uiStrings = uiStrings)
-        }
+        viewModel { SettingsCalibrationViewModel(get(), get()) }
+        viewModel { SettingsBenchmarkViewModel(get()) }
         viewModel {
             PermissionCenterViewModel(
                 inventoryFactory = { permanentDenials ->

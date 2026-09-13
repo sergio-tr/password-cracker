@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.platform.SharedPreferencesBenchmarkRepository
-import com.wifiauditlab.android.ui.audit.UiStrings
 import com.wifiauditlab.lab.domain.BenchmarkComparison
 import com.wifiauditlab.lab.domain.BenchmarkRecord
 import com.wifiauditlab.lab.domain.engine.LabBenchmarkService
@@ -20,13 +19,12 @@ data class BenchmarkSettingsUiState(
     val comparison: BenchmarkComparison? = null,
     val exportJson: String? = null,
     val exportCsv: String? = null,
-    val statusLabel: String = "Sin ejecuciones",
-    val errorMessage: String? = null,
+    val status: BenchmarkStatus = BenchmarkStatus.None,
+    val errorMessage: SettingsUiMessage? = null,
 )
 
 class SettingsBenchmarkViewModel(
     private val benchmarks: LabBenchmarkService,
-    private val uiStrings: UiStrings,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BenchmarkSettingsUiState())
     val state: StateFlow<BenchmarkSettingsUiState> = _state.asStateFlow()
@@ -41,11 +39,11 @@ class SettingsBenchmarkViewModel(
             _state.update {
                 it.copy(
                     history = history,
-                    statusLabel =
+                    status =
                         if (history.isEmpty()) {
-                            uiStrings.get(R.string.settings_bench_none)
+                            BenchmarkStatus.None
                         } else {
-                            uiStrings.get(R.string.settings_bench_runs, history.size)
+                            BenchmarkStatus.RunCount(history.size)
                         },
                     errorMessage = null,
                 )
@@ -62,7 +60,7 @@ class SettingsBenchmarkViewModel(
                         it.copy(
                             running = false,
                             history = records + it.history,
-                            statusLabel = uiStrings.get(R.string.settings_bench_suite, records.size),
+                            status = BenchmarkStatus.SuiteCompleted(records.size),
                             exportJson = SharedPreferencesBenchmarkRepository.exportJson(records),
                             exportCsv = SharedPreferencesBenchmarkRepository.exportCsv(records),
                         )
@@ -70,7 +68,14 @@ class SettingsBenchmarkViewModel(
                     refresh()
                 }.onFailure { error ->
                     _state.update {
-                        it.copy(running = false, errorMessage = error.message ?: uiStrings.get(R.string.settings_bench_failed))
+                        it.copy(
+                            running = false,
+                            errorMessage =
+                                SettingsUiMessage(
+                                    messageRes = R.string.settings_bench_failed,
+                                    detail = error.message,
+                                ),
+                        )
                     }
                 }
         }
@@ -85,9 +90,8 @@ class SettingsBenchmarkViewModel(
                         it.copy(
                             running = false,
                             comparison = comparison,
-                            statusLabel =
-                                uiStrings.get(
-                                    R.string.settings_bench_speedup_label,
+                            status =
+                                BenchmarkStatus.SpeedupResult(
                                     comparison.speedup?.let { s -> String.format("%.2fx", s) } ?: "—",
                                 ),
                         )
@@ -95,7 +99,14 @@ class SettingsBenchmarkViewModel(
                     refresh()
                 }.onFailure { error ->
                     _state.update {
-                        it.copy(running = false, errorMessage = error.message ?: uiStrings.get(R.string.settings_bench_compare_failed))
+                        it.copy(
+                            running = false,
+                            errorMessage =
+                                SettingsUiMessage(
+                                    messageRes = R.string.settings_bench_compare_failed,
+                                    detail = error.message,
+                                ),
+                        )
                     }
                 }
         }
@@ -105,7 +116,7 @@ class SettingsBenchmarkViewModel(
         viewModelScope.launch {
             benchmarks.clear()
             _state.update {
-                BenchmarkSettingsUiState(statusLabel = uiStrings.get(R.string.settings_bench_none))
+                BenchmarkSettingsUiState(status = BenchmarkStatus.None)
             }
         }
     }

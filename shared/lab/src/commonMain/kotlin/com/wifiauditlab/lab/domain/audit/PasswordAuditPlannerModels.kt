@@ -1,5 +1,6 @@
 package com.wifiauditlab.lab.domain.audit
 
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabSearchPlan
@@ -17,7 +18,7 @@ import kotlin.time.Duration
  */
 data class PasswordAuditContext(
     val sharedPasswordApplicable: Boolean,
-    val inapplicableReason: String? = null,
+    val inapplicableReason: PasswordAuditInapplicableReason? = null,
 )
 
 /**
@@ -68,8 +69,8 @@ data class PasswordAuditStage(
 )
 
 data class AutomaticPlanExplanation(
-    val headline: String,
-    val details: List<String>,
+    val headline: PlanExplanationHeadline = PlanExplanationHeadline.AutomaticConfiguration,
+    val details: List<PlanExplanationDetail>,
 )
 
 sealed interface PasswordAuditEngineChoice {
@@ -108,7 +109,7 @@ sealed interface PasswordAuditPlanResult {
     ) : PasswordAuditPlanResult
 
     data class NotApplicable(
-        val reason: String,
+        val reason: PasswordAuditInapplicableReason,
     ) : PasswordAuditPlanResult
 }
 

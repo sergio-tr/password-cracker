@@ -57,14 +57,12 @@ class PasswordAuditResultComposerTest {
                     ),
                 structural = structuralWeak,
                 networkAssessment = highConfig,
-                familyDisplayLabel = "WPA3 Personal",
             )
         assertEquals(PasswordResistanceRating.VERY_LOW, report.passwordResistance)
-        assertEquals("Contraseña encontrada", report.headline)
+        assertEquals(AuditOutcomeHeadline.PasswordFound, report.headline)
         assertTrue(report.performanceMetrics.any { it.quality == EvidenceQuality.Measured })
-        assertTrue(report.networkConfigLabel!!.contains("Alta"))
-        assertTrue(report.recommendations.any { it.id == "longer" })
-        // High Wi-Fi config must not upgrade weak password.
+        assertEquals(SecurityRating.HIGH, report.networkConfig?.rating)
+        assertTrue(report.recommendations.contains(AuditRecommendationId.LongerPassword))
         assertTrue(report.passwordResistance.ordinal <= PasswordResistanceRating.LOW.ordinal)
     }
 
@@ -91,15 +89,23 @@ class PasswordAuditResultComposerTest {
                     PasswordSearchOutcomeKind.LimitReached(
                         attempts = CombinationCount.of(100_000_000),
                         duration = 300.seconds,
-                        budgetSummary = "100M · 5 min",
+                        budgetSummary =
+                            LimitReachedBudgetSummary(
+                                measuredAttempts = CombinationCount.of(100_000_000),
+                                measuredDuration = 300.seconds,
+                                budgetedAttemptCapacity = CombinationCount.of(100_000_000),
+                            ),
                     ),
                 structural = structuralModerate,
                 budgetedAttemptCapacity = CombinationCount.of(100_000_000),
             )
         assertEquals(PasswordResistanceRating.MODERATE, report.passwordResistance)
-        assertTrue(report.headline.contains("límite") || report.headline.contains("resistencia"))
+        assertTrue(
+            report.headline == AuditOutcomeHeadline.NotFoundWithinLimit ||
+                report.headline == AuditOutcomeHeadline.HighResistanceWithinModel,
+        )
         assertTrue(report.performanceMetrics.any { it.quality == EvidenceQuality.Estimated })
-        assertTrue(report.classificationNotes.any { it.contains("presupuesto") })
+        assertTrue(report.classificationNotes.contains(ClassificationNote.SurvivedBudget))
     }
 
     @Test
@@ -110,12 +116,17 @@ class PasswordAuditResultComposerTest {
                     PasswordSearchOutcomeKind.LimitReached(
                         attempts = CombinationCount.of(50_000_000),
                         duration = 300.seconds,
-                        budgetSummary = "50M",
+                        budgetSummary =
+                            LimitReachedBudgetSummary(
+                                measuredAttempts = CombinationCount.of(50_000_000),
+                                measuredDuration = 300.seconds,
+                                budgetedAttemptCapacity = CombinationCount.of(50_000_000),
+                            ),
                     ),
                 structural = structuralStrong,
             )
         assertEquals(PasswordResistanceRating.HIGH, report.passwordResistance)
-        assertEquals("Alta resistencia dentro del modelo probado", report.headline)
+        assertEquals(AuditOutcomeHeadline.HighResistanceWithinModel, report.headline)
     }
 
     @Test
@@ -130,8 +141,8 @@ class PasswordAuditResultComposerTest {
                 structural = structuralModerate,
             )
         assertEquals(PasswordResistanceRating.UNKNOWN, report.passwordResistance)
-        assertEquals("Auditoría detenida", report.headline)
-        assertTrue(report.classificationNotes.any { it.contains("cancelada") })
+        assertEquals(AuditOutcomeHeadline.AuditStopped, report.headline)
+        assertTrue(report.classificationNotes.contains(ClassificationNote.CancelledIncomplete))
     }
 
     @Test
@@ -145,8 +156,8 @@ class PasswordAuditResultComposerTest {
                     ),
                 structural = structuralStrong,
             )
-        assertEquals("No encontrada dentro del modelo probado", report.headline)
-        assertTrue(report.classificationNotes.any { it.contains("no exista") })
+        assertEquals(AuditOutcomeHeadline.NotFoundWithinModel, report.headline)
+        assertTrue(report.classificationNotes.contains(ClassificationNote.ExhaustedPlanSpace))
         assertEquals(PasswordResistanceRating.HIGH, report.passwordResistance)
     }
 
@@ -158,7 +169,7 @@ class PasswordAuditResultComposerTest {
                 structural = structuralModerate,
             )
         assertEquals(PasswordResistanceRating.UNKNOWN, report.passwordResistance)
-        assertTrue(report.headline.contains("error"))
+        assertEquals(AuditOutcomeHeadline.AuditFailed, report.headline)
     }
 
     @Test
@@ -173,9 +184,8 @@ class PasswordAuditResultComposerTest {
                 measuredDuration = 1.seconds,
                 budgetedAttemptCapacity = CombinationCount.of(1_000_000),
                 networkAssessment = highConfig,
-                familyDisplayLabel = "WPA3 Personal",
             )
-        assertTrue(report.networkConfigLabel!!.startsWith("Alta"))
+        assertEquals(SecurityRating.HIGH, report.networkConfig?.rating)
         assertTrue(
             report.passwordResistance == PasswordResistanceRating.VERY_LOW ||
                 report.passwordResistance == PasswordResistanceRating.LOW,
@@ -190,15 +200,19 @@ class PasswordAuditResultComposerTest {
                     PasswordSearchOutcomeKind.LimitReached(
                         attempts = CombinationCount.of(10_000_000),
                         duration = 60.seconds,
-                        budgetSummary = "10M",
+                        budgetSummary =
+                            LimitReachedBudgetSummary(
+                                measuredAttempts = CombinationCount.of(10_000_000),
+                                measuredDuration = 60.seconds,
+                                budgetedAttemptCapacity = CombinationCount.of(10_000_000),
+                            ),
                     ),
                 structural = structuralStrong,
                 networkAssessment = insecureConfig,
-                familyDisplayLabel = "WEP",
             )
         assertEquals(PasswordResistanceRating.HIGH, report.passwordResistance)
-        assertTrue(report.recommendations.any { it.id == "upgrade-wifi" })
-        assertTrue(report.networkConfigLabel!!.contains("Insegura"))
+        assertTrue(report.recommendations.contains(AuditRecommendationId.UpgradeWifi))
+        assertEquals(SecurityRating.INSECURE, report.networkConfig?.rating)
     }
 
     @Test

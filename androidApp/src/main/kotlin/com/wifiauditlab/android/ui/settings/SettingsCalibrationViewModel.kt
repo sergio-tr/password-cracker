@@ -3,7 +3,6 @@ package com.wifiauditlab.android.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wifiauditlab.android.R
-import com.wifiauditlab.android.ui.audit.UiStrings
 import com.wifiauditlab.lab.domain.CalibrationRecord
 import com.wifiauditlab.lab.domain.engine.CalibrationEnvironmentProvider
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
@@ -13,20 +12,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.DateFormat
-import java.util.Date
 
 data class CalibrationSettingsUiState(
     val loading: Boolean = true,
     val recalibrating: Boolean = false,
     val hasRecord: Boolean = false,
     val usable: Boolean = false,
-    val statusLabel: String = "Sin calibración",
-    val lastCalibrationLabel: String = "—",
-    val throughputLabel: String = "—",
-    val sampleDurationLabel: String = "—",
-    val fingerprintLabel: String = "—",
-    val errorMessage: String? = null,
+    val status: CalibrationStatus = CalibrationStatus.None,
+    val lastCalibrationEpochMillis: Long? = null,
+    val throughput: Double? = null,
+    val sampleDurationMillis: Long? = null,
+    val environmentFingerprint: CalibrationFingerprint? = null,
+    val recordFingerprint: CalibrationRecordFingerprint? = null,
+    val errorMessage: SettingsUiMessage? = null,
 )
 
 class SettingsCalibrationViewModel(
@@ -34,7 +32,6 @@ class SettingsCalibrationViewModel(
     private val environmentProvider: CalibrationEnvironmentProvider,
     private val defaultStrategyId: String = LengthPrioritizedStrategy.ID.value,
     private val defaultWorkerCount: Int = 1,
-    private val uiStrings: UiStrings,
 ) : ViewModel() {
     private val _state = MutableStateFlow(CalibrationSettingsUiState())
     val state: StateFlow<CalibrationSettingsUiState> = _state.asStateFlow()
@@ -69,7 +66,11 @@ class SettingsCalibrationViewModel(
                 _state.update {
                     it.copy(
                         recalibrating = false,
-                        errorMessage = uiStrings.get(R.string.settings_cal_recalibrate_failed, error.message ?: "error"),
+                        errorMessage =
+                            SettingsUiMessage(
+                                messageRes = R.string.settings_cal_recalibrate_failed,
+                                detail = error.message ?: "error",
+                            ),
                     )
                 }
             }
@@ -81,18 +82,24 @@ class SettingsCalibrationViewModel(
         usable: CalibrationRecord?,
     ): CalibrationSettingsUiState {
         val env = environmentProvider.current()
+        val envFingerprint =
+            CalibrationFingerprint(
+                engineVersion = env.engineVersion,
+                abi = env.abi,
+                appVersion = env.appVersion,
+            )
         if (last == null) {
             return CalibrationSettingsUiState(
                 loading = false,
                 hasRecord = false,
                 usable = false,
-                statusLabel = uiStrings.get(R.string.settings_cal_none),
-                fingerprintLabel = fingerprint(env.engineVersion, env.abi, env.appVersion),
+                status = CalibrationStatus.None,
+                environmentFingerprint = envFingerprint,
             )
         }
         val status =
             when {
-                usable != null -> uiStrings.get(R.string.settings_cal_compatible)
+                usable != null -> CalibrationStatus.Compatible
                 !last.isCompatibleWith(
                     strategyId = defaultStrategyId,
                     engineVersion = env.engineVersion,
@@ -100,41 +107,30 @@ class SettingsCalibrationViewModel(
                     deviceClass = env.deviceClass,
                     abi = env.abi,
                     appVersion = env.appVersion,
-                ) -> uiStrings.get(R.string.settings_cal_incompatible)
-                last.isStale(System.currentTimeMillis()) -> uiStrings.get(R.string.settings_cal_stale)
-                else -> uiStrings.get(R.string.settings_cal_none)
+                ) -> CalibrationStatus.Incompatible
+                last.isStale(System.currentTimeMillis()) -> CalibrationStatus.Stale
+                else -> CalibrationStatus.None
             }
         return CalibrationSettingsUiState(
             loading = false,
             hasRecord = true,
             usable = usable != null,
-            statusLabel = status,
-            lastCalibrationLabel = formatTimestamp(last.timestampEpochMillis),
-            throughputLabel = formatThroughput(last.measuredAttemptsPerSecond),
-            sampleDurationLabel = uiStrings.get(R.string.settings_cal_sample_ms, last.sampleDurationMillis),
-            fingerprintLabel =
-                uiStrings.get(
-                    R.string.settings_cal_fingerprint_record,
-                    fingerprint(last.engineVersion, last.abi, last.appVersion),
-                    last.strategyId,
-                    last.workerCount,
+            status = status,
+            lastCalibrationEpochMillis = last.timestampEpochMillis,
+            throughput = last.measuredAttemptsPerSecond,
+            sampleDurationMillis = last.sampleDurationMillis,
+            environmentFingerprint = envFingerprint,
+            recordFingerprint =
+                CalibrationRecordFingerprint(
+                    fingerprint =
+                        CalibrationFingerprint(
+                            engineVersion = last.engineVersion,
+                            abi = last.abi,
+                            appVersion = last.appVersion,
+                        ),
+                    strategyId = last.strategyId,
+                    workerCount = last.workerCount,
                 ),
         )
     }
-
-    private fun fingerprint(
-        engineVersion: String,
-        abi: String,
-        appVersion: String,
-    ): String = uiStrings.get(R.string.settings_cal_fingerprint_template, engineVersion, abi, appVersion)
-
-    private fun formatTimestamp(epochMillis: Long): String =
-        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(epochMillis))
-
-    private fun formatThroughput(value: Double): String =
-        when {
-            value >= 1_000_000 -> uiStrings.get(R.string.settings_cal_throughput_m, value / 1_000_000.0)
-            value >= 1_000 -> uiStrings.get(R.string.settings_cal_throughput_k, value / 1_000.0)
-            else -> uiStrings.get(R.string.settings_cal_throughput_raw, value)
-        }
 }

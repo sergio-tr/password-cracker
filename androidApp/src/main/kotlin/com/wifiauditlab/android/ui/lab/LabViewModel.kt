@@ -71,11 +71,8 @@ data class LabConfig(
 ) {
     fun resolvedAlphabet(): Alphabet = customAlphabet ?: alphabet.alphabet
 
-    fun activeLimitsDescription(): String =
-        buildList {
-            maxAttempts?.let { add("$it intentos") }
-            maxDurationSeconds?.let { add("$it s") }
-        }.joinToString(" · ").ifEmpty { "Sin límite (inválido)" }
+    val hasActiveLimits: Boolean
+        get() = maxAttempts != null || maxDurationSeconds != null
 }
 
 data class LabUiState(

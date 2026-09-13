@@ -1,5 +1,6 @@
 package com.wifiauditlab.lab.domain.audit
 
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabSearchPlan
@@ -35,7 +36,7 @@ class DefaultAutomaticPasswordAuditPlanner(
     ): PasswordAuditPlanResult {
         if (!context.sharedPasswordApplicable) {
             return PasswordAuditPlanResult.NotApplicable(
-                context.inapplicableReason ?: "shared-password audit is not applicable",
+                context.inapplicableReason ?: PasswordAuditInapplicableReason.UnsupportedAuth,
             )
         }
 
@@ -124,13 +125,12 @@ class DefaultAutomaticPasswordAuditPlanner(
 
         val explanation =
             AutomaticPlanExplanation(
-                headline = "Configuración automática",
                 details =
                     listOf(
-                        "$workerCount procesos de búsqueda",
-                        "${stages.size} etapas",
-                        "Límite: ${describeBudget(budget)}",
-                        "Configuración adaptada automáticamente a este dispositivo",
+                        PlanExplanationDetail.WorkerCount(workerCount),
+                        PlanExplanationDetail.StageCount(stages.size),
+                        PlanExplanationDetail.BudgetLimit(budget.maxDuration, budget.maxAttempts),
+                        PlanExplanationDetail.DeviceAdapted,
                     ),
             )
 
@@ -260,25 +260,6 @@ class DefaultAutomaticPasswordAuditPlanner(
                 PasswordAuditBudgetPreset.Quick -> 200.milliseconds
                 else -> SearchLimits.DEFAULT_PROGRESS_INTERVAL
             }
-
-        private fun describeBudget(budget: PasswordAuditBudget): String {
-            val parts = mutableListOf<String>()
-            budget.maxDuration?.let { parts += formatDurationNovice(it) }
-            budget.maxAttempts?.let { parts += "${it.toAbbreviatedString()} intentos" }
-            return parts.joinToString(" · ")
-        }
-
-        private fun formatDurationNovice(duration: Duration): String {
-            val seconds = duration.inWholeSeconds
-            return when {
-                seconds < 60 -> "$seconds s"
-                seconds % 60L == 0L -> {
-                    val minutes = seconds / 60
-                    if (minutes == 1L) "1 minuto" else "$minutes minutos"
-                }
-                else -> duration.toString()
-            }
-        }
     }
 }
 
