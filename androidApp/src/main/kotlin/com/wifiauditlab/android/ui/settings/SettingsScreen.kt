@@ -29,9 +29,11 @@ fun SettingsScreen(
     onOpenPermissions: () -> Unit = {},
     onReplayOnboarding: () -> Unit = {},
     calibrationViewModel: SettingsCalibrationViewModel = koinViewModel(),
+    benchmarkViewModel: SettingsBenchmarkViewModel = koinViewModel(),
 ) {
     val capabilities = AndroidPlatformCapabilities()
     val calibration by calibrationViewModel.state.collectAsStateWithLifecycle()
+    val benchmarks by benchmarkViewModel.state.collectAsStateWithLifecycle()
     Scaffold(topBar = { TopAppBar(title = { Text("Ajustes") }) }) { padding ->
         Column(
             Modifier
@@ -63,6 +65,12 @@ fun SettingsScreen(
                 state = calibration,
                 onRecalibrate = calibrationViewModel::recalibrate,
             )
+            BenchmarksCard(
+                state = benchmarks,
+                onRunSuite = benchmarkViewModel::runSuite,
+                onCompare = benchmarkViewModel::compareBaselineVsParallel,
+                onClear = benchmarkViewModel::clearHistory,
+            )
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Capacidades de la plataforma", fontWeight = FontWeight.SemiBold)
@@ -86,6 +94,68 @@ fun SettingsScreen(
         }
     }
 }
+
+@Composable
+private fun BenchmarksCard(
+    state: BenchmarkSettingsUiState,
+    onRunSuite: () -> Unit,
+    onCompare: () -> Unit,
+    onClear: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Lab benchmarking", fontWeight = FontWeight.SemiBold)
+            Text("Estado: ${state.statusLabel}")
+            state.comparison?.let { comparison ->
+                Text("Baseline throughput: ${formatRate(comparison.baselineThroughput)}")
+                Text("Parallel throughput: ${formatRate(comparison.parallelThroughput)}")
+                Text("Speedup: ${comparison.speedup?.let { String.format("%.2fx", it) } ?: "—"}")
+                Text(
+                    "Worker efficiency: ${comparison.workerEfficiency?.let { String.format("%.2f", it) } ?: "—"}",
+                )
+            }
+            if (state.history.isNotEmpty()) {
+                Text("Historical runs (latest ${state.history.take(5).size}):")
+                state.history.take(5).forEach { run ->
+                    Text(
+                        "· ${run.challengeProfile} · w=${run.workerCount} · " +
+                            "${formatRate(run.attemptsPerSecond)} · ${run.terminalResult}",
+                    )
+                }
+            }
+            state.exportJson?.let {
+                Text("Export JSON ready (${it.length} chars, sanitized — no secrets).")
+            }
+            state.exportCsv?.let {
+                Text("Export CSV ready (${it.lineSequence().count()} lines, sanitized).")
+            }
+            state.errorMessage?.let { Text(it) }
+            Button(
+                onClick = onRunSuite,
+                enabled = !state.running,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(if (state.running) "Running…" else "Run benchmark suite") }
+            OutlinedButton(
+                onClick = onCompare,
+                enabled = !state.running,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Compare baseline vs 4 workers") }
+            OutlinedButton(
+                onClick = onClear,
+                enabled = !state.running,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Clear benchmark history") }
+        }
+    }
+}
+
+private fun formatRate(value: Double?): String =
+    when {
+        value == null -> "—"
+        value >= 1_000_000 -> String.format("%.2f M/s", value / 1_000_000.0)
+        value >= 1_000 -> String.format("%.1f k/s", value / 1_000.0)
+        else -> String.format("%.0f /s", value)
+    }
 
 @Composable
 private fun CalibrationCard(

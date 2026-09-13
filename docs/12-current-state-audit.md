@@ -44,7 +44,7 @@ Sin emulador / `androidTest`.
 | Feasibility analyzer | Implemented | **Implemented** | Plan/feasibility tests | Estimates card | — | **Keep** |
 | Calibration service | Implemented | **Implemented** run + refine + invalidation | `SearchCalibrationServiceTest` | Auto on Lab VM init + Settings | — | **Keep** |
 | Calibration persistence | Implemented (FASE 22) | **Implemented** `SharedPreferencesCalibrationRepository` | JVM + androidTest | Settings: last / throughput / Recalibrate | No PII stored | **Keep** |
-| Benchmark module / dashboard | Partial / Deferred | **Missing** | None | None | No dedicated module | **FASE 23** |
+| Benchmark module / dashboard | Implemented (FASE 23) | **Implemented** suite + Settings | `LabBenchmarkServiceTest` | Settings Lab benchmarking | Synthetic only | **Keep** |
 | ViewModel unit tests | `00-progress` yes; `10-testing` was “pending” | **Implemented** Nearby/Vault/Lab | 3 files under `androidApp/src/test` | N/A | Doc contradiction | **Docs reconciled** in this audit lineage |
 | Compose UI tests | Implemented (FASE 20+21) | **Implemented** + **CI emulator** | androidTest | N/A | Wi‑Fi físico manual | **Keep**; nightly API extra opcional |
 | Android instrumentation | Implemented (FASE 20+21) | **Implemented** + **CI emulator** | Keystore/SQLDelight | N/A | — | **Keep** |
