@@ -38,9 +38,16 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
   per-app language + recreate; strings migrados a `values`/`values-en` (Lab, Nearby, Vault,
   Onboarding, Permissions, Security, Settings). FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green.
   **Manual pending user** — no marcar Implemented.
-- **Navegación child (FIX-02, Partial)**: `ArrowBack` + CD `navigate_back` en Audit, Security
-  Analysis y Permission Center; iconografía en CTAs primarios. FIX-02 merged [#45](https://github.com/sergio-tr/password-cracker/pull/45).
-  **Manual pending user**.
+- **Navegación (FIX-02, Partial)**:
+  - **Top level** (barra inferior: Cercanas, Guardadas, Laboratorio, Ajustes): sin `ArrowBack`.
+  - **Child** (`permissions`, `security_analysis`, `password_audit`): `ArrowBack` +
+    CD `navigate_back` → `popBackStack` (audit limpia el target store). No hay botones
+    de texto «Atrás».
+  - **Copy novice (FIX-02)**: en Lab guiado y Quick Audit (superficies listas, no Avanzado
+    colapsado) se evita jerga primaria («Workers», «Target», «Reasonable»); términos técnicos
+    (p. ej. Paralelismo) solo en Opciones avanzadas con ayuda.
+  - Iconografía en CTAs primarios (Refresh, Play/Stop, acciones Vault). Rama
+    `feature/navigation-copy-consistency`. **Manual pending user**.
 - **No bloquear el hilo principal**: la búsqueda corre en `Dispatchers.Default`;
   la UI se actualiza por batch.
 - **Confirmaciones** sólo cuando evitan consecuencias reales (borrar una red).

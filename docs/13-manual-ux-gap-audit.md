@@ -10,7 +10,7 @@ Prioridad sobre filas `Implemented` de `docs/00-progress.md` que contradigan est
 | --- | --- | --- | --- | --- |
 | P1 | Mezcla español / inglés | FIX-01 | **Code+CI green** — `AppCompatActivity` + `localeConfig` + strings migrados a `values`/`values-en`; tests i18n | **Manual pending user** |
 | P2 | Cambiar idioma no cambia la app | FIX-01 | **Code+CI green** — recreate + `AppLanguagePreferences`; `ProductRegressionComposeTest` + `AppLanguagePreferencesInstrumentedTest` | **Manual pending user** |
-| P3 | Navegación / UX poco Material | FIX-02 | **Code+CI green** — `ArrowBack` + CD `navigate_back` en child screens; iconografía CTAs | **Manual pending user** |
+| P3 | Navegación / UX poco Material | FIX-02 | **Partial** — `ArrowBack` en child screens verificado; copy novice Lab/Audit; sin `Text("Atrás")` | **Manual pending user** |
 | P4 | Lab sin prototipo local de red | FIX-03 + FIX-04 | **Code+CI green** — prototipo local + flujo guiado novice; `LabComposeTest` + `ProductRegressionComposeTest` | **Manual pending user** |
 
 FIX-05 (`fix/05-product-regression-docs`) añade `ProductRegressionComposeTest` y cierra docs; **no** promueve a `Implemented` sin pase manual del usuario.
@@ -51,12 +51,13 @@ Causa raíz (código, pre-FIX-01):
 
 | Hallazgo | Estado |
 | --- | --- |
-| Password Audit / Security Analysis | `ArrowBack` OK |
-| Permission Center | **FIX-02**: `ArrowBack` + `onBack` → `popBackStack`; CD unificado `navigate_back` |
-| Recurso `audit_back` | **Eliminado** en FIX-02; solo `navigate_back` |
-| Lab / Vault / Nearby | FIX-02: iconografía en CTAs primarios (Refresh, secret actions, Play/Stop CD); localización FIX-01 |
+| Top level (Nearby, Vault, Lab, Settings) | Sin `ArrowBack` (barra inferior) |
+| Password Audit / Security Analysis / Permission Center | `ArrowBack` + `onBack` → `popBackStack`; CD `navigate_back` |
+| Recurso `audit_back` | Eliminado; solo `navigate_back` |
+| Lab / Vault / Nearby CTAs | Iconografía en primarios (Refresh, Play/Stop, secret actions) |
+| Copy novice (Lab guiado, Audit listo) | Sin jerga «Workers/Target/Reasonable» en superficies principales; Paralelismo solo en Avanzado |
 
-La prueba manual del usuario (textos «Atrás» / acciones textuales confusas) se trata como **síntoma UX** a corregir en FIX-02 aunque el literal `Text("Atrás")` ya no esté en Compose.
+Auditoría de código (2026-09-13): **no** hay `Text("Atrás")` en Compose. FIX-02 corregido cubre consistencia de navegación + copy de producto, no reintroducir botones de texto atrás.
 
 ### P4 — Lab sin prototipo local de red
 
@@ -82,7 +83,7 @@ El modo **Random hidden** sigue usando `withHiddenSecret`. La auditoría known-p
 | Fix | Rama | PR | Objetivo | Estado |
 | --- | --- | --- | --- | --- |
 | FIX-01 | `fix/01-runtime-localization` | [#44](https://github.com/sergio-tr/password-cracker/pull/44) | Locale runtime real + migrar strings visibles a `values` / `values-en` | Merged · **Code+CI green / Manual pending user** |
-| FIX-02 | `fix/02-navigation-usability` | [#45](https://github.com/sergio-tr/password-cracker/pull/45) | ArrowBack / iconografía / copy claro en child screens | Merged · **Code+CI green / Manual pending user** |
+| FIX-02 | `feature/navigation-copy-consistency` | — | ArrowBack child screens + copy novice Lab/Audit (sin `Text("Atrás")`) | En curso · **Manual pending user** |
 | FIX-03 | `fix/03-local-network-prototype` | [#46](https://github.com/sergio-tr/password-cracker/pull/46) | Prototipo de red local configurable + motor local | Merged · **Code+CI green / Manual pending user** |
 | FIX-04 | `fix/04-guided-local-prototype-audit` | [#47](https://github.com/sergio-tr/password-cracker/pull/47) | Flujo guiado novice del prototipo | Merged · **Code+CI green / Manual pending user** |
 | FIX-05 | `fix/05-product-regression-docs` | — | Tests de regresión + docs honestas | En curso |

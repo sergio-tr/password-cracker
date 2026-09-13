@@ -215,8 +215,8 @@
     <string name="audit_network_rating_insecure">Insecure</string>
 
     <plurals name="audit_plan_workers">
-        <item quantity="one">%d search worker</item>
-        <item quantity="other">%d search workers</item>
+        <item quantity="one">Parallelism: %d</item>
+        <item quantity="other">Parallelism: %d</item>
     </plurals>
     <plurals name="audit_plan_stages">
         <item quantity="one">%d stage</item>
@@ -237,7 +237,7 @@
     <string name="lab_simulation_local">Local simulation</string>
     <string name="lab_simulation_local_body">The experiment uses this network\'s configuration as context, but does not attempt to connect to it.</string>
     <string name="lab_cd_guided_mode">Lab guided mode</string>
-    <string name="lab_guided_auto_explanation">The app automatically picks strategy, workers, and reasonable limits for a synthetic demo.</string>
+    <string name="lab_guided_auto_explanation">The app automatically picks a strategy and suitable limits for a synthetic demo.</string>
     <string name="lab_estimation">Estimate: %1$s</string>
     <string name="lab_mode_guided">Guided mode</string>
     <string name="lab_mode_advanced">Advanced</string>
@@ -250,13 +250,13 @@
     <string name="lab_prototype_standard">Wi-Fi standard (optional)</string>
     <string name="lab_prototype_band">Band (optional)</string>
     <string name="lab_prototype_optional_none">None</string>
-    <string name="lab_prototype_password">Target password</string>
+    <string name="lab_prototype_password">Password to try</string>
     <string name="lab_prototype_show_password">Show password</string>
     <string name="lab_prototype_hide_password">Hide password</string>
     <string name="lab_prototype_local_only">Local-only search</string>
     <string name="lab_prototype_local_only_body">The search runs only on this device against the password you enter. It never authenticates against an access point or router.</string>
     <string name="lab_cd_local_only_banner">Local-only search notice</string>
-    <string name="lab_err_password_required">Enter the prototype target password.</string>
+    <string name="lab_err_password_required">Enter the prototype test password.</string>
     <string name="lab_err_password_alphabet">The password contains symbols outside the selected alphabet.</string>
     <string name="lab_err_password_alphabet_guided">The password uses symbols that do not fit the automatic alphabet. Open Advanced options and choose a broader alphabet.</string>
     <string name="lab_cd_guided_prototype">Guided local prototype audit</string>
@@ -267,7 +267,7 @@
     <string name="lab_guided_step_security">Choose security</string>
     <string name="lab_guided_step_password">Enter the password to evaluate</string>
     <string name="lab_guided_step_start">Press Start test</string>
-    <string name="lab_guided_step_start_body">The search runs on this device only, with reasonable time and attempt limits.</string>
+    <string name="lab_guided_step_start_body">The search runs on this device only, with suitable time and attempt limits.</string>
     <string name="lab_guided_show_legacy_security">Show WPA / transition</string>
     <string name="lab_guided_hide_legacy_security">Hide WPA / transition</string>
     <string name="lab_novice_observed_resistance">Observed resistance: %1$s</string>
@@ -301,7 +301,8 @@
     <string name="lab_strategy">Strategy: %1$s</string>
     <string name="lab_secret_length">Secret length: %1$d</string>
     <string name="lab_attempt_limit">Attempt limit</string>
-    <string name="lab_workers">Workers: %1$d (1 is the baseline)</string>
+    <string name="lab_workers">Parallelism: %1$d (1 is the baseline)</string>
+    <string name="lab_workers_help">How many simultaneous searches the device runs. 1 is the baseline for comparison.</string>
     <string name="lab_time_limit">Time limit (s)</string>
     <string name="lab_before_start">Before starting</string>
     <string name="lab_before_challenge">Challenge: %1$s · length %2$d</string>
@@ -312,7 +313,7 @@
     <string name="lab_found_secret">Secret found: %1$s</string>
     <string name="lab_final_attempts">Final attempts: %1$s</string>
     <string name="lab_final_time">Final time: %1$s</string>
-    <string name="lab_feasibility_reasonable">Reasonable</string>
+    <string name="lab_feasibility_reasonable">Suitable</string>
     <string name="lab_feasibility_expensive">Expensive</string>
     <string name="lab_feasibility_impractical">Impractical</string>
     <string name="lab_feasibility_invalid">Invalid</string>

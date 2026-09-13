@@ -57,9 +57,7 @@ fun PlanExplanationDetail.line(): String =
 @Composable
 fun AutomaticPlanExplanation.noviceLines(plan: PasswordAuditPlan): List<String> {
     val lines = mutableListOf<String>()
-    details.filterIsInstance<PlanExplanationDetail.WorkerCount>().firstOrNull()?.let {
-        lines += it.line()
-    }
+    // Worker/parallelism counts stay in expanded plan details (advanced), not the ready summary.
     details.filterIsInstance<PlanExplanationDetail.StageCount>().firstOrNull()?.let {
         lines += it.line()
     }
