@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -73,7 +74,15 @@ fun PasswordAuditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.audit_title)) },
+                title = {
+                    Text(
+                        if (state.isActive) {
+                            stringResource(R.string.audit_running_title, state.displayName)
+                        } else {
+                            stringResource(R.string.audit_title)
+                        },
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -89,53 +98,55 @@ fun PasswordAuditScreen(
         },
         bottomBar = {
             if (!state.missingTarget) {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    state.infoMessage?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall)
-                    }
-                    if (state.isActive) {
-                        Button(
-                            onClick = viewModel::stop,
-                            enabled = state.searchState != SearchState.Cancelling,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .testTag("audit_stop")
-                                    .semantics { contentDescription = stopLabel },
-                        ) {
-                            Icon(Icons.Filled.Stop, contentDescription = null)
-                            Spacer(Modifier.size(8.dp))
-                            Text(
-                                if (state.searchState == SearchState.Cancelling) {
-                                    stoppingLabel
-                                } else {
-                                    stopLabel
-                                },
-                            )
+                Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        state.infoMessage?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall)
                         }
-                    } else {
-                        Button(
-                            onClick = viewModel::onStartAuditClicked,
-                            enabled = state.startBlockedReason == null && state.plan != null,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .testTag("audit_start")
-                                    .semantics { contentDescription = startLabel },
-                        ) {
-                            Text(startLabel)
-                        }
-                        state.startBlockedReason?.let {
-                            Text(
-                                it,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                        if (state.isActive) {
+                            Button(
+                                onClick = viewModel::stop,
+                                enabled = state.searchState != SearchState.Cancelling,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .testTag("audit_stop")
+                                        .semantics { contentDescription = stopLabel },
+                            ) {
+                                Icon(Icons.Filled.Stop, contentDescription = null)
+                                Spacer(Modifier.size(8.dp))
+                                Text(
+                                    if (state.searchState == SearchState.Cancelling) {
+                                        stoppingLabel
+                                    } else {
+                                        stopLabel
+                                    },
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = viewModel::onStartAuditClicked,
+                                enabled = state.startBlockedReason == null && state.plan != null,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .testTag("audit_start")
+                                        .semantics { contentDescription = startLabel },
+                            ) {
+                                Text(startLabel)
+                            }
+                            state.startBlockedReason?.let {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -165,7 +176,7 @@ fun PasswordAuditScreen(
                         ExecutionStatusCard(state)
                     }
                     if (state.outcome != null && !state.isActive) {
-                        AuditResultReportCard(state)
+                        AuditResultReportCard(state, viewModel)
                     }
                     if (!state.isActive) {
                         PasswordSection(state, viewModel)
@@ -585,7 +596,10 @@ private fun ExecutionStatusCard(state: PasswordAuditUiState) {
 }
 
 @Composable
-private fun AuditResultReportCard(state: PasswordAuditUiState) {
+private fun AuditResultReportCard(
+    state: PasswordAuditUiState,
+    viewModel: PasswordAuditViewModel,
+) {
     val report = state.resultReport
     Card(
         modifier =
@@ -613,6 +627,20 @@ private fun AuditResultReportCard(state: PasswordAuditUiState) {
                 }
             }
             state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (state.errorDetails != null) {
+                TextButton(onClick = viewModel::toggleErrorDetails) {
+                    Text(
+                        if (state.showErrorDetails) {
+                            stringResource(R.string.audit_hide_details)
+                        } else {
+                            stringResource(R.string.audit_error_details)
+                        },
+                    )
+                }
+                if (state.showErrorDetails) {
+                    Text(state.errorDetails, style = MaterialTheme.typography.bodySmall)
+                }
+            }
         }
     }
 }
@@ -654,7 +682,7 @@ private fun executionHeadline(state: SearchState): String =
 
 private fun resultHeadline(state: PasswordAuditUiState): String =
     when (state.outcome) {
-        SearchOutcome.Found -> "Contraseña encontrada dentro del presupuesto (verificación local)."
+        SearchOutcome.Found -> "Contraseña encontrada (verificación local)."
         SearchOutcome.LimitReached -> "No se descubrió dentro del límite configurado."
         SearchOutcome.NotFound -> "Se agotó el espacio presupuestado sin descubrir la contraseña."
         SearchOutcome.Cancelled -> "Auditoría detenida por el usuario."

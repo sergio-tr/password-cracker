@@ -104,3 +104,23 @@ Cercanas → red conectada elegible → Auditar contraseña
 Presupuestos UI: 30 s / 1 min / 5 min / Personalizado (default **1 min**).
 El modo Avanzado está colapsado; incluye «Restablecer configuración automática».
 
+## Quick Audit — ejecución y STOP
+
+Al iniciar, la UI muestra métricas agregadas (intentos, tiempo, velocidad, etapa,
+progreso de presupuesto) y un `DETENER` fijo en `Scaffold.bottomBar`.
+
+Cancelación:
+
+```text
+UI → ViewModel.stop → CancellationController → engine/workers/scheduler → Cancelled
+```
+
+Latencia: el motor observa cancelación en límites de batch (`progressInterval`
+≈ 250 ms por defecto; Quick usa 200 ms). No se espera un bucket entero enorme;
+el tradeoff es throughput vs respuesta percibida — 250 ms es el compromiso
+validado también en el Lab.
+
+Lifecycle: rotación/recomposición no reinicia la búsqueda (ViewModel retenido).
+`onCleared` cancela la sesión activa; Pause/Resume queda deferred (sesiones
+resumibles).
+

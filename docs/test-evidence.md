@@ -13,6 +13,8 @@ CI job `jvm` (`.github/workflows/ci.yml`):
 | `test` / `jvmTest` | PASS |
 | `assembleDebug` + `compileDebugAndroidTestKotlin` | PASS |
 | Lab cancelación (`LabViewModelTest.stop_*`) | PASS local UX-01 |
+| Quick Audit cancelación (`PasswordAuditViewModelTest.stop*`) | PASS local PR5 |
+| Engine cancel (`DefaultLabSearchEngineTest.cancel_*`) | PASS |
 
 ## AUTOMATED — ANDROID EMULATOR
 

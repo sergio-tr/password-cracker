@@ -42,14 +42,14 @@ WPA2/WPA3 · 5 GHz · Wi-Fi 6
 Excelente
 ```
 
-## Lab (durante la ejecución)
+## Quick Audit (durante la ejecución)
 
 ```
-RUNNING
-Intentos    1,284,420
-Tiempo      00:00:13
-Velocidad   98 k/s
-Progreso    21.4 %
-Fase        3 / 6
-[ DETENER ] (barra fija)
+Auditando Casa
+Intentos     1.284.420
+Tiempo       00:13
+Velocidad    98 k/s
+Etapa        3 de 5
+Presupuesto  68 %
+[ DETENER ] (bottomBar fija)
 ```

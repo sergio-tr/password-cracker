@@ -23,7 +23,8 @@ encontrarla. La red real solo aporta contexto; nunca se autentica contra el AP.
 4. **Quick Audit UI** (PR4): presets 30 s / 1 min / 5 min (default 1 min);
    origen Vault diferido / manual; save-to-Vault OFF; modo Automático;
    `ArrowBack`; opciones avanzadas colapsadas + restablecer.
-5. **Execution + STOP** (PR5): motor local + cancelación cooperativa.
+5. **Execution + STOP** (PR5): motor local + cancelación cooperativa;
+   DETENER en bottomBar; métricas agregadas; `onCleared` cancela.
 6. **Results + strength** (PR6): `PasswordAuditResultComposer` con
    Measured / Estimated / Modelled.
 7. **Localization + docs** (PR7): strings ES/EN + walkthrough.
