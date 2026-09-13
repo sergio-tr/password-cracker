@@ -60,7 +60,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | --- | --- |
 | Localización ES/EN (runtime) | **Partial** (FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings en `values`/`values-en`. **No** marcar Implemented hasta pase manual del usuario. |
 | Navegación Material (child screens) | **Partial** (FIX-02 merged [#45](https://github.com/sergio-tr/password-cracker/pull/45), CI green): ArrowBack en Audit/Security/Permission Center; CD `navigate_back` unificado; iconografía CTAs. Manual pendiente usuario. |
-| Prototipo local de red (Lab) | **Partial** (FIX-03A): `LocalNetworkPrototype` + presets + `AssessNetworkSecurity` en Lab; evaluación en UI. Auditoría de contraseña del prototipo = FIX-03B (Deferred). Flujo guiado con contraseña = Partial hasta 03B. |
+| Prototipo local de red (Lab) | **Partial** (FIX-03A + FIX-03B): prototipo + evaluación + búsqueda PSK encapsulada en familias personal; polish guiado (FIX-04) pendiente. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |
@@ -72,7 +72,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | --- | --- |
 | Revelar secreto con biometría | Arquitectura lista (`RevealSavedNetworkSecret`). |
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
-| Auditoría de contraseña del prototipo Lab (FIX-03B) | `EncapsulatedPasswordVerifier` sobre prototipo local; depende de FIX-03A. |
 | Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |
 | Biometría Vault + hardening | FASE 26–27. |
 | Observabilidad local + evidence RC + release eng. | Bloqueado hasta FIX-01…05. |

@@ -11,7 +11,7 @@ Prioridad sobre filas `Implemented` de `docs/00-progress.md` que contradigan est
 | P1 | Mezcla español / inglés | FIX-01 | **Code+CI green** — `AppCompatActivity` + `localeConfig` + strings migrados a `values`/`values-en`; tests i18n | **Manual pending user** |
 | P2 | Cambiar idioma no cambia la app | FIX-01 | **Code+CI green** — recreate + `AppLanguagePreferences`; `ProductRegressionComposeTest` + `AppLanguagePreferencesInstrumentedTest` | **Manual pending user** |
 | P3 | Navegación / UX poco Material | FIX-02 | **Partial** — `ArrowBack` en child screens verificado; copy novice Lab/Audit; sin `Text("Atrás")` | **Manual pending user** |
-| P4 | Lab sin prototipo local de red | FIX-03A (+ FIX-03B contraseña) | **Partial** — FIX-03A: prototipo + evaluación (`AssessNetworkSecurity`); sin auditoría PSK del prototipo hasta FIX-03B; `LabComposeTest` + regresión | **Manual pending user** |
+| P4 | Lab sin prototipo local de red | FIX-03A + FIX-03B | **Partial** — prototipo + evaluación + búsqueda PSK encapsulada (WPA personal); polish guiado = FIX-04; `LabComposeTest` + regresión | **Manual pending user** |
 
 FIX-05 (`fix/05-product-regression-docs`) añade `ProductRegressionComposeTest` y cierra docs; **no** promueve a `Implemented` sin pase manual del usuario.
 
@@ -61,11 +61,13 @@ Auditoría de código (2026-09-13): **no** hay `Text("Atrás")` en Compose. FIX-
 
 ### P4 — Lab sin prototipo local de red
 
-**Partial (FIX-03):** el Lab permite crear un prototipo local configurable (`LabSecretMode.LocalPrototype`):
+**Partial (FIX-03A + FIX-03B):** el Lab permite crear un prototipo local configurable (`LabSecretMode.LocalPrototype`):
 
-* SSID editable, familia PSK personal (WPA/WPA2/WPA3/WPA2+WPA3), banda/estándar opcionales;
-* contraseña objetivo en memoria (se borra al iniciar);
-* búsqueda local vía `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`;
+* SSID editable, presets (Abierta, WEP, WPA2/WPA3/transición, Enterprise), banda/estándar opcionales;
+* evaluación `AssessNetworkSecurity` al cambiar perfil;
+* **FIX-03B:** campo «Contraseña del prototipo» (oculta por defecto) solo en familias PSK personal;
+* ruta producto: encapsulado → `withEncapsulatedVerifier` → planner automático (guiado) / motor existente;
+* OPEN/Enterprise: evaluación sin campo ni CTA PSK engañoso;
 * banner «Búsqueda solo local» siempre visible en modo prototipo.
 
 **Partial (FIX-04):** flujo guiado novice del prototipo local:

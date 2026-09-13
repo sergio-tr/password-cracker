@@ -15,11 +15,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,6 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
@@ -70,7 +75,7 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             LabActionBar(
                 running = running,
                 cancelling = cancelling,
-                canStart = state.configErrorRes == null,
+                canStart = state.canStartSearch,
                 startLabel = if (state.mode == LabInteractionMode.Guided) startTestLabel else startSearchLabel,
                 onStart = viewModel::start,
                 onStop = viewModel::stop,
@@ -118,12 +123,16 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                         onExpandAdvanced = { viewModel.setAdvancedExpanded(true) },
                         onCollapseAdvanced = { viewModel.setAdvancedExpanded(false) },
                         onOpenAdvancedMode = { viewModel.setMode(LabInteractionMode.Advanced) },
+                        onTargetPasswordChanged = viewModel::onTargetPasswordChanged,
+                        onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
                     )
                 } else {
                     SecretModeCard(
                         state = state,
                         onSecretModeChange = viewModel::setSecretMode,
                         onPrototypeChange = viewModel::updatePrototype,
+                        onTargetPasswordChanged = viewModel::onTargetPasswordChanged,
+                        onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
                     )
                     GuidedModeCard(
                         state = state,
@@ -186,6 +195,8 @@ private fun GuidedPrototypeCard(
     onExpandAdvanced: () -> Unit,
     onCollapseAdvanced: () -> Unit,
     onOpenAdvancedMode: () -> Unit,
+    onTargetPasswordChanged: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
 ) {
     val guidedPrototypeCd = stringResource(R.string.lab_cd_guided_prototype)
     val advancedOptionsCd = stringResource(R.string.lab_cd_advanced_options)
@@ -245,8 +256,21 @@ private fun GuidedPrototypeCard(
                     onPrototypeChange = onPrototypeChange,
                 )
             }
+            if (state.prototype.securityFamily.supportsSharedPasswordDemo()) {
+                GuidedStep(
+                    step = 4,
+                    title = stringResource(R.string.lab_guided_step_password),
+                ) {
+                    PrototypePasswordField(
+                        password = state.targetPassword,
+                        passwordVisible = state.passwordVisible,
+                        onPasswordChanged = onTargetPasswordChanged,
+                        onToggleVisibility = onTogglePasswordVisibility,
+                    )
+                }
+            }
             GuidedStep(
-                step = 4,
+                step = if (state.prototype.securityFamily.supportsSharedPasswordDemo()) 5 else 4,
                 title = stringResource(R.string.lab_prototype_assessment_heading),
             ) {
                 PrototypeAssessmentCard(
@@ -302,6 +326,8 @@ private fun SecretModeCard(
     state: LabUiState,
     onSecretModeChange: (LabSecretMode) -> Unit,
     onPrototypeChange: (LocalNetworkPrototype) -> Unit,
+    onTargetPasswordChanged: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
 ) {
     val secretModeCd = stringResource(R.string.lab_cd_secret_mode)
     Card(
@@ -330,11 +356,56 @@ private fun SecretModeCard(
                     assessment = state.prototypeAssessment,
                     assessmentLoading = state.prototypeAssessmentLoading,
                     configErrorRes = state.configErrorRes,
+                    targetPassword = state.targetPassword,
+                    passwordVisible = state.passwordVisible,
                     onPrototypeChange = onPrototypeChange,
+                    onTargetPasswordChanged = onTargetPasswordChanged,
+                    onTogglePasswordVisibility = onTogglePasswordVisibility,
                 )
             }
         }
     }
+}
+
+@Composable
+private fun PrototypePasswordField(
+    password: String,
+    passwordVisible: Boolean,
+    onPasswordChanged: (String) -> Unit,
+    onToggleVisibility: () -> Unit,
+) {
+    val label = stringResource(R.string.lab_prototype_password)
+    OutlinedTextField(
+        value = password,
+        onValueChange = onPasswordChanged,
+        label = { Text(label) },
+        singleLine = true,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = label },
+        visualTransformation =
+            if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+        trailingIcon = {
+            IconButton(onClick = onToggleVisibility) {
+                Icon(
+                    imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription =
+                        stringResource(
+                            if (passwordVisible) {
+                                R.string.lab_prototype_hide_password
+                            } else {
+                                R.string.lab_prototype_show_password
+                            },
+                        ),
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -343,7 +414,11 @@ private fun PrototypeForm(
     assessment: com.wifiauditlab.assessment.domain.security.SecurityAssessment?,
     assessmentLoading: Boolean,
     configErrorRes: Int?,
+    targetPassword: String,
+    passwordVisible: Boolean,
     onPrototypeChange: (LocalNetworkPrototype) -> Unit,
+    onTargetPasswordChanged: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
 ) {
     Text(stringResource(R.string.lab_create_prototype_title), fontWeight = FontWeight.Bold)
     Text(stringResource(R.string.lab_create_prototype_intro))
@@ -362,6 +437,14 @@ private fun PrototypeForm(
         modifier = Modifier.fillMaxWidth(),
     )
     PrototypePresetPicker(prototype = prototype, onPrototypeChange = onPrototypeChange)
+    if (prototype.securityFamily.supportsSharedPasswordDemo()) {
+        PrototypePasswordField(
+            password = targetPassword,
+            passwordVisible = passwordVisible,
+            onPasswordChanged = onTargetPasswordChanged,
+            onToggleVisibility = onTogglePasswordVisibility,
+        )
+    }
     PrototypeAdvancedOptions(prototype = prototype, onPrototypeChange = onPrototypeChange)
     PrototypeAssessmentCard(
         assessment = assessment,
