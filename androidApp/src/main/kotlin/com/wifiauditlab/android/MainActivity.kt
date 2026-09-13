@@ -27,6 +27,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.wifiauditlab.android.ui.audit.PasswordAuditScreen
+import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
+import com.wifiauditlab.android.ui.audit.passwordAuditRequestFromNearby
 import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
 import com.wifiauditlab.android.ui.lab.LabScreen
 import com.wifiauditlab.android.ui.lab.labNetworkContextFromNearby
@@ -63,6 +66,7 @@ private enum class Destination(val route: String, val label: String, val icon: I
 private object Routes {
     const val PERMISSIONS = "permissions"
     const val SECURITY_ANALYSIS = "security_analysis"
+    const val PASSWORD_AUDIT = "password_audit"
 }
 
 @Composable
@@ -70,6 +74,7 @@ private fun AppRoot() {
     val onboardingPreferences: OnboardingPreferences = koinInject()
     val analysisTarget: SecurityAnalysisTargetStore = koinInject()
     val labContext: LabNetworkContextStore = koinInject()
+    val passwordAuditTarget: PasswordAuditTargetStore = koinInject()
     var showOnboarding by remember { mutableStateOf(!onboardingPreferences.isCompleted()) }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -77,7 +82,8 @@ private fun AppRoot() {
     val hideBottomBar =
         showOnboarding ||
             currentDestination?.route == Routes.PERMISSIONS ||
-            currentDestination?.route == Routes.SECURITY_ANALYSIS
+            currentDestination?.route == Routes.SECURITY_ANALYSIS ||
+            currentDestination?.route == Routes.PASSWORD_AUDIT
 
     if (showOnboarding) {
         OnboardingScreen(
@@ -138,8 +144,9 @@ private fun AppRoot() {
                             restoreState = true
                         }
                     },
-                    onOpenPasswordAudit = {
-                        // Full quick-audit UI arrives in a follow-up PR; eligibility gate is live.
+                    onOpenPasswordAudit = { item ->
+                        passwordAuditTarget.set(passwordAuditRequestFromNearby(item))
+                        navController.navigate(Routes.PASSWORD_AUDIT)
                     },
                 )
             }
@@ -156,6 +163,14 @@ private fun AppRoot() {
             composable(Routes.PERMISSIONS) { PermissionCenterScreen() }
             composable(Routes.SECURITY_ANALYSIS) {
                 SecurityAnalysisScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.PASSWORD_AUDIT) {
+                PasswordAuditScreen(
+                    onBack = {
+                        passwordAuditTarget.clear()
+                        navController.popBackStack()
+                    },
+                )
             }
         }
     }
