@@ -17,6 +17,7 @@ import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
+import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -222,20 +223,25 @@ class LabComposeTest {
             .onNodeWithText(activity.getString(R.string.lab_preset_open))
             .performScrollTo()
             .performClick()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.prototype.securityFamily == SecurityFamily.OPEN &&
+                vm.state.value.prototypeAssessment != null &&
+                !vm.state.value.prototypeAssessmentLoading
+        }
         composeTestRule
             .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
             .performScrollTo()
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("OpenLab")
-        composeTestRule.waitUntil(5_000) { vm.state.value.prototypeAssessment != null }
         waitForText(activity.getString(R.string.lab_prototype_assessment_heading))
-        scrollToText("Red abierta")
+        val noPsk = activity.getString(R.string.lab_prototype_no_password_audit)
+        waitForText(noPsk)
+        scrollToText(noPsk)
         assertTrue(
             composeTestRule
                 .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))
                 .fetchSemanticsNodes()
                 .isEmpty(),
         )
-        waitForText(activity.getString(R.string.lab_prototype_no_password_audit))
     }
 
     @Test
@@ -396,8 +402,14 @@ class LabComposeTest {
             .onNodeWithText(activity.getString(R.string.lab_preset_enterprise_wpa2))
             .performScrollTo()
             .performClick()
-        composeTestRule.waitUntil(5_000) { vm.state.value.prototypeAssessment != null }
-        waitForText(activity.getString(R.string.lab_prototype_no_password_audit))
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.prototype.securityFamily == SecurityFamily.WPA2_ENTERPRISE &&
+                vm.state.value.prototypeAssessment != null &&
+                !vm.state.value.prototypeAssessmentLoading
+        }
+        val noPsk = activity.getString(R.string.lab_prototype_no_password_audit)
+        waitForText(noPsk)
+        scrollToText(noPsk)
         assertTrue(
             composeTestRule
                 .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))

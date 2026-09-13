@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
@@ -27,6 +29,7 @@ import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
 import com.wifiauditlab.assessment.domain.wifi.WifiBand
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PrototypePresetPicker(
     prototype: LocalNetworkPrototype,
@@ -36,9 +39,10 @@ fun PrototypePresetPicker(
     var showEnterpriseAlt by remember {
         mutableStateOf(selectedPreset in PrototypeSecurityPreset.ENTERPRISE_ALTERNATIVES)
     }
-    Row(
+    // FlowRow keeps chips in the vertical scroll (nested horizontalScroll breaks performScrollTo).
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PrototypeSecurityPreset.PRIMARY.forEach { preset ->
             FilterChip(
@@ -53,9 +57,9 @@ fun PrototypePresetPicker(
     }
     if (showEnterpriseAlt || selectedPreset in PrototypeSecurityPreset.ENTERPRISE_ALTERNATIVES) {
         Text(stringResource(R.string.lab_prototype_security), fontWeight = FontWeight.Medium)
-        Row(
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             PrototypeSecurityPreset.ENTERPRISE_ALTERNATIVES.forEach { preset ->
                 FilterChip(
