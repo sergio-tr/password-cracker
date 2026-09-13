@@ -96,6 +96,8 @@ data class PasswordAuditUiState(
     val outcome: SearchOutcome? = null,
     val discoveredWithinBudget: Boolean = false,
     val errorMessage: String? = null,
+    val errorDetails: String? = null,
+    val showErrorDetails: Boolean = false,
     val resultReport: PasswordAuditResultReport? = null,
 ) {
     val isActive: Boolean

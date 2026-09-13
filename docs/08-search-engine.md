@@ -124,3 +124,7 @@ Presets de dominio: Quick (30 s) / Standard (1 min, default) / Deep (5 min) / Cu
 UI Quick Audit = `PasswordAuditScreen` con ejecución local, STOP e informe
 combinado (walkthrough: `docs/13-known-password-audit-walkthrough.md`).
 Explicación novice: «procesos de búsqueda» / etapas / límite — sin nombres internos.
+
+Cancelación cooperativa del motor: `CancellationController` detiene scheduler y
+workers; tests en `DefaultLabSearchEngineTest.cancel_*` y
+`PasswordAuditViewModelTest.stop*`.

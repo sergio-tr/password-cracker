@@ -63,6 +63,9 @@
     <string name="audit_metric_stage_of">%1$d of %2$d</string>
     <string name="audit_metric_budget">Budget</string>
     <string name="audit_metric_remaining">Time remaining</string>
+    <string name="audit_running_title">Auditing %1$s</string>
+    <string name="audit_error_details">Show details</string>
+    <string name="audit_start_failed">Could not start the audit.</string>
     <string name="audit_preparing">Preparing…</string>
     <string name="audit_strength_hint">Structural analysis (independent of the plan): %1$s</string>
     <string name="audit_not_connected_title">You are not connected to this network.</string>

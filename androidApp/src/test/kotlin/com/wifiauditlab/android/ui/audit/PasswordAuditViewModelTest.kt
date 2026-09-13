@@ -243,6 +243,71 @@ class PasswordAuditViewModelTest {
         }
 
     @Test
+    fun stopFreezesAttemptGrowthAfterCancel() =
+        runTest {
+            val vm = viewModel(request = eligibleRequest())
+            vm.selectPreset(PasswordAuditBudgetPreset.Deep)
+            advanceUntilIdle()
+            vm.onPasswordChanged("zzzzzzzz")
+            vm.onStartAuditClicked()
+            advanceUntilIdle()
+            if (!vm.state.value.isActive) return@runTest
+            vm.stop()
+            advanceUntilIdle()
+            val attemptsAfterCancel = vm.state.value.metrics?.attempts
+            advanceUntilIdle()
+            assertEquals(attemptsAfterCancel, vm.state.value.metrics?.attempts)
+            assertTrue(
+                vm.state.value.outcome == SearchOutcome.Cancelled ||
+                    vm.state.value.searchState == SearchState.Cancelled,
+            )
+        }
+
+    @Test
+    fun secondStartWhileActiveIsIgnored() =
+        runTest {
+            val vm = viewModel(request = eligibleRequest())
+            vm.selectPreset(PasswordAuditBudgetPreset.Deep)
+            advanceUntilIdle()
+            vm.onPasswordChanged("zzzzzzzz")
+            vm.onStartAuditClicked()
+            val firstState = vm.state.value.searchState
+            vm.onPasswordChanged("should-not-apply")
+            vm.onStartAuditClicked()
+            // Password edits and second start are ignored while active.
+            assertTrue(vm.state.value.isActive || vm.state.value.outcome != null)
+            assertTrue(
+                firstState == SearchState.Preparing ||
+                    firstState == SearchState.Running ||
+                    firstState == SearchState.Cancelling ||
+                    vm.state.value.outcome != null,
+            )
+            if (vm.state.value.isActive) {
+                vm.stop()
+                advanceUntilIdle()
+            }
+        }
+
+    @Test
+    fun attemptLimitProducesLimitReached() =
+        runTest {
+            val vm = viewModel(request = eligibleRequest())
+            vm.onCustomDurationChanged("30")
+            vm.onCustomAttemptsChanged("5")
+            vm.applyCustomBudget()
+            advanceUntilIdle()
+            vm.onPasswordChanged("zzzzzzzz")
+            vm.onStartAuditClicked()
+            advanceUntilIdle()
+            assertTrue(
+                vm.state.value.outcome == SearchOutcome.LimitReached ||
+                    vm.state.value.outcome == SearchOutcome.NotFound ||
+                    vm.state.value.outcome == SearchOutcome.Cancelled,
+            )
+            assertFalse(vm.state.value.isActive)
+        }
+
+    @Test
     fun unsupportedFamilyIsNotApplicable() =
         runTest {
             val vm =

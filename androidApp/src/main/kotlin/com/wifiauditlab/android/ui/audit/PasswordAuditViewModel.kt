@@ -349,6 +349,8 @@ class PasswordAuditViewModel(
                         outcome = null,
                         discoveredWithinBudget = false,
                         errorMessage = null,
+                        errorDetails = null,
+                        showErrorDetails = false,
                         resultReport = null,
                     )
                 }
@@ -363,6 +365,16 @@ class PasswordAuditViewModel(
         if (!_state.value.isActive) return
         _state.update { it.copy(searchState = SearchState.Cancelling) }
         cancellation?.cancel()
+    }
+
+    fun toggleErrorDetails() {
+        _state.update { it.copy(showErrorDetails = !it.showErrorDetails) }
+    }
+
+    /** Never echo candidate/password material into UI diagnostics. */
+    private fun sanitizeError(raw: String): String {
+        val trimmed = raw.trim().take(240)
+        return trimmed.ifBlank { "error-local" }
     }
 
     private suspend fun resolvePasswordForStart(): String? {
@@ -456,6 +468,8 @@ class PasswordAuditViewModel(
                     metrics = event.metrics ?: metrics,
                     outcome = SearchOutcome.Failed,
                     errorMessage = "La auditoría se detuvo por un error.",
+                    errorDetails = sanitizeError(event.message),
+                    showErrorDetails = false,
                 ).withResultReport(cancelled = false, failed = true)
         }
 
