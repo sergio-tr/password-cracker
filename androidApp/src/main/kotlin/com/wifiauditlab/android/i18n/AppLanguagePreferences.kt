@@ -1,61 +1,58 @@
 package com.wifiauditlab.android.i18n
 
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 
 /**
- * Per-app language via official [AppCompatDelegate] APIs.
- * Empty locale list = follow system language.
+ * Per-app language via official [AppCompatDelegate.setApplicationLocales].
  *
- * Requires [androidx.appcompat.app.AppCompatActivity] (or installViewFactory)
- * so locales propagate into the Activity configuration used by Compose.
+ * Empty locale list = follow system language.
+ * Requires [androidx.appcompat.app.AppCompatActivity] so locales propagate into
+ * the Activity [android.content.res.Configuration] that Compose [androidx.compose.ui.res.stringResource] reads.
+ *
+ * Do **not** call [android.app.Activity.recreate] here: AppCompat applies a configuration
+ * change through the official API when locales change.
  */
 object AppLanguagePreferences {
     private const val PREFS = "app_language"
     private const val KEY = "tag"
 
-    const val SYSTEM = "system"
-    const val SPANISH = "es"
-    const val ENGLISH = "en"
+    fun current(context: Context): AppLanguage =
+        AppLanguage.fromTag(
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, AppLanguage.SYSTEM.tag)
+                ?: AppLanguage.SYSTEM.tag,
+        )
 
-    fun currentTag(context: Context): String =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(KEY, SYSTEM) ?: SYSTEM
+    /** @deprecated Prefer [current]. */
+    fun currentTag(context: Context): String = current(context).tag
 
     fun applyStored(context: Context) {
-        apply(context, currentTag(context), recreate = false)
+        apply(context, current(context))
     }
 
     fun apply(
         context: Context,
-        tag: String,
-        recreate: Boolean = true,
+        language: AppLanguage,
     ) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY, tag)
+            .putString(KEY, language.tag)
             .apply()
         val locales =
-            when (tag) {
-                SPANISH -> LocaleListCompat.forLanguageTags("es")
-                ENGLISH -> LocaleListCompat.forLanguageTags("en")
-                else -> LocaleListCompat.getEmptyLocaleList()
+            when (language) {
+                AppLanguage.SPANISH -> LocaleListCompat.forLanguageTags("es")
+                AppLanguage.ENGLISH -> LocaleListCompat.forLanguageTags("en")
+                AppLanguage.SYSTEM -> LocaleListCompat.getEmptyLocaleList()
             }
         AppCompatDelegate.setApplicationLocales(locales)
-        if (recreate) {
-            context.findActivity()?.recreate()
-        }
     }
 
-    private fun Context.findActivity(): Activity? {
-        var current: Context? = this
-        while (current is ContextWrapper) {
-            if (current is Activity) return current
-            current = current.baseContext
-        }
-        return null
+    /** Convenience overloads matching stored string tags. */
+    fun apply(
+        context: Context,
+        tag: String,
+    ) {
+        apply(context, AppLanguage.fromTag(tag))
     }
 }

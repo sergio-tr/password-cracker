@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
+import com.wifiauditlab.android.i18n.AppLanguage
 import com.wifiauditlab.android.i18n.AppLanguagePreferences
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import org.koin.androidx.compose.koinViewModel
@@ -44,7 +45,7 @@ fun SettingsScreen(
     benchmarkViewModel: SettingsBenchmarkViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
-    val currentLanguage = AppLanguagePreferences.currentTag(context)
+    val currentLanguage = AppLanguagePreferences.current(context)
     val yesLabel = stringResource(R.string.settings_yes)
     val noLabel = stringResource(R.string.settings_no)
     val capabilities = AndroidPlatformCapabilities()
@@ -65,19 +66,19 @@ fun SettingsScreen(
                     Text(stringResource(R.string.settings_language_help))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         LanguageChip(
-                            selected = currentLanguage == AppLanguagePreferences.SYSTEM,
+                            selected = currentLanguage == AppLanguage.SYSTEM,
                             label = stringResource(R.string.settings_language_system),
-                            onClick = { AppLanguagePreferences.apply(context, AppLanguagePreferences.SYSTEM) },
+                            onClick = { AppLanguagePreferences.apply(context, AppLanguage.SYSTEM) },
                         )
                         LanguageChip(
-                            selected = currentLanguage == AppLanguagePreferences.SPANISH,
+                            selected = currentLanguage == AppLanguage.SPANISH,
                             label = stringResource(R.string.settings_language_es),
-                            onClick = { AppLanguagePreferences.apply(context, AppLanguagePreferences.SPANISH) },
+                            onClick = { AppLanguagePreferences.apply(context, AppLanguage.SPANISH) },
                         )
                         LanguageChip(
-                            selected = currentLanguage == AppLanguagePreferences.ENGLISH,
+                            selected = currentLanguage == AppLanguage.ENGLISH,
                             label = stringResource(R.string.settings_language_en),
-                            onClick = { AppLanguagePreferences.apply(context, AppLanguagePreferences.ENGLISH) },
+                            onClick = { AppLanguagePreferences.apply(context, AppLanguage.ENGLISH) },
                         )
                     }
                 }

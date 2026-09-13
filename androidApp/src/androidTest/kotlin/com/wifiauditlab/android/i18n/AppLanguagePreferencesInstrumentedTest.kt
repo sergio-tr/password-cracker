@@ -6,18 +6,19 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.wifiauditlab.android.R
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
 
 /**
- * Ensures ES/EN string packs diverge and language preference persistence works.
- * Avoids asserting AppCompatDelegate.getApplicationLocales() immediately after
- * setApplicationLocales (can be empty on some API levels without a resumed Activity).
+ * Pack divergence + preference persistence (no Activity UI).
+ * Runtime UI proof lives in [MainActivityRuntimeLocaleTest].
  */
 @RunWith(AndroidJUnit4::class)
 class AppLanguagePreferencesInstrumentedTest {
@@ -41,20 +42,32 @@ class AppLanguagePreferencesInstrumentedTest {
     }
 
     @Test
-    fun apply_persistsLanguageTag() {
-        AppLanguagePreferences.apply(appContext, AppLanguagePreferences.ENGLISH, recreate = false)
-        assertEquals(AppLanguagePreferences.ENGLISH, AppLanguagePreferences.currentTag(appContext))
+    fun apply_persistsLanguageEnum_esEnSystem() {
+        AppLanguagePreferences.apply(appContext, AppLanguage.ENGLISH)
+        assertEquals(AppLanguage.ENGLISH, AppLanguagePreferences.current(appContext))
 
-        AppLanguagePreferences.apply(appContext, AppLanguagePreferences.SPANISH, recreate = false)
-        assertEquals(AppLanguagePreferences.SPANISH, AppLanguagePreferences.currentTag(appContext))
+        AppLanguagePreferences.apply(appContext, AppLanguage.SPANISH)
+        assertEquals(AppLanguage.SPANISH, AppLanguagePreferences.current(appContext))
 
-        AppLanguagePreferences.apply(appContext, AppLanguagePreferences.SYSTEM, recreate = false)
-        assertEquals(AppLanguagePreferences.SYSTEM, AppLanguagePreferences.currentTag(appContext))
+        AppLanguagePreferences.apply(appContext, AppLanguage.SYSTEM)
+        assertEquals(AppLanguage.SYSTEM, AppLanguagePreferences.current(appContext))
     }
 
     private fun localizedContext(locale: Locale): Context {
         val config = Configuration(appContext.resources.configuration)
         config.setLocale(locale)
         return appContext.createConfigurationContext(config)
+    }
+
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun markOnboardingCompletedForSiblingMainActivityTests() {
+            val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+            ctx.getSharedPreferences("onboarding", Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("completed", true)
+                .commit()
+        }
     }
 }
