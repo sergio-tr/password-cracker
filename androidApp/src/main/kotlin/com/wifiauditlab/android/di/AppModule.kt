@@ -178,7 +178,17 @@ val appModule =
         viewModel {
             VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
         }
-        viewModel { LabViewModel(get(), get(), get(), get(), calibration = get(), networkContextStore = get()) }
+        viewModel {
+            LabViewModel(
+                get(),
+                get(),
+                get(),
+                get(),
+                assessNetworkSecurity = get(),
+                calibration = get(),
+                networkContextStore = get(),
+            )
+        }
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
         viewModel {

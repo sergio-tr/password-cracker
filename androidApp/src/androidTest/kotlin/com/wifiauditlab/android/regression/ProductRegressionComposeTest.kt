@@ -23,6 +23,8 @@ import com.wifiauditlab.android.ui.permissions.PermissionItem
 import com.wifiauditlab.android.ui.permissions.PermissionKind
 import com.wifiauditlab.android.ui.permissions.PermissionStatus
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
+import com.wifiauditlab.assessment.application.AssessNetworkSecurity
+import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
 import com.wifiauditlab.lab.domain.LabSearchPlan
@@ -72,6 +74,7 @@ class ProductRegressionComposeTest {
                 DefaultSearchPlanOptimizer(),
                 DefaultSearchFeasibilityAnalyzer(),
                 FixedThroughputEstimator(),
+                AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
                 searchDispatcher = Dispatchers.Main.immediate,
             )
         composeTestRule.setContent {
@@ -90,9 +93,15 @@ class ProductRegressionComposeTest {
             .performScrollTo()
             .assertIsDisplayed()
         composeTestRule
-            .onNodeWithText(activity.getString(R.string.lab_prototype_password))
+            .onNodeWithText(activity.getString(R.string.lab_prototype_assessment_heading))
             .performScrollTo()
             .assertIsDisplayed()
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
         assertTrue(
             composeTestRule
                 .onAllNodesWithText(activity.getString(R.string.lab_challenge))

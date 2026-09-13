@@ -1,5 +1,8 @@
 package com.wifiauditlab.android.ui.lab
 
+import com.wifiauditlab.assessment.application.AssessNetworkSecurity
+import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
+import com.wifiauditlab.assessment.domain.security.SecurityRating
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -17,7 +20,6 @@ import com.wifiauditlab.lab.domain.engine.SearchFeasibility
 import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
-import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import com.wifiauditlab.lab.engine.DefaultSearchPlanOptimizer
 import com.wifiauditlab.lab.engine.FixedThroughputEstimator
 import com.wifiauditlab.lab.engine.LengthPrioritizedStrategy
@@ -108,6 +110,8 @@ class LabViewModelTest {
     private val metrics =
         SearchMetrics.initial(totalBuckets = 1, searchSpace = CombinationCount.of(10))
 
+    private val assessNetworkSecurity = AssessNetworkSecurity(SecurityAssessmentRegistry.default())
+
     private fun viewModel(
         engine: LabSearchEngine,
         optimizer: SearchPlanOptimizer = DefaultSearchPlanOptimizer(),
@@ -120,7 +124,14 @@ class LabViewModelTest {
                 ) = SearchFeasibility(FeasibilityRating.Reasonable, 1.seconds, "ok")
             },
         estimator: SearchPerformanceEstimator = FixedThroughputEstimator(),
-    ) = LabViewModel(engine, optimizer, analyzer, estimator, dispatcher)
+    ) = LabViewModel(
+        engine,
+        optimizer,
+        analyzer,
+        estimator,
+        assessNetworkSecurity,
+        dispatcher,
+    )
 
     @Test
     fun guided_defaults_applied_on_init() =
@@ -131,36 +142,30 @@ class LabViewModelTest {
             assertEquals(LabSecretMode.LocalPrototype, vm.state.value.secretMode)
             assertEquals(StrategyChoice.LENGTH, vm.state.value.config.strategy)
             assertEquals(com.wifiauditlab.android.R.string.lab_err_ssid_required, vm.state.value.configErrorRes)
+            assertNotNull(vm.state.value.prototypeAssessment)
         }
 
     @Test
-    fun guided_passwordAutoFitsAlphabet() =
+    fun prototypeAssessment_updatesWhenSecurityPresetChanges() =
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
-            vm.onTargetPasswordChanged("ab12")
-            advanceUntilIdle()
-            assertEquals(AlphabetChoice.LOWER_ALPHANUMERIC, vm.state.value.config.alphabet)
-            assertTrue(
-                vm.state.value.config.resolvedAlphabet().symbols.toSet().containsAll("ab12".toSet()),
+            vm.updatePrototype(
+                LocalNetworkPrototype(
+                    ssid = "LabNet",
+                    securityProfile = PrototypeSecurityPreset.WPA2_PERSONAL.toProfile(),
+                ),
             )
-            assertEquals(4, vm.state.value.config.secretLength)
-        }
+            advanceUntilIdle()
+            assertEquals(SecurityRating.MODERATE, vm.state.value.prototypeAssessment?.rating)
 
-    @Test
-    fun guided_prototypeStart_findsShortPassword() =
-        runTest(dispatcher) {
-            val vm = viewModel(DefaultLabSearchEngine())
+            vm.updatePrototype(
+                vm.state.value.prototype.copy(
+                    securityProfile = PrototypeSecurityPreset.WPA3_PERSONAL.toProfile(),
+                ),
+            )
             advanceUntilIdle()
-            vm.updatePrototype(LocalNetworkPrototype(ssidLabel = "LabNet"))
-            vm.onTargetPasswordChanged("1234")
-            advanceUntilIdle()
-            assertEquals(AlphabetChoice.DIGITS, vm.state.value.config.alphabet)
-            assertNull(vm.state.value.configErrorRes)
-            vm.start()
-            advanceUntilIdle()
-            assertEquals(SearchOutcome.Found, vm.state.value.outcome)
-            assertEquals("1234", vm.state.value.foundCandidate)
+            assertEquals(SecurityRating.HIGH, vm.state.value.prototypeAssessment?.rating)
         }
 
     @Test
@@ -178,6 +183,7 @@ class LabViewModelTest {
     fun missing_limits_are_invalid_and_start_is_blocked() =
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
+            vm.setSecretMode(LabSecretMode.RandomHidden)
             vm.updateConfig(vm.state.value.config.copy(maxAttempts = null, maxDurationSeconds = null))
             advanceUntilIdle()
             assertNotNull(vm.state.value.configErrorRes)
@@ -229,7 +235,6 @@ class LabViewModelTest {
             vm.setSecretMode(LabSecretMode.RandomHidden)
             advanceUntilIdle()
             vm.start()
-            // Reach Running without draining the hang loop (delay until cancel).
             dispatcher.scheduler.runCurrent()
             assertEquals(SearchState.Running, vm.state.value.searchState)
 
@@ -260,57 +265,13 @@ class LabViewModelTest {
         }
 
     @Test
-    fun prototypeMode_findsShortDigitPasswordLocally() =
-        runTest(dispatcher) {
-            val vm = viewModel(DefaultLabSearchEngine())
-            advanceUntilIdle()
-            vm.setSecretMode(LabSecretMode.LocalPrototype)
-            vm.updatePrototype(LocalNetworkPrototype(ssidLabel = "LabNet"))
-            vm.onTargetPasswordChanged("1234")
-            vm.updateConfig(
-                vm.state.value.config.copy(
-                    alphabet = AlphabetChoice.DIGITS,
-                    secretLength = 4,
-                    maxAttempts = 1_000_000,
-                    maxDurationSeconds = 60,
-                    workers = 1,
-                    seed = 1,
-                ),
-            )
-            advanceUntilIdle()
-            assertNull(vm.state.value.configErrorRes)
-            vm.start()
-            advanceUntilIdle()
-            assertEquals(SearchOutcome.Found, vm.state.value.outcome)
-            assertEquals("1234", vm.state.value.foundCandidate)
-            assertEquals("", vm.state.value.targetPassword)
-        }
-
-    @Test
-    fun prototypeMode_blocksStartWhenPasswordEmpty() =
+    fun prototypeMode_blocksStartUntilPasswordAuditFix03B() =
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
-            vm.setSecretMode(LabSecretMode.LocalPrototype)
-            vm.updatePrototype(LocalNetworkPrototype(ssidLabel = "LabNet"))
+            vm.updatePrototype(LocalNetworkPrototype(ssid = "LabNet"))
             advanceUntilIdle()
-            assertEquals(com.wifiauditlab.android.R.string.lab_err_password_required, vm.state.value.configErrorRes)
-            vm.start()
-            advanceUntilIdle()
-            assertEquals(SearchState.Idle, vm.state.value.searchState)
-        }
-
-    @Test
-    fun prototypeMode_blocksStartWhenPasswordOutsideAlphabet() =
-        runTest(dispatcher) {
-            val vm = viewModel(ScriptedEngine(emptyList()))
-            advanceUntilIdle()
-            vm.setSecretMode(LabSecretMode.LocalPrototype)
-            vm.updatePrototype(LocalNetworkPrototype(ssidLabel = "LabNet"))
-            vm.onTargetPasswordChanged("12ab")
-            vm.updateConfig(vm.state.value.config.copy(alphabet = AlphabetChoice.DIGITS))
-            advanceUntilIdle()
-            assertEquals(com.wifiauditlab.android.R.string.lab_err_password_alphabet_guided, vm.state.value.configErrorRes)
+            assertEquals(com.wifiauditlab.android.R.string.lab_err_prototype_search_deferred, vm.state.value.configErrorRes)
             vm.start()
             advanceUntilIdle()
             assertEquals(SearchState.Idle, vm.state.value.searchState)

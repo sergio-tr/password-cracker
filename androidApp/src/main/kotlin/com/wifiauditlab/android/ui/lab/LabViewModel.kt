@@ -4,12 +4,12 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wifiauditlab.android.R
+import com.wifiauditlab.assessment.application.AssessNetworkSecurity
+import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
-import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
-import com.wifiauditlab.lab.domain.LabSecretPolicy
 import com.wifiauditlab.lab.domain.LengthPolicy
 import com.wifiauditlab.lab.domain.SearchLimits
 import com.wifiauditlab.lab.domain.SearchMetrics
@@ -84,6 +84,8 @@ data class LabUiState(
     val passwordVisible: Boolean = false,
     val advancedExpanded: Boolean = false,
     val networkContext: LabNetworkContext? = null,
+    val prototypeAssessment: SecurityAssessment? = null,
+    val prototypeAssessmentLoading: Boolean = false,
     val searchState: SearchState = SearchState.Idle,
     val estimatedCombinations: CombinationCount = CombinationCount.ZERO,
     val feasibility: SearchFeasibility? = null,
@@ -94,12 +96,7 @@ data class LabUiState(
     val errorMessage: String? = null,
 ) {
     val effectiveSecretLength: Int
-        get() =
-            if (secretMode == LabSecretMode.LocalPrototype && targetPassword.isNotEmpty()) {
-                targetPassword.length
-            } else {
-                config.secretLength
-            }
+        get() = config.secretLength
 }
 
 /**
@@ -111,6 +108,7 @@ class LabViewModel(
     private val optimizer: SearchPlanOptimizer,
     private val analyzer: SearchFeasibilityAnalyzer,
     private val estimator: SearchPerformanceEstimator,
+    private val assessNetworkSecurity: AssessNetworkSecurity,
     private val searchDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val calibration: SearchCalibrationService? = null,
     private val networkContextStore: LabNetworkContextStore? = null,
@@ -120,10 +118,12 @@ class LabViewModel(
 
     private var searchJob: Job? = null
     private var cancellation: CancellationController? = null
+    private var assessmentJob: Job? = null
 
     init {
         refreshNetworkContext()
         applyGuidedDefaults(calibratedAttemptsPerSecond = null)
+        refreshPrototypeAssessment()
         val service = calibration
         if (service != null) {
             viewModelScope.launch(searchDispatcher) {
@@ -168,11 +168,17 @@ class LabViewModel(
                 configErrorRes = null,
             )
         }
+        if (mode == LabSecretMode.LocalPrototype) {
+            refreshPrototypeAssessment()
+        } else {
+            _state.update { it.copy(prototypeAssessment = null, prototypeAssessmentLoading = false) }
+        }
         recomputePreview()
     }
 
     fun updatePrototype(prototype: LocalNetworkPrototype) {
         _state.update { it.copy(prototype = prototype) }
+        refreshPrototypeAssessment()
         recomputePreview()
     }
 
@@ -181,11 +187,6 @@ class LabViewModel(
             var syncedConfig = current.config
             if (value.isNotEmpty()) {
                 syncedConfig = syncedConfig.copy(secretLength = value.length)
-                if (current.mode == LabInteractionMode.Guided &&
-                    current.secretMode == LabSecretMode.LocalPrototype
-                ) {
-                    syncedConfig = syncedConfig.withAutoFitAlphabet(value)
-                }
             }
             current.copy(
                 targetPassword = value,
@@ -194,14 +195,6 @@ class LabViewModel(
             )
         }
         recomputePreview()
-    }
-
-    private fun LabConfig.withAutoFitAlphabet(password: String): LabConfig {
-        val fit = GuidedAlphabetFitter.fit(password) ?: return this
-        return copy(
-            alphabet = fit.choice,
-            customAlphabet = fit.customAlphabet,
-        )
     }
 
     fun togglePasswordVisibility() {
@@ -227,6 +220,7 @@ class LabViewModel(
                 advancedExpanded = false,
             )
         }
+        refreshPrototypeAssessment()
         recomputePreview()
     }
 
@@ -241,6 +235,24 @@ class LabViewModel(
             current.copy(config = normalized)
         }
         recomputePreview()
+    }
+
+    private fun refreshPrototypeAssessment() {
+        val snapshot = _state.value
+        if (snapshot.secretMode != LabSecretMode.LocalPrototype) return
+        val profile = snapshot.prototype.securityProfile
+        assessmentJob?.cancel()
+        assessmentJob =
+            viewModelScope.launch(searchDispatcher) {
+                _state.update { it.copy(prototypeAssessmentLoading = true) }
+                val assessment = assessNetworkSecurity(profile)
+                _state.update {
+                    it.copy(
+                        prototypeAssessment = assessment,
+                        prototypeAssessmentLoading = false,
+                    )
+                }
+            }
     }
 
     private fun recomputePreview() {
@@ -299,6 +311,7 @@ class LabViewModel(
     override fun onCleared() {
         cancellation?.cancel()
         searchJob?.cancel()
+        assessmentJob?.cancel()
     }
 
     private fun LabUiState.reduce(event: LabSearchEvent): LabUiState =
@@ -335,27 +348,12 @@ class LabViewModel(
                     lengthPolicy = LengthPolicy.exactly(config.secretLength),
                     seed = config.seed,
                 )
-            LabSecretMode.LocalPrototype -> {
-                val password = state.targetPassword
-                if (password.isBlank()) {
-                    require(forPreview) { "Local prototype requires a target password to start" }
-                    LabChallenge.withHiddenSecret(
-                        alphabet = config.resolvedAlphabet(),
-                        lengthPolicy = LengthPolicy.exactly(state.effectiveSecretLength),
-                        seed = config.seed,
-                    )
-                } else {
-                    LabChallenge.withEncapsulatedVerifier(
-                        policy =
-                            LabSecretPolicy(
-                                alphabet = config.resolvedAlphabet(),
-                                length = LengthPolicy.exactly(password.length),
-                            ),
-                        verifier = EncapsulatedPasswordVerifier.encapsulate(password),
-                        seed = config.seed,
-                    )
-                }
-            }
+            LabSecretMode.LocalPrototype ->
+                LabChallenge.withHiddenSecret(
+                    alphabet = config.resolvedAlphabet(),
+                    lengthPolicy = LengthPolicy.exactly(state.effectiveSecretLength),
+                    seed = config.seed,
+                )
         }
     }
 
@@ -367,21 +365,11 @@ class LabViewModel(
             runCatching { buildLimits(config) }.isFailure
         if (limitsMissing) return R.string.lab_err_limits_required
 
-        if (state.secretMode != LabSecretMode.LocalPrototype) return null
+        if (state.secretMode == LabSecretMode.LocalPrototype) {
+            if (state.prototype.ssid.isBlank()) return R.string.lab_err_ssid_required
+            return R.string.lab_err_prototype_search_deferred
+        }
 
-        if (state.prototype.ssidLabel.isBlank()) return R.string.lab_err_ssid_required
-        if (!state.prototype.securityFamily.supportsSharedPasswordDemo()) {
-            return R.string.lab_err_family_not_psk
-        }
-        if (state.targetPassword.isBlank()) return R.string.lab_err_password_required
-        val alphabet = config.resolvedAlphabet()
-        if (!state.targetPassword.all { alphabet.symbols.contains(it) }) {
-            return if (state.mode == LabInteractionMode.Guided) {
-                R.string.lab_err_password_alphabet_guided
-            } else {
-                R.string.lab_err_password_alphabet
-            }
-        }
         return null
     }
 

@@ -11,7 +11,7 @@ Prioridad sobre filas `Implemented` de `docs/00-progress.md` que contradigan est
 | P1 | Mezcla español / inglés | FIX-01 | **Code+CI green** — `AppCompatActivity` + `localeConfig` + strings migrados a `values`/`values-en`; tests i18n | **Manual pending user** |
 | P2 | Cambiar idioma no cambia la app | FIX-01 | **Code+CI green** — recreate + `AppLanguagePreferences`; `ProductRegressionComposeTest` + `AppLanguagePreferencesInstrumentedTest` | **Manual pending user** |
 | P3 | Navegación / UX poco Material | FIX-02 | **Partial** — `ArrowBack` en child screens verificado; copy novice Lab/Audit; sin `Text("Atrás")` | **Manual pending user** |
-| P4 | Lab sin prototipo local de red | FIX-03 + FIX-04 | **Code+CI green** — prototipo local + flujo guiado novice; `LabComposeTest` + `ProductRegressionComposeTest` | **Manual pending user** |
+| P4 | Lab sin prototipo local de red | FIX-03A (+ FIX-03B contraseña) | **Partial** — FIX-03A: prototipo + evaluación (`AssessNetworkSecurity`); sin auditoría PSK del prototipo hasta FIX-03B; `LabComposeTest` + regresión | **Manual pending user** |
 
 FIX-05 (`fix/05-product-regression-docs`) añade `ProductRegressionComposeTest` y cierra docs; **no** promueve a `Implemented` sin pase manual del usuario.
 
