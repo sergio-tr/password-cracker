@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +48,9 @@ import kotlin.math.roundToInt
 @Composable
 fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        viewModel.refreshNetworkContext()
+    }
     val running =
         state.searchState == SearchState.Running ||
             state.searchState == SearchState.Preparing ||
@@ -74,6 +78,7 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Spacer(Modifier.height(4.dp))
+            state.networkContext?.let { NetworkContextBanner(it) }
             // Outcome first so Cancelled/Found remain visible without scrolling past config.
             state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
             if (running) {
@@ -83,6 +88,36 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                 EstimatesCard(state)
             }
             Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun NetworkContextBanner(context: LabNetworkContext) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Contexto de red del laboratorio" },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Laboratorio", fontWeight = FontWeight.Bold)
+            Text(context.displayName, fontWeight = FontWeight.SemiBold)
+            if (context.ssidLabel != context.displayName) {
+                Text(context.ssidLabel)
+            }
+            Text(context.familyDisplayLabel())
+            val meta = context.metaLine()
+            if (meta != "—") {
+                Text(meta)
+            }
+            context.assessmentSummary?.let { Text(it) }
+            Spacer(Modifier.height(4.dp))
+            Text("Simulación local", fontWeight = FontWeight.SemiBold)
+            Text(
+                "El experimento utiliza la configuración de esta red como contexto, " +
+                    "pero no realiza intentos de conexión contra ella.",
+            )
         }
     }
 }

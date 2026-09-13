@@ -4,8 +4,9 @@ Material 3, soporte light/dark del sistema, navegación con barra inferior
 (Cercanas, Guardadas, Laboratorio, Ajustes). Un usuario nuevo ve en Ajustes qué
 hace cada pestaña. El detalle de una red cercana muestra primero nombre,
 seguridad, señal y si está guardada; los datos avanzados se despliegan a
-demanda. El laboratorio explica reto, coste, límites y STOP antes y durante
-la ejecución.
+demanda. El laboratorio explica reto, coste, límites y DETENER antes y durante
+la ejecución. Desde el detalle de una red cercana se puede abrir el Lab con
+contexto (`LabNetworkContext`) sin autenticar contra el AP.
 
 ## Pantallas
 

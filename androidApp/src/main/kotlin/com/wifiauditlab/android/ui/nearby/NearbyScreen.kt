@@ -14,14 +14,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -38,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,6 +59,7 @@ import org.koin.androidx.compose.koinViewModel
 fun NearbyScreen(
     viewModel: NearbyViewModel = koinViewModel(),
     onOpenSecurityAnalysis: (NearbyItem) -> Unit = {},
+    onOpenLab: (NearbyItem, String?) -> Unit = { _, _ -> },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val detail by viewModel.detail.collectAsStateWithLifecycle()
@@ -115,6 +122,10 @@ fun NearbyScreen(
             onSave = viewModel::saveSelectedToVault,
             onOpenSecurityAnalysis = {
                 onOpenSecurityAnalysis(current.item)
+                viewModel.dismissDetail()
+            },
+            onOpenLab = {
+                onOpenLab(current.item, current.assessment?.headline)
                 viewModel.dismissDetail()
             },
         )
@@ -182,6 +193,7 @@ private fun NetworkDetailSheet(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
     onOpenSecurityAnalysis: () -> Unit,
+    onOpenLab: () -> Unit,
 ) {
     val observation = detail.item.observation
     var alias by remember(detail.item) {
@@ -213,9 +225,24 @@ private fun NetworkDetailSheet(
 
             Spacer(Modifier.height(8.dp))
             Button(
+                onClick = onOpenLab,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = "Probar en laboratorio" },
+            ) {
+                Icon(
+                    Icons.Filled.Science,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Probar en laboratorio")
+            }
+            OutlinedButton(
                 onClick = onOpenSecurityAnalysis,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Ver análisis de seguridad") }
+            ) { Text("Analizar seguridad") }
 
             TextButton(onClick = { showAdvanced = !showAdvanced }) {
                 Text(if (showAdvanced) "Ocultar datos avanzados" else "Mostrar datos avanzados")

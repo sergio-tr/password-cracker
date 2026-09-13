@@ -1,7 +1,11 @@
 # 07 · Synthetic Security Lab
 
-Laboratorio **totalmente desacoplado** de redes reales. Genera un secreto oculto
-local y estudia algoritmos de exploración del espacio de candidatos.
+Laboratorio **totalmente desacoplado** de redes reales a nivel de motor. Genera un
+secreto oculto local y estudia algoritmos de exploración del espacio de candidatos.
+
+La UI puede contextualizar el experimento con una red observada (`LabNetworkContext`
+en androidApp): muestra SSID/familia/banda y un banner de «Simulación local», pero
+**nunca** conecta `LabSearchEngine` ni `CandidateSource` a autenticación Wi‑Fi real.
 
 ## Flujo conceptual
 
