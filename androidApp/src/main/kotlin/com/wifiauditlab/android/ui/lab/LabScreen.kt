@@ -4,22 +4,32 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -41,33 +51,156 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
         state.searchState == SearchState.Running ||
             state.searchState == SearchState.Preparing ||
             state.searchState == SearchState.Cancelling
+    val cancelling = state.searchState == SearchState.Cancelling
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Laboratorio sintético") }) }) { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Laboratorio sintético") }) },
+        bottomBar = {
+            LabActionBar(
+                running = running,
+                cancelling = cancelling,
+                canStart = state.configError == null,
+                onStart = viewModel::start,
+                onStop = viewModel::stop,
+            )
+        },
+    ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ConfigCard(state = state, enabled = !running, onChange = viewModel::updateConfig)
-            EstimatesCard(state)
-
-            if (running) {
-                Button(
-                    onClick = viewModel::stop,
-                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Detener búsqueda" },
-                ) { Text("STOP") }
-            } else {
-                Button(
-                    onClick = viewModel::start,
-                    enabled = state.configError == null,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Iniciar búsqueda") }
-            }
-
-            state.metrics?.let { MetricsCard(state, it) }
+            Spacer(Modifier.height(4.dp))
+            // Outcome first so Cancelled/Found remain visible without scrolling past config.
             state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
+            if (running) {
+                ExecutionStatusCard(state = state)
+            } else {
+                ConfigCard(state = state, enabled = true, onChange = viewModel::updateConfig)
+                EstimatesCard(state)
+            }
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
+
+/**
+ * Fixed action zone — always visible without scrolling.
+ * STOP stays reachable for every cancelable state.
+ */
+@Composable
+private fun LabActionBar(
+    running: Boolean,
+    cancelling: Boolean,
+    canStart: Boolean,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+) {
+    Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
+        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            if (running) {
+                Button(
+                    onClick = onStop,
+                    enabled = !cancelling,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = "Detener búsqueda" },
+                ) {
+                    Icon(
+                        Icons.Filled.Stop,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(if (cancelling) "Deteniendo…" else "DETENER")
+                }
+            } else {
+                Button(
+                    onClick = onStart,
+                    enabled = canStart,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = "Iniciar búsqueda" },
+                ) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("Iniciar búsqueda")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExecutionStatusCard(state: LabUiState) {
+    val metrics = state.metrics
+    val progress = metrics?.processedPercentage?.toFloat()?.coerceIn(0f, 1f)
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Estado de la búsqueda" },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(executionHeadline(state.searchState), fontWeight = FontWeight.Bold)
+            if (metrics != null) {
+                MetricRow("Intentos", metrics.attempts.toExactString())
+                MetricRow("Tiempo", formatElapsed(metrics.elapsed.inWholeSeconds))
+                MetricRow("Velocidad", "${(metrics.attemptsPerSecond / 1000).roundToInt()} k/s")
+                metrics.processedPercentage?.let {
+                    MetricRow("Progreso", "${(it * 1000).roundToInt() / 10.0} %")
+                }
+                if (progress != null) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = "Barra de progreso de la búsqueda" },
+                    )
+                } else {
+                    LinearProgressIndicator(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = "Barra de progreso indeterminada" },
+                    )
+                }
+            } else {
+                Text("Preparando la búsqueda…")
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label)
+        Text(value, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+private fun executionHeadline(state: SearchState): String =
+    when (state) {
+        SearchState.Preparing -> "Preparando…"
+        SearchState.Running -> "Buscando…"
+        SearchState.Cancelling -> "Deteniendo…"
+        else -> state.name
+    }
 
 @Composable
 private fun ConfigCard(
@@ -105,7 +238,7 @@ private fun ConfigCard(
                     )
                 }
             }
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Longitud del secreto: ${config.secretLength}")
                 OutlinedButton(
                     onClick = { if (enabled && config.secretLength > 1) onChange(config.copy(secretLength = config.secretLength - 1)) },
@@ -168,26 +301,6 @@ private fun EstimatesCard(state: LabUiState) {
                 feasibility.estimatedDurationRange?.let { Text("Estimación: ${it.toApproximateString()}") }
                 Text(feasibility.reason)
             }
-        }
-    }
-}
-
-@Composable
-private fun MetricsCard(
-    state: LabUiState,
-    metrics: SearchMetrics,
-) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(state.searchState.name.uppercase(), fontWeight = FontWeight.Bold)
-            Text("Intentos: ${metrics.attempts.toExactString()}")
-            Text("Tiempo: ${formatElapsed(metrics.elapsed.inWholeSeconds)}")
-            Text("Velocidad: ${(metrics.attemptsPerSecond / 1000).roundToInt()} k/s")
-            Text("Fase: ${metrics.currentBucketIndex + 1} / ${metrics.totalBuckets}")
-            Text("Bucket actual: ${metrics.currentBucketIndex + 1}")
-            Text("Espacio estimado: ${metrics.searchSpace.toAbbreviatedString()}")
-            metrics.processedPercentage?.let { Text("Progreso: ${(it * 100).roundToInt() / 100.0} %") }
-            Text("Límites activos: ${state.config.activeLimitsDescription()}")
         }
     }
 }

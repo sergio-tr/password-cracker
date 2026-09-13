@@ -21,8 +21,10 @@ la ejecución.
 - **Estados explícitos**: escaneo (`WifiScanState`) y búsqueda (`SearchState`) se
   modelan como enums/sealed, no como múltiples booleans.
 - **Secretos ocultos** por defecto (`••••••••••••`); revelar es una acción explícita.
-- **Cancelación siempre visible**: el botón `STOP` permanece mientras el
-  laboratorio ejecuta, y la cancelación es prácticamente inmediata.
+- **Cancelación siempre visible**: el botón `DETENER` vive en una barra de
+  acciones fija (fuera del scroll) mientras el laboratorio ejecuta; al pulsar
+  pasa a `Deteniendo…` (deshabilitado) y termina en `CANCELADO`. La cancelación
+  es prácticamente inmediata.
 - **No bloquear el hilo principal**: la búsqueda corre en `Dispatchers.Default`;
   la UI se actualiza por batch.
 - **Confirmaciones** sólo cuando evitan consecuencias reales (borrar una red).
@@ -45,5 +47,5 @@ Tiempo      00:00:13
 Velocidad   98 k/s
 Progreso    21.4 %
 Fase        3 / 6
-[ STOP ]
+[ DETENER ] (barra fija)
 ```

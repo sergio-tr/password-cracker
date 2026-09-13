@@ -27,7 +27,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Vault UI | Listado + detalle + CRUD + secretos (Reveal/Hide/Copy/Replace/Remove). |
 | Dominio lab + motor baseline | Lazy, límites, cancelación, métricas, `SearchLifecycle`. |
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
-| UX de ejecución del lab | Preview, STOP, límites, resultado + métricas. |
+| UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |

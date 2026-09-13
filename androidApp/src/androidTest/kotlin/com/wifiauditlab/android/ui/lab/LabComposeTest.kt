@@ -128,7 +128,8 @@ class LabComposeTest {
     }
 
     private fun startSearch() {
-        composeTestRule.onNodeWithText("Iniciar búsqueda").performScrollTo().performClick()
+        // Start lives in the fixed bottom action bar — must not require scroll.
+        composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
     }
 
@@ -142,7 +143,7 @@ class LabComposeTest {
         waitForText("Viabilidad: Razonable")
         scrollToText("Viabilidad: Razonable")
         scrollToText("ok")
-        scrollToText("Iniciar búsqueda")
+        composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed()
     }
 
     @Test
@@ -181,7 +182,7 @@ class LabComposeTest {
     }
 
     @Test
-    fun stop_visibleWhileRunning_andCancelShowsCancellingOrCancelled() {
+    fun stop_alwaysVisibleWithoutScroll_whileRunning() {
         val vm = viewModel(HangingEngine(metrics))
         setLab(vm)
         startSearch()
@@ -189,17 +190,43 @@ class LabComposeTest {
             vm.state.value.searchState == SearchState.Running ||
                 vm.state.value.searchState == SearchState.Preparing
         }
-        waitForText("STOP")
-        composeTestRule.onNodeWithContentDescription("Detener búsqueda").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("STOP").performScrollTo().assertIsDisplayed()
+        // Regression: DETENER must be in the fixed action bar — never require scroll.
+        composeTestRule.onNodeWithContentDescription("Detener búsqueda").assertIsDisplayed()
+        composeTestRule.onNodeWithText("DETENER").assertIsDisplayed()
+        waitForText("Buscando")
+    }
 
-        composeTestRule.onNodeWithText("STOP").performClick()
+    @Test
+    fun stop_runsCancellingThenCancelled_withoutScroll() {
+        val vm = viewModel(HangingEngine(metrics))
+        setLab(vm)
+        startSearch()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.searchState == SearchState.Running ||
+                vm.state.value.searchState == SearchState.Preparing
+        }
+        composeTestRule.onNodeWithContentDescription("Detener búsqueda").assertIsDisplayed().performClick()
+
         composeTestRule.waitUntil(5_000) {
             vm.state.value.searchState == SearchState.Cancelling ||
-                vm.state.value.outcome == SearchOutcome.Cancelled ||
-                composeTestRule.onAllNodesWithText("CANCELLING").fetchSemanticsNodes().isNotEmpty() ||
-                composeTestRule.onAllNodesWithText("CANCELADO").fetchSemanticsNodes().isNotEmpty()
+                vm.state.value.searchState == SearchState.Cancelled ||
+                vm.state.value.outcome == SearchOutcome.Cancelled
         }
+        // Immediate UI feedback after tap (Cancelling and/or terminal Cancelled).
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithText("Deteniendo", substring = true).fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodesWithText("CANCELADO").fetchSemanticsNodes().isNotEmpty() ||
+                vm.state.value.outcome == SearchOutcome.Cancelled
+        }
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.outcome == SearchOutcome.Cancelled &&
+                vm.state.value.searchState == SearchState.Cancelled
+        }
+        waitForText("CANCELADO")
+        // Result card is pinned above config after terminal outcomes.
+        composeTestRule.onNodeWithText("CANCELADO").assertIsDisplayed()
+        // Start returns to the fixed bar — cancel completed.
+        composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed()
     }
 
     @Test
