@@ -15,6 +15,9 @@ import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.observation
 import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
+import com.wifiauditlab.assessment.application.AssessNetworkSecurity
+import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
+import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -109,6 +112,7 @@ class LabComposeTest {
         optimizer,
         analyzer,
         estimator,
+        AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
         // Keep search collection on Main so Compose UI tests observe emissions deterministically.
         searchDispatcher = Dispatchers.Main.immediate,
         networkContextStore = networkContextStore,
@@ -212,28 +216,32 @@ class LabComposeTest {
     }
 
     @Test
-    fun guided_fillSsidPasswordAndStart() {
-        val vm = viewModel(HangingEngine(metrics))
+    fun openPreset_showsAssessmentWithoutPasswordField() {
+        val vm = viewModel(ScriptedEngine(emptyList()))
         setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_preset_open))
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.prototype.securityFamily == SecurityFamily.OPEN &&
+                vm.state.value.prototypeAssessment != null &&
+                !vm.state.value.prototypeAssessmentLoading
+        }
         composeTestRule
             .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
             .performScrollTo()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextClearance()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("HomeLab")
-        composeTestRule
-            .onNodeWithText(activity.getString(R.string.lab_prototype_password))
-            .performScrollTo()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
-        composeTestRule.waitForIdle()
-
-        startSearch()
-        composeTestRule.waitUntil(5_000) {
-            vm.state.value.searchState == SearchState.Running ||
-                vm.state.value.searchState == SearchState.Preparing
-        }
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_stop_search))
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("OpenLab")
+        waitForText(activity.getString(R.string.lab_prototype_assessment_heading))
+        val noPsk = activity.getString(R.string.lab_prototype_no_password_audit)
+        waitForText(noPsk)
+        scrollToText(noPsk)
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 
     @Test
@@ -360,8 +368,8 @@ class LabComposeTest {
     }
 
     @Test
-    fun prototypeMode_showsLocalOnlyBannerAndStartsSearch() {
-        val vm = viewModel(HangingEngine(metrics))
+    fun prototypeMode_showsLocalOnlyBannerAndAssessment() {
+        val vm = viewModel(ScriptedEngine(emptyList()))
         setLab(vm)
         composeTestRule.waitForIdle()
         val localOnly = activity.getString(R.string.lab_prototype_local_only)
@@ -373,20 +381,41 @@ class LabComposeTest {
             .performScrollTo()
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextClearance()
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("TestSSID")
+        composeTestRule.waitUntil(5_000) { vm.state.value.prototypeAssessment != null }
+        waitForText(activity.getString(R.string.lab_prototype_assessment_heading))
         composeTestRule
-            .onNodeWithText(activity.getString(R.string.lab_prototype_password))
-            .performScrollTo()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
-        composeTestRule.waitForIdle()
-
-        startSearch()
-        composeTestRule.waitUntil(5_000) {
-            vm.state.value.searchState == SearchState.Running ||
-                vm.state.value.searchState == SearchState.Preparing
-        }
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_stop_search))
+            .onNodeWithText(activity.getString(R.string.lab_start_test))
             .assertIsDisplayed()
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun enterprisePreset_showsAssessmentWithoutPasswordAuditCta() {
+        val vm = viewModel(ScriptedEngine(emptyList()))
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_preset_enterprise_wpa2))
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.prototype.securityFamily == SecurityFamily.WPA2_ENTERPRISE &&
+                vm.state.value.prototypeAssessment != null &&
+                !vm.state.value.prototypeAssessmentLoading
+        }
+        val noPsk = activity.getString(R.string.lab_prototype_no_password_audit)
+        waitForText(noPsk)
+        scrollToText(noPsk)
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 
     @Test
