@@ -20,3 +20,5 @@ Thumbs.db
 *.keystore
 *.p12
 secrets.properties
+# CI local downloads
+.ci-artifacts/
