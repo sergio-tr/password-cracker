@@ -260,7 +260,6 @@ class DefaultAutomaticPasswordAuditPlanner(
                 PasswordAuditBudgetPreset.Quick -> 200.milliseconds
                 else -> SearchLimits.DEFAULT_PROGRESS_INTERVAL
             }
-
     }
 }
 

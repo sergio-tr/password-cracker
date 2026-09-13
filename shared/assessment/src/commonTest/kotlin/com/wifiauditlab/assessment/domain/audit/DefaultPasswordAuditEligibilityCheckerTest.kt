@@ -12,13 +12,12 @@ import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.domain.wifi.WifiSignal
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
-import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class DefaultPasswordAuditEligibilityCheckerTest {
     private val home =

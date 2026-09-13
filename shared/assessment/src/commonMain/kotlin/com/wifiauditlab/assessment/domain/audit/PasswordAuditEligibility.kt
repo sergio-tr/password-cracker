@@ -5,9 +5,9 @@ import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMat
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
-import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 
 /**
  * Whether a known-password audit may start for [observation].

@@ -2,8 +2,6 @@ package com.wifiauditlab.lab.domain.audit
 
 import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.core.math.CombinationCount
-import com.wifiauditlab.lab.domain.audit.PlanExplanationDetail
-import com.wifiauditlab.lab.domain.audit.PlanExplanationHeadline
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
