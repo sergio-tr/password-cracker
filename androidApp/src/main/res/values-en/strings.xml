@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Wi-Fi Audit Lab</string>
+
+    <string name="audit_title">Quick audit</string>
+    <string name="audit_back">Back</string>
+    <string name="audit_start">START AUDIT</string>
+    <string name="audit_stop">STOP</string>
+    <string name="audit_stopping">Stopping…</string>
+    <string name="audit_connected_network">Connected network</string>
+    <string name="audit_local_only_banner">Search is local only: candidates are never authenticated against the router.</string>
+    <string name="audit_local_only_running">Local verification — not authenticating against the router.</string>
+    <string name="audit_password_section">Known password</string>
+    <string name="audit_password_help">Enter this network\'s password or retrieve it from the Vault. It is not used to prioritize the automatic search.</string>
+    <string name="audit_password_label">Password</string>
+    <string name="audit_password_from_vault">Retrieved from Vault (in memory only)</string>
+    <string name="audit_use_vault">Use from Vault</string>
+    <string name="audit_show">Show</string>
+    <string name="audit_hide">Hide</string>
+    <string name="audit_clear">Clear</string>
+    <string name="audit_budget">Budget</string>
+    <string name="audit_preset_quick">Quick</string>
+    <string name="audit_preset_standard">Standard</string>
+    <string name="audit_preset_deep">Deep</string>
+    <string name="audit_preset_custom">Custom</string>
+    <string name="audit_advanced_show">Advanced options</string>
+    <string name="audit_advanced_hide">Hide advanced options</string>
+    <string name="audit_plan_title">Automatic plan</string>
+    <string name="audit_plan_loading">Building plan…</string>
+    <string name="audit_missing_target">No network selected for audit.</string>
+    <string name="audit_report_title">Report</string>
+    <string name="audit_evidence_measured">Measured</string>
+    <string name="audit_evidence_estimated">Estimated</string>
+    <string name="audit_evidence_modelled">Modelled</string>
+    <string name="audit_cta_nearby">Audit password</string>
+</resources>
