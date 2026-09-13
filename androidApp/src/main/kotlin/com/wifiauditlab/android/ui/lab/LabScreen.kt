@@ -1,5 +1,6 @@
 package com.wifiauditlab.android.ui.lab
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,6 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -54,7 +58,7 @@ import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -68,18 +72,34 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
     val cancelling = state.searchState == SearchState.Cancelling
     val startTestLabel = stringResource(R.string.lab_start_test)
     val startSearchLabel = stringResource(R.string.lab_start_search)
+    val showGuidedStartBar =
+        !state.isGuidedPrototypeFlow ||
+            state.guidedPhase != GuidedPrototypePhase.Configure
+    val scrollState = rememberScrollState()
+    val startFocusRequester = remember { BringIntoViewRequester() }
+
+    LaunchedEffect(state.guidedFocusTarget) {
+        if (state.guidedFocusTarget == GuidedFocusTarget.Start) {
+            startFocusRequester.bringIntoView()
+            viewModel.consumeGuidedFocusTarget()
+        }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.lab_title)) }) },
         bottomBar = {
-            LabActionBar(
-                running = running,
-                cancelling = cancelling,
-                canStart = state.canStartSearch,
-                startLabel = if (state.mode == LabInteractionMode.Guided) startTestLabel else startSearchLabel,
-                onStart = viewModel::start,
-                onStop = viewModel::stop,
-            )
+            if (showGuidedStartBar) {
+                LabActionBar(
+                    running = running,
+                    cancelling = cancelling,
+                    canStart = state.canStartSearch,
+                    startLabel = if (state.mode == LabInteractionMode.Guided) startTestLabel else startSearchLabel,
+                    onStart = viewModel::start,
+                    onStop = viewModel::stop,
+                    modifier =
+                        Modifier.bringIntoViewRequester(startFocusRequester),
+                )
+            }
         },
     ) { padding ->
         Column(
@@ -87,7 +107,7 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Spacer(Modifier.height(4.dp))
@@ -95,22 +115,36 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             if (state.secretMode == LabSecretMode.LocalPrototype) {
                 LocalPrototypeBanner(state.prototype)
             }
-            state.outcome?.let {
-                ResultCard(
-                    outcome = it,
-                    found = state.foundCandidate,
-                    errorMessage = state.errorMessage,
-                    metrics = state.metrics,
-                    showNoviceSummary =
-                        state.mode == LabInteractionMode.Guided &&
-                            state.secretMode == LabSecretMode.LocalPrototype &&
-                            it in
-                            setOf(
-                                SearchOutcome.Found,
-                                SearchOutcome.LimitReached,
-                                SearchOutcome.Cancelled,
-                            ),
-                )
+            state.outcome?.let { outcome ->
+                if (
+                    state.isGuidedPrototypeFlow &&
+                    outcome in
+                    setOf(
+                        SearchOutcome.Found,
+                        SearchOutcome.LimitReached,
+                        SearchOutcome.Cancelled,
+                        SearchOutcome.NotFound,
+                    )
+                ) {
+                    GuidedPrototypeResultCard(
+                        outcome = outcome,
+                        found = state.foundCandidate,
+                        errorMessage = state.errorMessage,
+                        metrics = state.metrics,
+                        networkAssessment = state.resultNetworkAssessment ?: state.prototypeAssessment,
+                        prototype = state.prototype,
+                        onEditPassword = viewModel::editGuidedPassword,
+                        onChangeSecurity = viewModel::changeGuidedSecurity,
+                        onRepeat = viewModel::repeatGuidedRun,
+                    )
+                } else {
+                    ResultCard(
+                        outcome = outcome,
+                        found = state.foundCandidate,
+                        errorMessage = state.errorMessage,
+                        metrics = state.metrics,
+                    )
+                }
             }
             if (running) {
                 ExecutionStatusCard(state = state)
@@ -125,6 +159,8 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                         onOpenAdvancedMode = { viewModel.setMode(LabInteractionMode.Advanced) },
                         onTargetPasswordChanged = viewModel::onTargetPasswordChanged,
                         onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                        onCreateAndTest = viewModel::createAndTest,
+                        onFocusConsumed = viewModel::consumeGuidedFocusTarget,
                     )
                 } else {
                     SecretModeCard(
@@ -187,6 +223,7 @@ private fun LocalPrototypeBanner(prototype: LocalNetworkPrototype) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GuidedPrototypeCard(
     state: LabUiState,
@@ -197,7 +234,24 @@ private fun GuidedPrototypeCard(
     onOpenAdvancedMode: () -> Unit,
     onTargetPasswordChanged: (String) -> Unit,
     onTogglePasswordVisibility: () -> Unit,
+    onCreateAndTest: () -> Unit,
+    onFocusConsumed: () -> Unit,
 ) {
+    val passwordFocusRequester = remember { BringIntoViewRequester() }
+    val securityFocusRequester = remember { BringIntoViewRequester() }
+
+    LaunchedEffect(state.guidedFocusTarget) {
+        when (state.guidedFocusTarget) {
+            GuidedFocusTarget.Password -> passwordFocusRequester.bringIntoView()
+            GuidedFocusTarget.Security -> securityFocusRequester.bringIntoView()
+            else -> Unit
+        }
+        if (state.guidedFocusTarget == GuidedFocusTarget.Password ||
+            state.guidedFocusTarget == GuidedFocusTarget.Security
+        ) {
+            onFocusConsumed()
+        }
+    }
     val guidedPrototypeCd = stringResource(R.string.lab_cd_guided_prototype)
     val advancedOptionsCd = stringResource(R.string.lab_cd_advanced_options)
     val advancedShow = stringResource(R.string.lab_advanced_show)
@@ -250,6 +304,7 @@ private fun GuidedPrototypeCard(
             GuidedStep(
                 step = 3,
                 title = stringResource(R.string.lab_guided_step_security),
+                modifier = Modifier.bringIntoViewRequester(securityFocusRequester),
             ) {
                 PrototypePresetPicker(
                     prototype = state.prototype,
@@ -260,6 +315,7 @@ private fun GuidedPrototypeCard(
                 GuidedStep(
                     step = 4,
                     title = stringResource(R.string.lab_guided_step_password),
+                    modifier = Modifier.bringIntoViewRequester(passwordFocusRequester),
                 ) {
                     PrototypePasswordField(
                         password = state.targetPassword,
@@ -278,6 +334,35 @@ private fun GuidedPrototypeCard(
                     loading = state.prototypeAssessmentLoading,
                     prototype = state.prototype,
                 )
+                Text(
+                    stringResource(R.string.lab_guided_network_assessment_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (state.guidedPhase == GuidedPrototypePhase.Configure &&
+                state.prototype.securityFamily.supportsSharedPasswordDemo()
+            ) {
+                val createStep = if (state.prototype.securityFamily.supportsSharedPasswordDemo()) 6 else 5
+                GuidedStep(
+                    step = createStep,
+                    title = stringResource(R.string.lab_guided_step_create_test),
+                ) {
+                    Text(stringResource(R.string.lab_guided_step_create_test_body))
+                    Button(
+                        onClick = onCreateAndTest,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.lab_create_and_test))
+                    }
+                }
+            } else if (state.guidedPhase == GuidedPrototypePhase.Ready) {
+                GuidedStep(
+                    step = if (state.prototype.securityFamily.supportsSharedPasswordDemo()) 6 else 5,
+                    title = stringResource(R.string.lab_guided_step_start),
+                ) {
+                    Text(stringResource(R.string.lab_guided_step_start_body))
+                }
             }
             state.configErrorRes?.let { Text(stringResource(it)) }
             if (state.advancedExpanded) {
@@ -313,11 +398,96 @@ private fun GuidedPrototypeCard(
 private fun GuidedStep(
     step: Int,
     title: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(stringResource(R.string.lab_guided_step_label, step, title), fontWeight = FontWeight.SemiBold)
         content()
+    }
+}
+
+@Composable
+private fun GuidedPrototypeResultCard(
+    outcome: SearchOutcome,
+    found: String?,
+    errorMessage: String?,
+    metrics: SearchMetrics?,
+    networkAssessment: com.wifiauditlab.assessment.domain.security.SecurityAssessment?,
+    prototype: LocalNetworkPrototype,
+    onEditPassword: () -> Unit,
+    onChangeSecurity: () -> Unit,
+    onRepeat: () -> Unit,
+) {
+    val resultCd = stringResource(R.string.lab_cd_guided_result)
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = resultCd },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.lab_guided_result_title), fontWeight = FontWeight.Bold)
+
+            Text(stringResource(R.string.lab_result_network_config_heading), fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(familyLabelRes(prototype.securityProfile.family)),
+                fontWeight = FontWeight.Medium,
+            )
+            if (networkAssessment != null) {
+                PrototypeAssessmentCard(
+                    assessment = networkAssessment,
+                    loading = false,
+                    prototype = prototype,
+                )
+            } else {
+                Text(stringResource(R.string.lab_prototype_assessment_loading))
+            }
+            Text(
+                stringResource(R.string.lab_result_network_config_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(4.dp))
+            Text(stringResource(R.string.lab_result_password_resistance_heading), fontWeight = FontWeight.SemiBold)
+            Text(outcomeLabel(outcome), fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.lab_novice_observed_resistance, outcomeLabel(outcome)),
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                stringResource(R.string.lab_result_password_resistance_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(stringResource(R.string.lab_novice_local_only_reminder))
+            if (outcome == SearchOutcome.Found && found != null) {
+                Text(stringResource(R.string.lab_found_secret, found))
+            }
+            errorMessage?.let { Text(it) }
+            metrics?.let {
+                Text(stringResource(R.string.lab_final_attempts, it.attempts.toExactString()))
+                Text(stringResource(R.string.lab_final_time, formatElapsed(it.elapsed.inWholeSeconds)))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (prototype.securityFamily.supportsSharedPasswordDemo()) {
+                    OutlinedButton(onClick = onEditPassword, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.lab_post_edit_password))
+                    }
+                }
+                OutlinedButton(onClick = onChangeSecurity, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.lab_post_change_security))
+                }
+            }
+            Button(onClick = onRepeat, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.lab_post_repeat))
+            }
+        }
     }
 }
 
@@ -554,10 +724,11 @@ private fun LabActionBar(
     startLabel: String,
     onStart: () -> Unit,
     onStop: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val stopSearchCd = stringResource(R.string.lab_cd_stop_search)
     val startSearchCd = stringResource(R.string.lab_cd_start_search)
-    Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
+    Surface(tonalElevation = 3.dp, shadowElevation = 4.dp, modifier = modifier) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             if (running) {
                 Button(
@@ -808,18 +979,10 @@ private fun ResultCard(
     found: String?,
     errorMessage: String?,
     metrics: SearchMetrics?,
-    showNoviceSummary: Boolean = false,
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(outcomeLabel(outcome), fontWeight = FontWeight.Bold)
-            if (showNoviceSummary) {
-                Text(
-                    stringResource(R.string.lab_novice_observed_resistance, outcomeLabel(outcome)),
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(stringResource(R.string.lab_novice_local_only_reminder))
-            }
             if (outcome == SearchOutcome.Found && found != null) {
                 Text(stringResource(R.string.lab_found_secret, found))
             }

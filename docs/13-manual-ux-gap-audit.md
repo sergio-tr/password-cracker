@@ -73,10 +73,14 @@ Auditoría de código (2026-09-13): **no** hay `Text("Atrás")` en Compose. FIX-
 **Partial (FIX-04):** flujo guiado novice del prototipo local:
 
 * modo guiado arranca en `LocalPrototype` (chip «Secreto aleatorio» opcional);
-* tarjeta con pasos SSID → seguridad WPA2/WPA3 → contraseña → Iniciar prueba;
-* alfabeto y longitud autoajustados al escribir la contraseña;
-* workers/estrategia/alfabeto solo bajo Opciones avanzadas;
-* resumen novice (resistencia observada + aviso local-only) tras Found/Límite/Cancelado.
+* tarjeta con pasos SSID → seguridad → contraseña → evaluación de configuración → **Crear y probar** → **Iniciar prueba**;
+* `GuidedAlphabetFitter` ajusta alfabeto al escribir (planner ciego al target, sin filtrar longitud);
+* workers/estrategia/alfabeto solo bajo Opciones avanzadas (colapsadas por defecto);
+* resultado separa **evaluación de configuración de red** y **resistencia de contraseña** (búsqueda);
+* copy explícito: WPA2→WPA3 no implica que la misma contraseña sea menos predecible;
+* acciones post-resultado: Editar contraseña, Cambiar seguridad, Repetir (preserva perfil del prototipo).
+
+**Pendiente FIX-05:** suite de regresión de producto + honestidad docs sin promover a Implemented sin pase manual.
 
 El modo **Random hidden** sigue usando `withHiddenSecret`. La auditoría known-password contra red conectada permanece en **Password Audit**.
 

@@ -10,7 +10,7 @@ Modos de verificación:
 
 - **Sintético aleatorio** — `LabChallenge.withHiddenSecret` (secreto oculto
   generado localmente; disponible vía chip en modo guiado o por defecto en Avanzado).
-- **Prototipo guiado (FIX-03A + FIX-03B)** — modo guiado arranca en prototipo local
+- **Prototipo guiado (FIX-03A + FIX-03B + FIX-04)** — modo guiado arranca en prototipo local
   (`LocalPrototype`): formulario «Crear prototipo de red» con presets (Abierta, WEP,
   WPA2/WPA3/Transición, Enterprise) + nombre/SSID; opciones avanzadas colapsadas
   (banda, estándar, PMF). Al cambiar el perfil se ejecuta `AssessNetworkSecurity` y se
@@ -19,6 +19,13 @@ Modos de verificación:
   alimenta la ruta encapsulada; OPEN/Enterprise/WEP muestran evaluación sin CTA PSK.
   Chip «Secreto aleatorio» sigue disponible para ejercicios sintéticos. Banner «Solo local»
   siempre visible.
+- **Bucle guiado FIX-04** — flujo novice: SSID → preset → contraseña (si aplica) →
+  **Crear y probar** (ajusta alfabeto vía `GuidedAlphabetFitter` y límites automáticos;
+  el planner sigue ciego al target) → **Iniciar prueba** → métricas → STOP/resultado.
+  Tras el resultado: **Editar contraseña**, **Cambiar seguridad**, **Repetir** sin
+  reconstruir todo el experimento. La UI separa explícitamente **evaluación de
+  configuración de red** y **resistencia de contraseña** (resultado de búsqueda); no
+  implica que WPA3 haga la misma contraseña menos predecible para un humano.
 - **Prototipo local — auditoría de contraseña (FIX-03B, Implemented)** — contraseña en
   memoria → `EncapsulatedPasswordVerifier.encapsulate` →
   `LabChallenge.withEncapsulatedVerifier` → `AutomaticPasswordAuditPlanner` (modo guiado)
