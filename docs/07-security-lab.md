@@ -10,16 +10,20 @@ Modos de verificación:
 
 - **Sintético aleatorio** — `LabChallenge.withHiddenSecret` (secreto oculto
   generado localmente; disponible vía chip en modo guiado o por defecto en Avanzado).
-- **Prototipo guiado (FIX-03A, Partial)** — modo guiado arranca en prototipo local
+- **Prototipo guiado (FIX-03A + FIX-03B)** — modo guiado arranca en prototipo local
   (`LocalPrototype`): formulario «Crear prototipo de red» con presets (Abierta, WEP,
   WPA2/WPA3/Transición, Enterprise) + nombre/SSID; opciones avanzadas colapsadas
   (banda, estándar, PMF). Al cambiar el perfil se ejecuta `AssessNetworkSecurity` y se
-  muestra rating + significado (estilo Análisis de seguridad). **Sin** búsqueda de
-  contraseña del prototipo en este PR — ver FIX-03B. Para probar el motor, usar chip
-  «Secreto aleatorio». Banner «Solo local» siempre visible.
-- **Prototipo local — auditoría de contraseña (FIX-03B, Deferred)** — contraseña objetivo
-  en memoria + `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`.
-  Sin autenticación contra AP ni handshakes.
+  muestra rating + significado (estilo Análisis de seguridad). Para familias PSK personal
+  (WPA/WPA2/WPA3/transición) el paso **Contraseña del prototipo** (oculta por defecto)
+  alimenta la ruta encapsulada; OPEN/Enterprise/WEP muestran evaluación sin CTA PSK.
+  Chip «Secreto aleatorio» sigue disponible para ejercicios sintéticos. Banner «Solo local»
+  siempre visible.
+- **Prototipo local — auditoría de contraseña (FIX-03B, Implemented)** — contraseña en
+  memoria → `EncapsulatedPasswordVerifier.encapsulate` →
+  `LabChallenge.withEncapsulatedVerifier` → `AutomaticPasswordAuditPlanner` (modo guiado)
+  o plan manual (Avanzado) → `LabSearchEngine` existente. Planner ciego al target;
+  `withKnownSecret` no se usa en producto. Sin autenticación contra AP ni handshakes.
 - **Known-password audit** — mismo encapsulado en Password Audit (red real
   conectada); `withKnownSecret` queda reservado a tests/benchmarks.
 

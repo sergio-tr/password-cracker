@@ -368,7 +368,7 @@ class LabComposeTest {
     }
 
     @Test
-    fun prototypeMode_showsLocalOnlyBannerAndAssessment() {
+    fun prototypeMode_showsLocalOnlyBannerAssessmentAndPasswordField() {
         val vm = viewModel(ScriptedEngine(emptyList()))
         setLab(vm)
         composeTestRule.waitForIdle()
@@ -383,15 +383,138 @@ class LabComposeTest {
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("TestSSID")
         composeTestRule.waitUntil(5_000) { vm.state.value.prototypeAssessment != null }
         waitForText(activity.getString(R.string.lab_prototype_assessment_heading))
+        scrollToText(activity.getString(R.string.lab_prototype_password))
         composeTestRule
             .onNodeWithText(activity.getString(R.string.lab_start_test))
             .assertIsDisplayed()
-        assertTrue(
-            composeTestRule
-                .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))
-                .fetchSemanticsNodes()
-                .isEmpty(),
-        )
+    }
+
+    @Test
+    fun prototypeWpa2_startReachesFound() {
+        val vm =
+            viewModel(
+                ScriptedEngine(
+                    listOf(
+                        LabSearchEvent.Preparing,
+                        LabSearchEvent.Started(SearchSessionId("s"), samplePlan, CombinationCount.of(10)),
+                        LabSearchEvent.CandidateFound("1234", metrics.copy(attempts = CombinationCount.of(2))),
+                    ),
+                ),
+            )
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("Wpa2Lab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        composeTestRule.waitForIdle()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
+        waitForText(activity.getString(R.string.lab_outcome_found))
+    }
+
+    @Test
+    fun prototypeWpa3_startReachesFound() {
+        val vm =
+            viewModel(
+                ScriptedEngine(
+                    listOf(
+                        LabSearchEvent.Preparing,
+                        LabSearchEvent.Started(SearchSessionId("s"), samplePlan, CombinationCount.of(10)),
+                        LabSearchEvent.CandidateFound("5678", metrics.copy(attempts = CombinationCount.of(2))),
+                    ),
+                ),
+            )
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_preset_wpa3))
+            .performScrollTo()
+            .performClick()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("Wpa3Lab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("5678")
+        composeTestRule.waitForIdle()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
+    }
+
+    @Test
+    fun prototypeTransition_startReachesFound() {
+        val vm =
+            viewModel(
+                ScriptedEngine(
+                    listOf(
+                        LabSearchEvent.Preparing,
+                        LabSearchEvent.Started(SearchSessionId("s"), samplePlan, CombinationCount.of(10)),
+                        LabSearchEvent.CandidateFound("abcd", metrics.copy(attempts = CombinationCount.of(2))),
+                    ),
+                ),
+            )
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_preset_transition))
+            .performScrollTo()
+            .performClick()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("TransLab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("abcd")
+        composeTestRule.waitForIdle()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
+    }
+
+    @Test
+    fun prototypeStop_whileRunning_reachesCancelled() {
+        val vm = viewModel(HangingEngine(metrics))
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("StopLab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        composeTestRule.waitForIdle()
+        startSearch()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.searchState == SearchState.Running ||
+                vm.state.value.searchState == SearchState.Preparing
+        }
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_stop_search))
+            .performClick()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Cancelled }
+    }
+
+    @Test
+    fun prototypeLimitReached_showsOutcome() {
+        val vm =
+            viewModel(
+                ScriptedEngine(
+                    listOf(
+                        LabSearchEvent.Preparing,
+                        LabSearchEvent.Started(SearchSessionId("s"), samplePlan, CombinationCount.of(10)),
+                        LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                    ),
+                ),
+            )
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("LimitLab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        composeTestRule.waitForIdle()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.LimitReached }
+        waitForText(activity.getString(R.string.lab_outcome_limit))
     }
 
     @Test

@@ -185,6 +185,7 @@ val appModule =
                 get(),
                 get(),
                 assessNetworkSecurity = get(),
+                planner = get(),
                 calibration = get(),
                 networkContextStore = get(),
             )

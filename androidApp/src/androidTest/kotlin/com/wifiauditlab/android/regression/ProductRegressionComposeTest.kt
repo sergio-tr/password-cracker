@@ -96,12 +96,10 @@ class ProductRegressionComposeTest {
             .onNodeWithText(activity.getString(R.string.lab_prototype_assessment_heading))
             .performScrollTo()
             .assertIsDisplayed()
-        assertTrue(
-            composeTestRule
-                .onAllNodesWithText(activity.getString(R.string.lab_prototype_password))
-                .fetchSemanticsNodes()
-                .isEmpty(),
-        )
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_password))
+            .performScrollTo()
+            .assertIsDisplayed()
         assertTrue(
             composeTestRule
                 .onAllNodesWithText(activity.getString(R.string.lab_challenge))

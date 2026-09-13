@@ -8,14 +8,25 @@ import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
+import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
+import com.wifiauditlab.lab.domain.LabSearchPlan
+import com.wifiauditlab.lab.domain.LabSecretPolicy
 import com.wifiauditlab.lab.domain.LengthPolicy
 import com.wifiauditlab.lab.domain.SearchLimits
 import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.SearchStrategyId
+import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.PasswordAuditBudget
+import com.wifiauditlab.lab.domain.audit.PasswordAuditContext
+import com.wifiauditlab.lab.domain.audit.PasswordAuditEngineChoice
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
 import com.wifiauditlab.lab.domain.engine.CancellationController
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
@@ -97,6 +108,15 @@ data class LabUiState(
 ) {
     val effectiveSecretLength: Int
         get() = config.secretLength
+
+    /** PSK prototype audit is only startable when shared-password demo applies. */
+    val canStartSearch: Boolean
+        get() =
+            configErrorRes == null &&
+                !(
+                    secretMode == LabSecretMode.LocalPrototype &&
+                        !prototype.securityFamily.supportsSharedPasswordDemo()
+                )
 }
 
 /**
@@ -109,9 +129,11 @@ class LabViewModel(
     private val analyzer: SearchFeasibilityAnalyzer,
     private val estimator: SearchPerformanceEstimator,
     private val assessNetworkSecurity: AssessNetworkSecurity,
+    private val planner: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
     private val searchDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val calibration: SearchCalibrationService? = null,
     private val networkContextStore: LabNetworkContextStore? = null,
+    private val availableProcessors: Int = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
 ) : ViewModel() {
     private val _state = MutableStateFlow(LabUiState())
     val state = _state.asStateFlow()
@@ -119,6 +141,8 @@ class LabViewModel(
     private var searchJob: Job? = null
     private var cancellation: CancellationController? = null
     private var assessmentJob: Job? = null
+    private var calibratedThroughput: Double? = null
+    private var cachedPrototypePlan: PasswordAuditPlan? = null
 
     init {
         refreshNetworkContext()
@@ -127,6 +151,12 @@ class LabViewModel(
         val service = calibration
         if (service != null) {
             viewModelScope.launch(searchDispatcher) {
+                calibratedThroughput = service.lastRecord()?.measuredAttemptsPerSecond
+                if (_state.value.mode == LabInteractionMode.Guided) {
+                    applyGuidedDefaults(calibratedAttemptsPerSecond = calibratedThroughput)
+                } else {
+                    recomputePreview()
+                }
                 val guided = GuidedLabDefaults.recommendedConfig()
                 val record =
                     service.calibrate(
@@ -134,6 +164,7 @@ class LabViewModel(
                         workerCount = guided.workers,
                     )
                 estimator.refine(record.measuredAttemptsPerSecond)
+                calibratedThroughput = record.measuredAttemptsPerSecond
                 if (_state.value.mode == LabInteractionMode.Guided) {
                     applyGuidedDefaults(calibratedAttemptsPerSecond = record.measuredAttemptsPerSecond)
                 } else {
@@ -156,7 +187,9 @@ class LabViewModel(
             )
         }
         if (mode == LabInteractionMode.Guided) {
-            applyGuidedDefaults(calibratedAttemptsPerSecond = null)
+            applyGuidedDefaults(calibratedAttemptsPerSecond = calibratedThroughput)
+        } else {
+            recomputePreview()
         }
     }
 
@@ -185,7 +218,7 @@ class LabViewModel(
     fun onTargetPasswordChanged(value: String) {
         _state.update { current ->
             var syncedConfig = current.config
-            if (value.isNotEmpty()) {
+            if (current.secretMode == LabSecretMode.RandomHidden && value.isNotEmpty()) {
                 syncedConfig = syncedConfig.copy(secretLength = value.length)
             }
             current.copy(
@@ -207,7 +240,7 @@ class LabViewModel(
 
     fun resetToGuidedDefaults() {
         setMode(LabInteractionMode.Guided)
-        applyGuidedDefaults(calibratedAttemptsPerSecond = null)
+        applyGuidedDefaults(calibratedAttemptsPerSecond = calibratedThroughput)
     }
 
     fun applyGuidedDefaults(calibratedAttemptsPerSecond: Double?) {
@@ -257,7 +290,15 @@ class LabViewModel(
 
     private fun recomputePreview() {
         val snapshot = _state.value
-        val challenge = buildChallenge(snapshot, forPreview = true)
+        when {
+            usesPrototypePlanner(snapshot) -> recomputePrototypePreview(snapshot)
+            else -> recomputeSyntheticPreview(snapshot)
+        }
+    }
+
+    private fun recomputeSyntheticPreview(snapshot: LabUiState) {
+        cachedPrototypePlan = null
+        val challenge = buildSyntheticPreviewChallenge(snapshot)
         val plan = optimizer.optimize(challenge, snapshot.config.strategy.id)
         val limits = runCatching { buildLimits(snapshot.config) }.getOrNull()
         _state.update {
@@ -269,6 +310,53 @@ class LabViewModel(
         }
     }
 
+    private fun recomputePrototypePreview(snapshot: LabUiState) {
+        val budget = runCatching { prototypeBudget(snapshot.config) }.getOrNull()
+        if (budget == null) {
+            cachedPrototypePlan = null
+            _state.update {
+                it.copy(
+                    estimatedCombinations = CombinationCount.ZERO,
+                    feasibility = null,
+                    configErrorRes = R.string.lab_err_limits_required,
+                )
+            }
+            return
+        }
+        when (
+            val result =
+                planner.createPlan(
+                    PasswordAuditContext(sharedPasswordApplicable = true),
+                    PasswordAuditPerformanceProfile(
+                        calibratedAttemptsPerSecond = calibratedThroughput,
+                        availableProcessors = availableProcessors,
+                    ),
+                    budget,
+                )
+        ) {
+            is PasswordAuditPlanResult.Ready -> {
+                cachedPrototypePlan = result.plan
+                _state.update {
+                    it.copy(
+                        estimatedCombinations = result.plan.totalCandidateSpace,
+                        feasibility = result.plan.feasibility,
+                        configErrorRes = validateForStart(snapshot.config, snapshot),
+                    )
+                }
+            }
+            is PasswordAuditPlanResult.NotApplicable -> {
+                cachedPrototypePlan = null
+                _state.update {
+                    it.copy(
+                        estimatedCombinations = CombinationCount.ZERO,
+                        feasibility = null,
+                        configErrorRes = validateForStart(snapshot.config, snapshot),
+                    )
+                }
+            }
+        }
+    }
+
     fun start() {
         val snapshot = _state.value
         val validationError = validateForStart(snapshot.config, snapshot)
@@ -276,10 +364,61 @@ class LabViewModel(
             _state.update { it.copy(configErrorRes = validationError) }
             return
         }
+        when (snapshot.secretMode) {
+            LabSecretMode.RandomHidden -> startSyntheticSearch(snapshot)
+            LabSecretMode.LocalPrototype -> startPrototypeSearch(snapshot)
+        }
+    }
+
+    private fun startSyntheticSearch(snapshot: LabUiState) {
         val limits = buildLimits(snapshot.config)
-        val challenge = buildChallenge(snapshot)
+        val challenge = buildSyntheticSearchChallenge(snapshot)
         val plan = optimizer.optimize(challenge, snapshot.config.strategy.id)
         (engine as? WorkerAwareLabSearchEngine)?.workers = snapshot.config.workers
+        launchSearch(challenge, plan, limits, clearPassword = false)
+    }
+
+    private fun startPrototypeSearch(snapshot: LabUiState) {
+        val password = snapshot.targetPassword
+        val verifier = EncapsulatedPasswordVerifier.encapsulate(password)
+
+        val (challenge, plan, limits) =
+            if (snapshot.mode == LabInteractionMode.Guided) {
+                val auditPlan =
+                    cachedPrototypePlan ?: run {
+                        _state.update { it.copy(configErrorRes = R.string.lab_err_limits_required) }
+                        return
+                    }
+                val ch =
+                    LabChallenge.withEncapsulatedVerifier(
+                        policy = auditPlan.blindChallengePolicy,
+                        verifier = verifier,
+                        seed = auditPlan.searchPlan.seed,
+                    )
+                applyEngineSelection(auditPlan)
+                Triple(ch, auditPlan.searchPlan, auditPlan.searchLimits)
+            } else {
+                val blindPolicy = blindPolicyFromConfig(snapshot.config)
+                val ch =
+                    LabChallenge.withEncapsulatedVerifier(
+                        policy = blindPolicy,
+                        verifier = verifier,
+                        seed = snapshot.config.seed,
+                    )
+                val searchPlan = optimizer.optimize(ch, snapshot.config.strategy.id)
+                (engine as? WorkerAwareLabSearchEngine)?.workers = snapshot.config.workers
+                Triple(ch, searchPlan, buildLimits(snapshot.config))
+            }
+
+        launchSearch(challenge, plan, limits, clearPassword = true)
+    }
+
+    private fun launchSearch(
+        challenge: LabChallenge,
+        plan: LabSearchPlan,
+        limits: SearchLimits,
+        clearPassword: Boolean,
+    ) {
         val controller = CancellationController()
         cancellation = controller
 
@@ -290,7 +429,7 @@ class LabViewModel(
                 outcome = null,
                 foundCandidate = null,
                 errorMessage = null,
-                targetPassword = "",
+                targetPassword = if (clearPassword) "" else it.targetPassword,
                 passwordVisible = false,
             )
         }
@@ -312,6 +451,9 @@ class LabViewModel(
         cancellation?.cancel()
         searchJob?.cancel()
         assessmentJob?.cancel()
+        _state.update {
+            it.copy(targetPassword = "", passwordVisible = false)
+        }
     }
 
     private fun LabUiState.reduce(event: LabSearchEvent): LabUiState =
@@ -336,24 +478,39 @@ class LabViewModel(
                 )
         }
 
-    private fun buildChallenge(
-        state: LabUiState,
-        forPreview: Boolean = false,
-    ): LabChallenge {
-        val config = state.config
-        return when (state.secretMode) {
-            LabSecretMode.RandomHidden ->
-                LabChallenge.withHiddenSecret(
-                    alphabet = config.resolvedAlphabet(),
-                    lengthPolicy = LengthPolicy.exactly(config.secretLength),
-                    seed = config.seed,
-                )
-            LabSecretMode.LocalPrototype ->
-                LabChallenge.withHiddenSecret(
-                    alphabet = config.resolvedAlphabet(),
-                    lengthPolicy = LengthPolicy.exactly(state.effectiveSecretLength),
-                    seed = config.seed,
-                )
+    private fun buildSyntheticPreviewChallenge(state: LabUiState): LabChallenge =
+        LabChallenge.withHiddenSecret(
+            alphabet = state.config.resolvedAlphabet(),
+            lengthPolicy = LengthPolicy.exactly(state.config.secretLength),
+            seed = state.config.seed,
+        )
+
+    private fun buildSyntheticSearchChallenge(state: LabUiState): LabChallenge =
+        buildSyntheticPreviewChallenge(state)
+
+    private fun blindPolicyFromConfig(config: LabConfig): LabSecretPolicy =
+        LabSecretPolicy(
+            alphabet = config.resolvedAlphabet(),
+            length = LengthPolicy(1, config.secretLength),
+        )
+
+    private fun usesPrototypePlanner(state: LabUiState): Boolean =
+        state.secretMode == LabSecretMode.LocalPrototype &&
+            state.prototype.securityFamily.supportsSharedPasswordDemo() &&
+            state.mode == LabInteractionMode.Guided
+
+    private fun prototypeBudget(config: LabConfig): PasswordAuditBudget =
+        PasswordAuditBudget(
+            maxDuration = config.maxDurationSeconds?.seconds,
+            maxAttempts = config.maxAttempts?.let { CombinationCount.of(it) },
+        )
+
+    private fun applyEngineSelection(plan: PasswordAuditPlan) {
+        val aware = engine as? WorkerAwareLabSearchEngine ?: return
+        aware.workers = plan.workerCount
+        when (val choice = plan.engine) {
+            is PasswordAuditEngineChoice.Parallel -> aware.parallelVersion = choice.version
+            PasswordAuditEngineChoice.BaselineSequential -> Unit
         }
     }
 
@@ -362,14 +519,40 @@ class LabViewModel(
         state: LabUiState,
     ): Int? {
         val limitsMissing =
-            runCatching { buildLimits(config) }.isFailure
+            runCatching {
+                if (usesPrototypePlanner(state)) {
+                    prototypeBudget(config)
+                } else {
+                    buildLimits(config)
+                }
+            }.isFailure
         if (limitsMissing) return R.string.lab_err_limits_required
 
         if (state.secretMode == LabSecretMode.LocalPrototype) {
             if (state.prototype.ssid.isBlank()) return R.string.lab_err_ssid_required
-            return R.string.lab_err_prototype_search_deferred
+            if (!state.prototype.securityFamily.supportsSharedPasswordDemo()) return null
+            if (state.targetPassword.isBlank()) return R.string.lab_err_password_required
+            return validatePasswordAlphabet(state)
         }
 
+        return null
+    }
+
+    private fun validatePasswordAlphabet(state: LabUiState): Int? {
+        val password = state.targetPassword
+        val alphabet =
+            if (usesPrototypePlanner(state)) {
+                DefaultAutomaticPasswordAuditPlanner.BLIND_CHALLENGE_POLICY.alphabet
+            } else {
+                state.config.resolvedAlphabet()
+            }
+        if (!password.all { alphabet.symbols.contains(it) }) {
+            return if (state.mode == LabInteractionMode.Guided) {
+                R.string.lab_err_password_alphabet_guided
+            } else {
+                R.string.lab_err_password_alphabet
+            }
+        }
         return null
     }
 

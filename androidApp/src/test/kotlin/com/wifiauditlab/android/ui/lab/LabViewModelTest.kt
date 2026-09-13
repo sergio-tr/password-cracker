@@ -8,11 +8,13 @@ import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
 import com.wifiauditlab.lab.domain.LabSearchPlan
+import com.wifiauditlab.lab.domain.LimitReason
 import com.wifiauditlab.lab.domain.SearchLimits
 import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
+import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
@@ -34,6 +36,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -130,8 +133,23 @@ class LabViewModelTest {
         analyzer,
         estimator,
         assessNetworkSecurity,
-        dispatcher,
+        planner = DefaultAutomaticPasswordAuditPlanner(),
+        searchDispatcher = dispatcher,
     )
+
+    private fun LabViewModel.preparePrototype(
+        preset: PrototypeSecurityPreset = PrototypeSecurityPreset.WPA2_PERSONAL,
+        ssid: String = "LabNet",
+        password: String = "1234",
+    ) {
+        updatePrototype(
+            LocalNetworkPrototype(
+                ssid = ssid,
+                securityProfile = preset.toProfile(),
+            ),
+        )
+        onTargetPasswordChanged(password)
+    }
 
     @Test
     fun guided_defaults_applied_on_init() =
@@ -265,17 +283,174 @@ class LabViewModelTest {
         }
 
     @Test
-    fun prototypeMode_blocksStartUntilPasswordAuditFix03B() =
+    fun prototypeMode_requiresPasswordBeforeStart() =
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
             vm.updatePrototype(LocalNetworkPrototype(ssid = "LabNet"))
             advanceUntilIdle()
-            assertEquals(com.wifiauditlab.android.R.string.lab_err_prototype_search_deferred, vm.state.value.configErrorRes)
+            assertEquals(com.wifiauditlab.android.R.string.lab_err_password_required, vm.state.value.configErrorRes)
             vm.start()
             advanceUntilIdle()
             assertEquals(SearchState.Idle, vm.state.value.searchState)
         }
+
+    @Test
+    fun prototypeWpa2_foundViaEncapsulatedVerifier() =
+        runTest(dispatcher) {
+            val engine = CapturingEngine()
+            val vm = viewModel(engine)
+            advanceUntilIdle()
+            vm.preparePrototype(password = "1234")
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+            val challenge = engine.lastChallenge
+            assertNotNull(challenge)
+            assertTrue(challenge!!.toString().contains("verifier=encapsulated"))
+            assertFalse(challenge.toString().contains("1234"))
+        }
+
+    @Test
+    fun prototypeWpa3_foundViaEncapsulatedVerifier() =
+        runTest(dispatcher) {
+            val engine = CapturingEngine()
+            val vm = viewModel(engine)
+            advanceUntilIdle()
+            vm.preparePrototype(
+                preset = PrototypeSecurityPreset.WPA3_PERSONAL,
+                password = "5678",
+            )
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+            assertTrue(engine.lastChallenge!!.toString().contains("verifier=encapsulated"))
+        }
+
+    @Test
+    fun prototypeTransition_foundViaEncapsulatedVerifier() =
+        runTest(dispatcher) {
+            val engine = CapturingEngine()
+            val vm = viewModel(engine)
+            advanceUntilIdle()
+            vm.preparePrototype(
+                preset = PrototypeSecurityPreset.WPA2_WPA3_TRANSITION,
+                password = "abcd",
+            )
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+            assertTrue(engine.lastChallenge!!.toString().contains("verifier=encapsulated"))
+        }
+
+    @Test
+    fun prototypeStart_reachesFound() =
+        runTest(dispatcher) {
+            val vm =
+                viewModel(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.Started(SearchSessionId("s"), samplePlan(), CombinationCount.of(10)),
+                            LabSearchEvent.CandidateFound("1234", metrics.copy(attempts = CombinationCount.of(2))),
+                        ),
+                    ),
+                )
+            advanceUntilIdle()
+            vm.preparePrototype(password = "1234")
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(SearchOutcome.Found, vm.state.value.outcome)
+            assertEquals("1234", vm.state.value.foundCandidate)
+            assertEquals("", vm.state.value.targetPassword)
+        }
+
+    @Test
+    fun prototypeStart_reachesLimitReached() =
+        runTest(dispatcher) {
+            val vm =
+                viewModel(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.Started(SearchSessionId("s"), samplePlan(), CombinationCount.of(10)),
+                            LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                        ),
+                    ),
+                )
+            advanceUntilIdle()
+            vm.preparePrototype(password = "1234")
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(SearchOutcome.LimitReached, vm.state.value.outcome)
+        }
+
+    @Test
+    fun prototypePlanner_targetBlind_planUnchangedWhenPasswordLengthChanges() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.preparePrototype(password = "12")
+            advanceUntilIdle()
+            val spaceShort = vm.state.value.estimatedCombinations
+            vm.onTargetPasswordChanged("1234567890123456")
+            advanceUntilIdle()
+            assertEquals(spaceShort, vm.state.value.estimatedCombinations)
+        }
+
+    @Test
+    fun prototypePlanner_challengeHasNoSecretLength() =
+        runTest(dispatcher) {
+            val engine = CapturingEngine()
+            val vm = viewModel(engine)
+            advanceUntilIdle()
+            vm.preparePrototype(password = "longpassword")
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+            assertFalse(engine.lastChallenge!!.toString().contains("longpassword"))
+            assertTrue(engine.lastChallenge!!.lengthPolicy.maxLength <= 8)
+        }
+
+    @Test
+    fun openPrototype_disablesStartWithoutPasswordFieldError() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.updatePrototype(
+                LocalNetworkPrototype(
+                    ssid = "OpenLab",
+                    securityProfile = PrototypeSecurityPreset.OPEN.toProfile(),
+                ),
+            )
+            advanceUntilIdle()
+            assertNull(vm.state.value.configErrorRes)
+            assertFalse(vm.state.value.canStartSearch)
+        }
+
+    @Test
+    fun enterprisePrototype_disablesStartWithoutPasswordFieldError() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.updatePrototype(
+                LocalNetworkPrototype(
+                    ssid = "CorpLab",
+                    securityProfile = PrototypeSecurityPreset.ENTERPRISE_WPA2.toProfile(),
+                ),
+            )
+            advanceUntilIdle()
+            assertNull(vm.state.value.configErrorRes)
+            assertFalse(vm.state.value.canStartSearch)
+        }
+
+    private fun samplePlan(): LabSearchPlan =
+        DefaultSearchPlanOptimizer().optimize(
+            LabChallenge.withKnownSecret(Alphabet.DIGITS, "01"),
+            LengthPrioritizedStrategy.ID,
+        )
 
     @Test
     fun randomMode_usesHiddenSecretChallenge() =
