@@ -52,6 +52,20 @@ class LabChallengeTest {
     }
 
     @Test
+    fun encapsulated_verifier_keeps_blind_policy() {
+        val challenge =
+            LabChallenge.withEncapsulatedVerifier(
+                policy = LabSecretPolicy(Alphabet.DIGITS, LengthPolicy(1, 6)),
+                verifier = EncapsulatedPasswordVerifier.encapsulate("hunter2"),
+                seed = 3L,
+            )
+        assertNull(challenge.secretLength)
+        assertEquals(6, challenge.lengthPolicy.maxLength)
+        assertTrue(challenge.isSolution("hunter2"))
+        assertFalse(challenge.toString().contains("hunter2"))
+    }
+
+    @Test
     fun search_result_maps_only_terminal_events() {
         val session = SearchSessionId("session-1")
         val metrics = SearchMetrics.initial(1, CombinationCount.of(10))
