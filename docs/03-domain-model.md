@@ -31,9 +31,23 @@ Se separa siempre una **observación** (temporal) de una **red guardada**
 `SecurityAssessment`, `SecurityFinding`, `SecurityRating`, `Severity` y las
 estrategias del *Strategy Registry*.
 
+## Auditoría de contraseña (`...domain.audit`)
+
+| Tipo | Rol |
+| --- | --- |
+| `PasswordAuditEligibility` | EligibleConnectedNetwork / NotCurrentlyConnected / UnsupportedAuthenticationModel / MissingPermissions. |
+| `PasswordAuditNetworkContext` | Contexto de red para la UI (sin credenciales). |
+| `PasswordStrengthAssessment` | Análisis estructural del secreto (`SecretStrengthAnalyzer`). |
+| `PasswordResistanceRating` | VERY_LOW … VERY_HIGH / UNKNOWN — resistencia observada. |
+| `PasswordSearchOutcomeKind` | Found / LimitReached / Exhausted / Cancelled / Failed. |
+| `EvidenceQuality` | Measured / Estimated / Modelled — califica cada métrica del informe. |
+| `WifiPasswordAuditResult` | Informe completo: config Wi‑Fi vs contraseña separados; recomendaciones. |
+| `PasswordAuditResultComposer` | Compone el informe; nunca alimenta al planner. |
+
 ## Laboratorio (`com.wifiauditlab.lab.domain`)
 
-`LabChallengeId`/`ChallengeId`, `LabChallenge`, `LabSecretPolicy`, `LabSearchPlan`,
+`LabChallengeId`/`ChallengeId`, `LabChallenge`, `EncapsulatedPasswordVerifier`,
+`LabSecretPolicy`, `LabSearchPlan`, `PasswordAuditPlan`, `AutomaticPasswordAuditPlanner`,
 `SearchBucket`, `SearchLimits`, `SearchMetrics`, `LabSearchProgress`,
 `LabSearchEvent`, `LabSearchResult`, `SearchState`/`SearchLifecycle`,
 `SearchSessionId`, `SearchStrategyId`, `Alphabet`, `LengthPolicy`.

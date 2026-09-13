@@ -1,16 +1,17 @@
 # 07 · Security Lab
 
-Laboratorio de exploración de candidatos **desacoplado de autenticación Wi‑Fi**.
-El Search Engine opera exclusivamente de forma local. Nunca autentica candidatos
-contra una red o AP (sin handshakes, PMKID, deauth ni envío al router).
+El Search Engine funciona exclusivamente de forma local. Puede utilizarse con
+challenges sintéticos; y con contraseñas conocidas aportadas por el usuario para
+auditorías locales. Nunca envía candidatos a redes externas ni realiza
+autenticaciones contra access points (sin handshakes, PMKID, deauth ni envío al
+router).
 
-Puede verificar:
+Modos de verificación:
 
-- secrets **sintéticos** de laboratorio (`LabChallenge.withHiddenSecret` /
-  `withKnownSecret` para tests y benchmarks);
-- secrets **reales conocidos** aportados explícitamente por el usuario,
-  encapsulados como verifier local (`EncapsulatedPasswordVerifier` +
-  `LabChallenge.withEncapsulatedVerifier`).
+- **Sintético** — `LabChallenge.withHiddenSecret` / `withKnownSecret` (tests,
+  benchmarks, laboratorio didáctico).
+- **Known-password audit** — `EncapsulatedPasswordVerifier` +
+  `LabChallenge.withEncapsulatedVerifier` (contraseña del usuario, solo en memoria).
 
 La UI puede contextualizar el experimento con una red observada
 (`LabNetworkContext` en androidApp): muestra SSID/familia/banda y un banner de

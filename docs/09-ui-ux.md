@@ -23,12 +23,15 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
   modelan como enums/sealed, no como múltiples booleans.
 - **Secretos ocultos** por defecto (`••••••••••••`); revelar es una acción explícita.
 - **Cancelación siempre visible**: el botón `DETENER` vive en una barra de
-  acciones fija (fuera del scroll) mientras el laboratorio **o** la auditoría
-  rápida ejecutan; al pulsar pasa a `Deteniendo…` (deshabilitado) y termina en
-  `CANCELADO`. La cancelación es prácticamente inmediata.
-- **Quick Audit**: navegación con `ArrowBack` (sin botón textual «Atrás»);
-  modo Automático por defecto; duración 30 s / 1 min / 5 min; Vault diferido;
-  `saveToVault` OFF.
+  acciones fija (`Scaffold.bottomBar`, fuera del scroll) mientras el laboratorio
+  **o** la auditoría rápida ejecutan; al pulsar pasa a `Deteniendo…` (deshabilitado)
+  y termina en `CANCELADO`. Icono `Icons.Filled.Stop`.
+- **Quick Audit**: navegación con `ArrowBack` (`Icons.AutoMirrored.Filled.ArrowBack`,
+  contentDescription localizado); modo Automático por defecto; duración 30 s / 1 min /
+  5 min; Vault con reveal diferido; `saveToVault` OFF; icono `PlayArrow` en INICIAR.
+- **Idioma**: selector en Ajustes (Sistema / Español / English) vía AppCompat
+  per-app language; audit, settings, nav y security analysis localizados.
+  Lab/Nearby/Vault/Onboarding aún hardcoded ES (Partial).
 - **No bloquear el hilo principal**: la búsqueda corre en `Dispatchers.Default`;
   la UI se actualiza por batch.
 - **Confirmaciones** sólo cuando evitan consecuencias reales (borrar una red).
@@ -39,8 +42,10 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 Casa                       Guardada
 MOVISTAR_XXXX
 WPA2/WPA3 · 5 GHz · Wi-Fi 6
-Excelente
+Excelente                  [Conectado]
 ```
+
+Red conectada elegible: CTA «Auditar contraseña» en el detalle.
 
 ## Quick Audit (durante la ejecución)
 
@@ -51,5 +56,8 @@ Tiempo       00:13
 Velocidad    98 k/s
 Etapa        3 de 5
 Presupuesto  68 %
-[ DETENER ] (bottomBar fija)
+[ DETENER ] (bottomBar fija, testTag audit_stop)
 ```
+
+Tras completar: informe con badges Medido / Estimado / Modelado, resistencia
+observada, recomendaciones y «Cómo mejorarla».

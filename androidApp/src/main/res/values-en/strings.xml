@@ -84,4 +84,68 @@
     <string name="audit_exhausted_model">Not found within the tested model (does not mean it does not exist).</string>
     <string name="audit_cancelled_incomplete">No complete conclusion was issued because the test was cancelled.</string>
     <string name="audit_connected_now">Connected</string>
+
+    <!-- Navigation -->
+    <string name="nav_nearby">Nearby</string>
+    <string name="nav_vault">Saved</string>
+    <string name="nav_lab">Lab</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_help">Choose the app language. «System language» follows your device settings.</string>
+    <string name="settings_language_system">System language</string>
+    <string name="settings_language_es">Español</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_permissions">Permissions and services</string>
+    <string name="settings_permissions_help">Review required permissions, system services, and optional capabilities.</string>
+    <string name="settings_open_permissions">Open permission center</string>
+    <string name="settings_onboarding">Onboarding</string>
+    <string name="settings_onboarding_help">Replay the introduction to Nearby, Vault, and Lab.</string>
+    <string name="settings_show_onboarding">Show introduction</string>
+    <string name="settings_capabilities">Platform capabilities</string>
+    <string name="settings_cap_nearby">Nearby Wi-Fi discovery: %1$s</string>
+    <string name="settings_cap_current">Current network inspection: %1$s</string>
+    <string name="settings_cap_secrets">Secure secret storage: %1$s</string>
+    <string name="settings_cap_geo">Geolocation: %1$s</string>
+    <string name="settings_about">What this app does</string>
+    <string name="settings_about_nearby">Nearby — discover real Wi-Fi networks and assess their security.</string>
+    <string name="settings_about_vault">Saved — the Vault: alias, location, and encrypted password.</string>
+    <string name="settings_about_lab">Lab — local synthetic experiments with limits and a STOP button.</string>
+    <string name="settings_about_audit">Password audit — measures the strength of a known password with the local Search Engine.</string>
+    <string name="settings_about_engine">The Search Engine runs entirely on-device. It can use synthetic challenges or user-supplied known passwords. It never sends candidates to external networks or authenticates against access points.</string>
+    <string name="settings_yes">Yes</string>
+    <string name="settings_no">No</string>
+
+    <!-- Security analysis -->
+    <string name="security_analysis_title">Security analysis</string>
+    <string name="navigate_back">Go back</string>
+
+    <!-- Audit execution / result headlines -->
+    <string name="audit_state_preparing">Preparing…</string>
+    <string name="audit_state_running">Auditing locally…</string>
+    <string name="audit_state_cancelling">Stopping…</string>
+    <string name="audit_state_cancelled">Stopped</string>
+    <string name="audit_state_completed">Completed</string>
+    <string name="audit_state_limit">Limit reached</string>
+    <string name="audit_state_failed">Error</string>
+    <string name="audit_result_found">✓ Password found</string>
+    <string name="audit_result_limit">Not found within the limit</string>
+    <string name="audit_result_exhausted">Not found within the tested model</string>
+    <string name="audit_result_cancelled">Audit stopped</string>
+    <string name="audit_result_failed">The audit failed.</string>
+    <string name="audit_cd_save_vault">Save to Vault</string>
+    <string name="audit_cd_mode_auto">Automatic mode</string>
+    <string name="audit_cd_mode_advanced">Advanced mode</string>
+    <string name="audit_cd_reset_auto">Reset automatic configuration</string>
+    <string name="audit_cd_preset">Preset %1$s</string>
+    <string name="audit_cd_show_details">Show details</string>
+    <string name="audit_cd_status">Audit status</string>
+    <string name="audit_cd_report">Audit report</string>
+
+    <plurals name="audit_attempts_count">
+        <item quantity="one">%d attempt</item>
+        <item quantity="other">%d attempts</item>
+    </plurals>
 </resources>

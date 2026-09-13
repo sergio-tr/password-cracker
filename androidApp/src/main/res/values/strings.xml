@@ -85,4 +85,68 @@
     <string name="audit_exhausted_model">No encontrada dentro del modelo probado (no implica que no exista).</string>
     <string name="audit_cancelled_incomplete">No se ha emitido una conclusión completa porque la prueba fue cancelada.</string>
     <string name="audit_connected_now">Conectado</string>
+
+    <!-- Navigation -->
+    <string name="nav_nearby">Cercanas</string>
+    <string name="nav_vault">Guardadas</string>
+    <string name="nav_lab">Laboratorio</string>
+    <string name="nav_settings">Ajustes</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_help">Elige el idioma de la aplicación. «Idioma del sistema» sigue la configuración del dispositivo.</string>
+    <string name="settings_language_system">Idioma del sistema</string>
+    <string name="settings_language_es">Español</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_permissions">Permisos y servicios</string>
+    <string name="settings_permissions_help">Revisa permisos requeridos, servicios del sistema y capacidades opcionales.</string>
+    <string name="settings_open_permissions">Abrir centro de permisos</string>
+    <string name="settings_onboarding">Onboarding</string>
+    <string name="settings_onboarding_help">Vuelve a ver la introducción de Cercanas, Vault y Laboratorio.</string>
+    <string name="settings_show_onboarding">Mostrar introducción</string>
+    <string name="settings_capabilities">Capacidades de la plataforma</string>
+    <string name="settings_cap_nearby">Descubrimiento de redes cercanas: %1$s</string>
+    <string name="settings_cap_current">Inspección de la red actual: %1$s</string>
+    <string name="settings_cap_secrets">Almacenamiento seguro de secretos: %1$s</string>
+    <string name="settings_cap_geo">Geolocalización: %1$s</string>
+    <string name="settings_about">Qué hace esta app</string>
+    <string name="settings_about_nearby">Cercanas — descubre redes Wi-Fi reales y evalúa su seguridad.</string>
+    <string name="settings_about_vault">Guardadas — el Vault: alias, ubicación y contraseña cifrada.</string>
+    <string name="settings_about_lab">Laboratorio — experimentos sintéticos locales con límites y un botón STOP.</string>
+    <string name="settings_about_audit">Auditoría de contraseña — mide la resistencia de una contraseña conocida con el Search Engine local.</string>
+    <string name="settings_about_engine">El Search Engine funciona exclusivamente de forma local. Puede usar challenges sintéticos o contraseñas conocidas aportadas por el usuario. Nunca envía candidatos a redes externas ni autentica contra access points.</string>
+    <string name="settings_yes">Sí</string>
+    <string name="settings_no">No</string>
+
+    <!-- Security analysis -->
+    <string name="security_analysis_title">Análisis de seguridad</string>
+    <string name="navigate_back">Volver</string>
+
+    <!-- Audit execution / result headlines -->
+    <string name="audit_state_preparing">Preparando…</string>
+    <string name="audit_state_running">Auditando localmente…</string>
+    <string name="audit_state_cancelling">Deteniendo…</string>
+    <string name="audit_state_cancelled">Detenida</string>
+    <string name="audit_state_completed">Completada</string>
+    <string name="audit_state_limit">Límite alcanzado</string>
+    <string name="audit_state_failed">Error</string>
+    <string name="audit_result_found">✓ Contraseña encontrada</string>
+    <string name="audit_result_limit">No se encontró dentro del límite</string>
+    <string name="audit_result_exhausted">No encontrada dentro del modelo probado</string>
+    <string name="audit_result_cancelled">Auditoría detenida</string>
+    <string name="audit_result_failed">La auditoría falló.</string>
+    <string name="audit_cd_save_vault">Guardar en Vault</string>
+    <string name="audit_cd_mode_auto">Modo Automático</string>
+    <string name="audit_cd_mode_advanced">Modo Avanzado</string>
+    <string name="audit_cd_reset_auto">Restablecer configuración automática</string>
+    <string name="audit_cd_preset">Preset %1$s</string>
+    <string name="audit_cd_show_details">Ver detalles</string>
+    <string name="audit_cd_status">Estado de la auditoría</string>
+    <string name="audit_cd_report">Informe de auditoría</string>
+
+    <plurals name="audit_attempts_count">
+        <item quantity="one">%d intento</item>
+        <item quantity="other">%d intentos</item>
+    </plurals>
 </resources>

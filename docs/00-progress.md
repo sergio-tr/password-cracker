@@ -30,13 +30,16 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
 | Lab desde red cercana | **Implemented** (UX-02): CTA + `LabNetworkContext`; sin auth a AP. |
 | Modo guiado del Lab | **Implemented** (UX-03): defaults automáticos; opciones técnicas colapsadas; mensaje PSK vs no-PSK. |
-| Red conectada + elegibilidad auditoría | **Implemented** (PR1): conexión actual + eligibility + CTA Auditar. |
-| Aislamiento target de auditoría | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; strength analyzer separado. |
-| Planner automático de auditoría | **Implemented** (PR3): `AutomaticPasswordAuditPlanner` multi-stage, ciego al target; presets Quick/Standard/Deep. |
-| Quick Audit UI | **Implemented** (PR4): pantalla Auditar contraseña; origen Vault/manual (Vault diferido); duración 30s/1min/5min; modo Automático; save-to-Vault OFF. |
-| Ejecución auditoría + STOP | **Implemented** (PR5): Search Engine local + DETENER en bottomBar; cancelación cooperativa; métricas (etapa/presupuesto); lifecycle cancela en `onCleared`. |
-| Informe resultado + strength | **Implemented** (PR6): `WifiPasswordAuditResult` separa config Wi‑Fi vs resistencia; recomendaciones; Medido/Estimado/Modelado; guía «Cómo mejorarla». |
-| Auditoría known-password (localización + docs) | **Implemented** (PR7): strings ES/EN, walkthrough; ViewModel tests cubren missing-target. |
+| Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
+| Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
+| Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
+| Planner automático de auditoría | **Implemented** (PR3): `AutomaticPasswordAuditPlanner`; presets Quick/Standard/Deep; ciego al target. |
+| Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
+| Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
+| STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
+| Resultados de auditoría | **Implemented** (PR6): `WifiPasswordAuditResult`; config Wi‑Fi vs contraseña separados; recomendaciones; guía «Cómo mejorarla». |
+| Informe de resistencia de contraseña | **Implemented** (PR6): `PasswordResistanceRating`; evidencia Medido/Estimado/Modelado. |
+| Tests flujo novice (auditoría) | **Implemented** (PR7): `PasswordAuditComposeTest` — STOP + found + vault + restore automático; `PasswordAuditViewModelTest`. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
@@ -45,8 +48,8 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Onboarding (primera ejecución) | 3 pantallas; Omitir/Continuar; persistido; replay desde Ajustes. |
 | Permission Center | Requerido / servicio / opcional; request contextual; Abrir ajustes. |
 | Análisis de seguridad dedicado | Resumen, significado, autenticación, hallazgos, recomendaciones defensivas, detalles técnicos. |
-| Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis) | JUnit + `runTest`. |
-| Compose UI tests (`androidTest`) | Nearby…Lab — fakes; **ejecutados en CI emulador** (FASE 21). |
+| Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis, Password Audit) | JUnit + `runTest`. |
+| Compose UI tests (`androidTest`) | Nearby…Lab + **Password Audit** — fakes; **ejecutados en CI emulador** (FASE 21). |
 | Instrumentación Android | SQLDelight / Keystore / lifecycle — **CI emulador** API 29+35. |
 | Tooling CI | JVM job + Android emulator job (`docs/ci-emulator.md`). |
 | Docs `01`–`13`, ADRs, release checklist, test evidence | Índice vivo aquí; walkthrough known-password en `docs/13-known-password-audit-walkthrough.md`. |
@@ -55,10 +58,11 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 
 | Área | Notas |
 | --- | --- |
+| Localización ES/EN | **Partial** (PR7): selector de idioma en Ajustes (`AppCompatDelegate.setApplicationLocales`); audit/settings/nav/security analysis localizados (`values` + `values-en`). Compose de **Lab**, **Nearby**, **Vault** y **Onboarding** sigue con strings hardcoded en ES. Mensajes dinámicos del `PasswordAuditViewModel` (errores/bloqueos) también en ES hardcoded. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |
-| Visión documental única | Completada en FASE 17 (`docs/12-current-state-audit.md`). |
+| Historial de auditorías (compare-runs) | Follow-up; no bloquea el informe actual. |
 
 ## Deferred
 
@@ -68,6 +72,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
 | Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |
 | Biometría Vault + hardening | FASE 26–27. |
+| Localización completa Lab/Nearby/Vault/Onboarding | Extraer strings restantes a recursos. |
 | Observabilidad local + evidence RC + release eng. | FASE 28–30. |
 | UX final pass | FASE 31 (sin features grandes). |
 | Targets iOS reales | Requiere macOS/Xcode; ver `docs/11-ios-readiness.md` (FASE 32). |

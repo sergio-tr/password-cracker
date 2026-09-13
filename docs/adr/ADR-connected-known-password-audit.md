@@ -28,7 +28,17 @@ encontrarla. La red real solo aporta contexto; nunca se autentica contra el AP.
 6. **Results + strength** (PR6): `WifiPasswordAuditResult` con config vs
    contraseña separados, recomendaciones defensivas y evidencia
    Measured / Estimated / Modelled. Historial de runs = follow-up.
-7. **Localization + docs** (PR7): strings ES/EN + walkthrough.
+7. **Localization + docs + tests** (PR7):
+   - **AppCompat per-app language**: `AppLanguagePreferences` +
+     `AppCompatDelegate.setApplicationLocales`; selector Sistema/ES/EN en Ajustes.
+   - **Strings audit/settings/nav** en `values` + `values-en`.
+   - **Compose STOP regression**: `PasswordAuditComposeTest` — bottomBar visible,
+     cancelación, found + recommendations, vault deferred (campo vacío),
+     restore automático desde avanzado.
+   - **Docs reconciliation**: `00`–`13`, ADR, test-evidence, release-checklist,
+     `12-current-state-audit` actualizado a snapshot 2026-09-13.
+   - **Partial i18n**: Lab/Nearby/Vault/Onboarding Compose y mensajes dinámicos
+     del ViewModel siguen en ES hardcoded (follow-up).
 
 El motor verifica candidatos solo vía `CandidateVerifier`; no hay handshakes,
 PMKID, deauth ni envío de candidatos al router.
@@ -39,6 +49,7 @@ PMKID, deauth ni envío de candidatos al router.
 - `withKnownSecret` permanece para tests/benchmarks sintéticos; no usarlo para
   auditorías Wi-Fi reales.
 - Un usuario novice puede completar el flujo sin abrir opciones avanzadas.
+- Compare-runs history queda como follow-up explícito.
 
 ## Measured / Estimated / Modelled
 

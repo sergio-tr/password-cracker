@@ -28,27 +28,38 @@ Artifacts (siempre / al fallar JVM): reports JUnit/HTML, logcat **sanitizado**
 | Vault UI | VM + use cases | List/CRUD/secret UX | — | Clipboard OEM |
 | Vault DB | SQLDelight JVM | — | `AndroidSqliteDriver` | — |
 | Secretos | Redaction + use cases | Mask UI | `KeystoreSecretVault` + lifecycle | — |
-| Lab | Engine + VM | Fake engine UI | — | Runs largos físicos |
-| Quick Audit | VM (Vault/manual, presets, cancel, eligibility, attempt freeze) | — (unit; compose dedicado evitados por flakiness) | — | Flujo físico conectado |
+| Lab | Engine + VM | Fake engine UI + STOP | — | Runs largos físicos |
+| Quick Audit | `PasswordAuditViewModelTest` (presets, Vault, eligibility, cancel, missing-target) | `PasswordAuditComposeTest` (STOP, found, vault, advanced restore) | — | Flujo físico conectado |
+| Known-password domain | `AutomaticPasswordAuditPlannerTest`, `TargetIsolationTest`, `PasswordAuditResultComposerTest` | — | — | — |
 
 ## Clasificación `androidTest`
 
 | Clase | Tipo |
 | --- | --- |
 | `NearbyComposeTest` … `LabComposeTest` | Compose UI (fakes; sin Wi‑Fi físico) |
+| `PasswordAuditComposeTest` | Quick Audit — STOP bottomBar, found, vault deferred, restore automático |
 | `AndroidSqlDelightRepositoryTest` | SQLDelight Android |
 | `KeystoreSecretVaultInstrumentedTest` | Keystore real |
 | `NetworkSecretLifecycleInstrumentedTest` | Lifecycle red+secreto |
 | `AndroidWifiPermissionManagerInstrumentedTest` | Permission adapter smoke |
+| `SharedPreferencesCalibrationRepositoryTest` | Calibración durable |
 
 Sin dependencia de APs reales, Internet ni diálogos OEM.
 
+## Localización (testing)
+
+- Audit UI: tests usan `R.string.*` (ES/EN según locale del test).
+- Lab/Nearby/Vault/Onboarding Compose tests asumen strings ES hardcoded.
+- Mensajes dinámicos del `PasswordAuditViewModel` no tienen cobertura i18n.
+
 ## Cobertura JVM / KMP
 
-Ver listado histórico de ficheros en el historial del repo; ViewModels en
-`androidApp/src/test`, dominio en `shared/*/…Test`.
+ViewModels en `androidApp/src/test`, dominio en `shared/*/…Test`. Destacados
+para auditoría: `DefaultPasswordAuditEligibilityCheckerTest`,
+`HeuristicSecretStrengthAnalyzerTest`, `PasswordAuditResultComposerTest`,
+`AutomaticPasswordAuditPlannerTest`, `TargetIsolationTest`.
 
 ## Deferred
 
 - Nightly con API adicional si el coste de la matriz PR lo justifica.
-- Suite formal de benchmarks (FASE 23).
+- Tests Compose i18n para pantallas aún hardcoded ES.
