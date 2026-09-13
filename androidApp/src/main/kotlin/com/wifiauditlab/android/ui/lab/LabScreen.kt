@@ -24,6 +24,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -149,7 +150,7 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                     ConfigCard(state = state, enabled = true, onChange = viewModel::updateConfig)
                 }
                 if (state.mode == LabInteractionMode.Advanced ||
-                    state.secretMode != LabSecretMode.LocalPrototype
+                    (state.advancedExpanded && state.secretMode != LabSecretMode.LocalPrototype)
                 ) {
                     EstimatesCard(state)
                 }
@@ -789,6 +790,11 @@ private fun ConfigCard(
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(stringResource(R.string.lab_workers, config.workers))
+            Text(
+                stringResource(R.string.lab_workers_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.horizontalScroll(rememberScrollState()),

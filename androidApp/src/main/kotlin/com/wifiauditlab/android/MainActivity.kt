@@ -73,6 +73,12 @@ private enum class Destination(
     Settings("settings", R.string.nav_settings, Icons.Filled.Settings),
 }
 
+/**
+ * Navigation chrome (FIX-02):
+ * - TOP LEVEL (bottom nav: Nearby, Vault, Lab, Settings): no [ArrowBack]; user switches tabs.
+ * - CHILD (permissions, security_analysis, password_audit): [ArrowBack] + [R.string.navigate_back]
+ *   wired to [NavController.popBackStack] (audit also clears its target store).
+ */
 private object Routes {
     const val PERMISSIONS = "permissions"
     const val SECURITY_ANALYSIS = "security_analysis"
