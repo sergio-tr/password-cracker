@@ -15,9 +15,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,6 +52,7 @@ import org.koin.compose.koinInject
 @Composable
 fun PermissionCenterScreen(
     viewModel: PermissionCenterViewModel = koinViewModel(),
+    onBack: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val permissionManager: AndroidWifiPermissionManager = koinInject()
@@ -74,6 +79,7 @@ fun PermissionCenterScreen(
 
     PermissionCenterContent(
         viewModel = viewModel,
+        onBack = onBack,
         onRequestPermission = {
             hasRequested = true
             requestPermission.launch(scanPermission)
@@ -96,11 +102,13 @@ fun PermissionCenterScreen(
 @Composable
 fun PermissionCenterContent(
     viewModel: PermissionCenterViewModel,
+    onBack: () -> Unit = {},
     onRequestPermission: () -> Unit,
     onOpenAppSettings: () -> Unit,
     onOpenLocationSettings: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val backCd = stringResource(R.string.navigate_back)
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -112,7 +120,24 @@ fun PermissionCenterContent(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.permissions_title)) }) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.permissions_title)) },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.semantics { contentDescription = backCd },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = backCd,
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
         Column(
             Modifier
                 .fillMaxSize()

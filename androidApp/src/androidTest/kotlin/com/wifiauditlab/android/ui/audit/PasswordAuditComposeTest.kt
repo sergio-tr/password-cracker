@@ -190,7 +190,7 @@ class PasswordAuditComposeTest {
         assertEquals(PasswordAuditBudgetPreset.Standard, vm.state.value.preset)
         assertFalse(vm.state.value.advancedExpanded)
         // Chrome always visible without scroll (small emulator viewports).
-        composeTestRule.onNodeWithContentDescription(str(R.string.audit_navigate_back)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(str(R.string.navigate_back)).assertIsDisplayed()
         composeTestRule.onNodeWithTag("audit_start").assertIsDisplayed()
         composeTestRule.onNodeWithText(str(R.string.audit_mode_automatic)).performScrollTo().assertIsDisplayed()
     }

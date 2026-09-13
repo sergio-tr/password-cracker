@@ -3,6 +3,7 @@ package com.wifiauditlab.android.ui.permissions
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -83,6 +84,7 @@ class PermissionCenterComposeTest {
 
     private fun setContent(
         viewModel: PermissionCenterViewModel,
+        onBack: () -> Unit = {},
         onRequest: () -> Unit = {},
         onApp: () -> Unit = {},
         onLocation: () -> Unit = {},
@@ -91,6 +93,7 @@ class PermissionCenterComposeTest {
             WifiAuditLabTheme {
                 PermissionCenterContent(
                     viewModel = viewModel,
+                    onBack = onBack,
                     onRequestPermission = onRequest,
                     onOpenAppSettings = onApp,
                     onOpenLocationSettings = onLocation,
@@ -102,6 +105,18 @@ class PermissionCenterComposeTest {
 
     private fun statusLabel(statusRes: Int): String =
         activity.getString(R.string.permissions_status, activity.getString(statusRes))
+
+    @Test
+    fun backAffordance_callsOnBack() {
+        var backPressed = false
+        val vm = PermissionCenterViewModel { inventory(PermissionStatus.Granted) }
+        setContent(vm, onBack = { backPressed = true })
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.navigate_back))
+            .assertIsDisplayed()
+            .performClick()
+        assertTrue(backPressed)
+    }
 
     @Test
     fun granted_showsGrantedStatusWithoutPrimaryAction() {

@@ -39,9 +39,9 @@ Selector: `SettingsScreen` → `AppLanguagePreferences.apply` → solo SharedPre
 | Hallazgo | Estado |
 | --- | --- |
 | Password Audit / Security Analysis | `ArrowBack` OK |
-| Permission Center | **Sin** `navigationIcon` ni `onBack` |
-| Recurso `audit_back` = «Atrás» | Definido, **no usado** en Compose (ruido) |
-| Lab / Vault / Nearby | Labels y CTAs claros solo en ES hardcoded; sin pasada de iconografía coherente en hijo Permission Center |
+| Permission Center | **FIX-02**: `ArrowBack` + `onBack` → `popBackStack`; CD unificado `navigate_back` |
+| Recurso `audit_back` | **Eliminado** en FIX-02; solo `navigate_back` |
+| Lab / Vault / Nearby | FIX-02: iconografía en CTAs primarios (Refresh, secret actions, Play/Stop CD); localización sigue FIX-01 |
 
 La prueba manual del usuario (textos «Atrás» / acciones textuales confusas) se trata como **síntoma UX** a corregir en FIX-02 aunque el literal `Text("Atrás")` ya no esté en Compose.
 

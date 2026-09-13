@@ -224,7 +224,7 @@ private fun LabActionBar(
                 ) {
                     Icon(
                         Icons.Filled.Stop,
-                        contentDescription = null,
+                        contentDescription = stopSearchCd,
                         modifier = Modifier.size(22.dp),
                     )
                     Spacer(Modifier.size(8.dp))
@@ -239,7 +239,7 @@ private fun LabActionBar(
                             .fillMaxWidth()
                             .semantics { contentDescription = startSearchCd },
                 ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                    Icon(Icons.Filled.PlayArrow, contentDescription = startSearchCd)
                     Spacer(Modifier.size(8.dp))
                     Text(startLabel)
                 }

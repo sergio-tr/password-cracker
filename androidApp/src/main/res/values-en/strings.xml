@@ -3,8 +3,6 @@
     <string name="app_name">Wi-Fi Audit Lab</string>
 
     <string name="audit_title">Audit password</string>
-    <string name="audit_back">Back</string>
-    <string name="audit_navigate_back">Navigate back</string>
     <string name="audit_start">START AUDIT</string>
     <string name="audit_stop">STOP</string>
     <string name="audit_stopping">Stopping…</string>
@@ -120,7 +118,7 @@
 
     <!-- Security analysis -->
     <string name="security_analysis_title">Security analysis</string>
-    <string name="navigate_back">Go back</string>
+    <string name="navigate_back">Navigate back</string>
 
     <!-- Audit execution / result headlines -->
     <string name="audit_state_preparing">Preparing…</string>

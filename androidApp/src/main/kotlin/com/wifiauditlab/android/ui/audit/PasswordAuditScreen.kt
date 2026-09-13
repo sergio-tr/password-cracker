@@ -74,7 +74,7 @@ fun PasswordAuditScreen(
     val startLabel = stringResource(R.string.audit_start)
     val stopLabel = stringResource(R.string.audit_stop)
     val stoppingLabel = stringResource(R.string.audit_stopping)
-    val backCd = stringResource(R.string.audit_navigate_back)
+    val backCd = stringResource(R.string.navigate_back)
     Scaffold(
         topBar = {
             TopAppBar(
