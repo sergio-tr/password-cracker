@@ -61,8 +61,12 @@ class LabViewModelTest {
         ): Flow<LabSearchEvent> = flow { events.forEach { emit(it) } }
     }
 
-    private class RecordingCancelEngine : LabSearchEngine {
+    private class RecordingCancelEngine(
+        private val terminalMetrics: SearchMetrics,
+    ) : LabSearchEngine {
         var cancelled = false
+            private set
+        var sawCancelSignal = false
             private set
 
         override fun run(
@@ -75,6 +79,11 @@ class LabViewModelTest {
                 emit(LabSearchEvent.Preparing)
                 emit(LabSearchEvent.Started(SearchSessionId("s"), plan, plan.searchSpace))
                 cancelled = cancellation.isCancelled
+                while (!cancellation.isCancelled) {
+                    kotlinx.coroutines.delay(10)
+                }
+                sawCancelSignal = true
+                emit(LabSearchEvent.Cancelled(terminalMetrics))
             }
     }
 
@@ -145,9 +154,28 @@ class LabViewModelTest {
     @Test
     fun stop_marks_cancelling() =
         runTest(dispatcher) {
-            val vm = viewModel(RecordingCancelEngine())
+            val vm = viewModel(RecordingCancelEngine(metrics))
             vm.stop()
             assertEquals(SearchState.Cancelling, vm.state.value.searchState)
+        }
+
+    @Test
+    fun stop_whileRunning_signalsCancellation_andEndsCancelled() =
+        runTest(dispatcher) {
+            val engine = RecordingCancelEngine(metrics)
+            val vm = viewModel(engine)
+            vm.start()
+            // Reach Running without draining the hang loop (delay until cancel).
+            dispatcher.scheduler.runCurrent()
+            assertEquals(SearchState.Running, vm.state.value.searchState)
+
+            vm.stop()
+            assertEquals(SearchState.Cancelling, vm.state.value.searchState)
+
+            advanceUntilIdle()
+            assertTrue(engine.sawCancelSignal)
+            assertEquals(SearchState.Cancelled, vm.state.value.searchState)
+            assertEquals(SearchOutcome.Cancelled, vm.state.value.outcome)
         }
 
     @Test

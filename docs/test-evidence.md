@@ -1,7 +1,7 @@
 # Test evidence
 
 Evidencia de la suite automática y de los casos manuales del RC.
-Actualizado en FASE 22/23 (calibración durable + CI verde documentado).
+Actualizado en UX-01 (STOP fijo en Lab) y FASE 22/23 (calibración durable + CI).
 
 ## AUTOMATED — JVM
 
@@ -12,6 +12,7 @@ CI job `jvm` (`.github/workflows/ci.yml`):
 | `ktlintCheck` | PASS (run verde abajo) |
 | `test` / `jvmTest` | PASS |
 | `assembleDebug` + `compileDebugAndroidTestKotlin` | PASS |
+| Lab cancelación (`LabViewModelTest.stop_*`) | PASS local UX-01 |
 
 ## AUTOMATED — ANDROID EMULATOR
 
