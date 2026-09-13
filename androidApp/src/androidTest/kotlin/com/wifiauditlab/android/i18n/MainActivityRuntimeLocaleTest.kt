@@ -18,7 +18,7 @@ import org.junit.runner.RunWith
 
 /**
  * FIX-01A: official [AppCompatDelegate.setApplicationLocales] must update Compose
- * [androidx.compose.ui.res.stringResource] on an [androidx.appcompat.app.AppCompatActivity]
+ * [androidx.compose.ui.res.stringResource] on [LocaleProbeActivity] (AppCompatActivity)
  * without app-code [android.app.Activity.recreate].
  *
  * Required transitions: ES → EN, EN → ES, EN → SYSTEM.

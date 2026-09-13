@@ -10,13 +10,14 @@ import androidx.compose.ui.res.stringResource
 import com.wifiauditlab.android.R
 
 /**
- * Minimal [AppCompatActivity] probe used only by instrumentation tests to prove
+ * Minimal [AppCompatActivity] for FIX-01A instrumentation: proves
  * [androidx.appcompat.app.AppCompatDelegate.setApplicationLocales] updates Compose
- * [stringResource] without app-level [recreate].
+ * [stringResource] without app-level [android.app.Activity.recreate].
+ *
+ * Not a launcher activity — started only by instrumentation tests.
  */
 class LocaleProbeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(androidx.appcompat.R.style.Theme_AppCompat_Light_NoActionBar)
         super.onCreate(savedInstanceState)
         setContent {
             Text(
