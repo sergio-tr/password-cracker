@@ -12,6 +12,7 @@ import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.domain.wifi.WifiSignal
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -115,7 +116,7 @@ class DefaultPasswordAuditEligibilityCheckerTest {
             val open = observation(ssid = "OpenCafe", family = SecurityFamily.OPEN)
             val result = assertIs<PasswordAuditEligibility.UnsupportedAuthenticationModel>(checker.check(open))
             assertEquals(SecurityFamily.OPEN, result.family)
-            assertTrue(result.reason.isNotBlank())
+            assertEquals(PasswordAuditInapplicableReason.OpenNetwork, result.reason)
         }
 
     @Test

@@ -1,6 +1,9 @@
 package com.wifiauditlab.lab.domain.audit
 
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.core.math.CombinationCount
+import com.wifiauditlab.lab.domain.audit.PlanExplanationDetail
+import com.wifiauditlab.lab.domain.audit.PlanExplanationHeadline
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
@@ -111,13 +114,13 @@ class AutomaticPasswordAuditPlannerTest {
             planner.createPlan(
                 PasswordAuditContext(
                     sharedPasswordApplicable = false,
-                    inapplicableReason = "OPEN networks have no shared password",
+                    inapplicableReason = PasswordAuditInapplicableReason.OpenNetwork,
                 ),
                 basePerformance,
                 PasswordAuditBudget.standard(),
             )
         val denied = assertIs<PasswordAuditPlanResult.NotApplicable>(result)
-        assertTrue(denied.reason.contains("OPEN") || denied.reason.contains("not applicable"))
+        assertEquals(PasswordAuditInapplicableReason.OpenNetwork, denied.reason)
     }
 
     @Test
@@ -194,12 +197,12 @@ class AutomaticPasswordAuditPlannerTest {
     @Test
     fun explanation_is_novice_friendly() {
         val plan = ready(planner.createPlan(eligibleContext, basePerformance, PasswordAuditBudget.standard()))
-        assertEquals("Configuración automática", plan.explanation.headline)
-        assertTrue(plan.explanation.details.any { it.contains("procesos de búsqueda") })
-        assertTrue(plan.explanation.details.any { it.contains("etapas") })
-        assertFalse(plan.explanation.details.any { it.contains("workers", ignoreCase = true) })
-        assertFalse(plan.explanation.details.any { it.contains("DynamicRange") })
-        assertFalse(plan.explanation.details.any { it.contains("SearchBucket") })
+        assertEquals(PlanExplanationHeadline.AutomaticConfiguration, plan.explanation.headline)
+        assertTrue(plan.explanation.details.any { it is PlanExplanationDetail.WorkerCount })
+        assertTrue(plan.explanation.details.any { it is PlanExplanationDetail.StageCount })
+        assertTrue(plan.explanation.details.any { it is PlanExplanationDetail.DeviceAdapted })
+        assertFalse(plan.explanation.toString().contains("DynamicRange"))
+        assertFalse(plan.explanation.toString().contains("SearchBucket"))
     }
 
     @Test

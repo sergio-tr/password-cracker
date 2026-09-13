@@ -5,6 +5,7 @@ import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMat
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 
@@ -21,7 +22,7 @@ sealed interface PasswordAuditEligibility {
 
     data class UnsupportedAuthenticationModel(
         val family: SecurityFamily,
-        val reason: String,
+        val reason: PasswordAuditInapplicableReason,
     ) : PasswordAuditEligibility
 
     data object MissingPermissions : PasswordAuditEligibility
@@ -86,24 +87,5 @@ fun SecurityFamily.supportsSharedPasswordAudit(): Boolean =
         else -> false
     }
 
-fun SecurityFamily.unsupportedAuditReason(): String =
-    when (this) {
-        SecurityFamily.OPEN ->
-            "Esta red está abierta: no hay una contraseña Wi-Fi compartida que auditar."
-        SecurityFamily.OWE ->
-            "OWE (Enhanced Open) no usa una contraseña Wi-Fi compartida del mismo modo."
-        SecurityFamily.WPA2_ENTERPRISE,
-        SecurityFamily.WPA3_ENTERPRISE,
-        ->
-            "La autenticación enterprise (802.1X) no se modela como una contraseña Wi-Fi compartida."
-        SecurityFamily.PASSPOINT ->
-            "Passpoint no utiliza una contraseña Wi-Fi compartida del mismo modo."
-        SecurityFamily.DPP ->
-            "DPP (Easy Connect) no se representa como una contraseña compartida."
-        SecurityFamily.WEP ->
-            "WEP está obsoleto; esta auditoría se centra en contraseñas personales modernas (WPA/WPA2/WPA3)."
-        SecurityFamily.UNKNOWN ->
-            "No se puede determinar si esta red usa una contraseña Wi-Fi compartida."
-        else ->
-            "Este mecanismo de autenticación no admite una auditoría de contraseña compartida."
-    }
+fun SecurityFamily.unsupportedAuditReason(): PasswordAuditInapplicableReason =
+    toPasswordAuditInapplicableReason() ?: PasswordAuditInapplicableReason.UnsupportedAuth

@@ -159,6 +159,77 @@
     <string name="audit_err_budget_required">Set at least a duration or an attempt limit.</string>
     <string name="audit_err_password_required">Known password is missing.</string>
     <string name="audit_err_no_plan">No automatic plan.</string>
+    <string name="audit_connected_badge">● %1$s</string>
+    <string name="audit_inapplicable_open">This network is open: there is no shared Wi-Fi password to audit.</string>
+    <string name="audit_inapplicable_owe">OWE (Enhanced Open) does not use a shared Wi-Fi password in the same way.</string>
+    <string name="audit_inapplicable_enterprise">Enterprise authentication (802.1X) is not modeled as a shared Wi-Fi password.</string>
+    <string name="audit_inapplicable_passpoint">Passpoint does not use a shared Wi-Fi password in the same way.</string>
+    <string name="audit_inapplicable_dpp">DPP (Easy Connect) is not represented as a shared password.</string>
+    <string name="audit_inapplicable_wep">WEP is obsolete; this audit focuses on modern personal passwords (WPA/WPA2/WPA3).</string>
+    <string name="audit_inapplicable_unknown">Cannot determine whether this network uses a shared Wi-Fi password.</string>
+    <string name="audit_inapplicable_unsupported">This authentication mechanism does not support a shared-password audit.</string>
+    <string name="audit_plan_device_adapted">Configuration automatically adapted to this device</string>
+    <string name="audit_plan_budget_prefix">Limit: %1$s</string>
+    <string name="audit_duration_seconds">%1$d s</string>
+    <string name="audit_duration_min_sec">%1$d min %2$d s</string>
+    <string name="audit_duration_sec_frac">%1$d.%2$d s</string>
+    <string name="audit_budget_attempts_abbr">%1$s attempts</string>
+    <string name="audit_outcome_found">Password found</string>
+    <string name="audit_outcome_high_resistance">High resistance within the tested model</string>
+    <string name="audit_outcome_not_found_limit">Not found within the limit</string>
+    <string name="audit_outcome_not_found_model">Not found within the tested model</string>
+    <string name="audit_outcome_stopped">Audit stopped</string>
+    <string name="audit_outcome_failed">The audit stopped due to an error</string>
+    <string name="audit_resistance_very_low">Very low</string>
+    <string name="audit_resistance_low">Low</string>
+    <string name="audit_resistance_moderate">Moderate</string>
+    <string name="audit_resistance_high">High</string>
+    <string name="audit_resistance_very_high">Very high</string>
+    <string name="audit_resistance_unknown">Undetermined</string>
+    <string name="audit_metric_combinations">Combinations tried</string>
+    <string name="audit_metric_measured_time">Measured time</string>
+    <string name="audit_metric_attempts_done">Attempts performed</string>
+    <string name="audit_metric_budget_capacity">Budget capacity</string>
+    <string name="audit_metric_structure">Modeled structure</string>
+    <string name="audit_metric_speed_value">%1$d attempts/s</string>
+    <string name="audit_metric_budget_value">~%1$s attempts</string>
+    <string name="audit_metric_structure_value">length %1$s · %2$s classes</string>
+    <string name="audit_recommend_longer">Use a longer password.</string>
+    <string name="audit_recommend_structure">Avoid simple or repetitive structures.</string>
+    <string name="audit_recommend_charset">Mix upper/lowercase, numbers, and symbols if your devices allow it.</string>
+    <string name="audit_recommend_upgrade_wifi">Keep WPA2/WPA3 instead of legacy protocols.</string>
+    <string name="audit_recommend_prefer_wpa3">If all your devices support it, prefer WPA3 Personal.</string>
+    <string name="audit_recommend_avoid_transition">Avoid transition modes if all your devices support WPA3.</string>
+    <string name="audit_note_resistance_method">Observed resistance combines local search results and structural analysis.</string>
+    <string name="audit_note_no_absolute">Does not claim real attacker time or absolute security.</string>
+    <string name="audit_note_found_budget">Found within budget → observed resistance does not exceed Low in this model.</string>
+    <string name="audit_note_survived_budget">The password survived the selected search budget.</string>
+    <string name="audit_note_exhausted">Automatic plan space was exhausted; that does not mean the password does not exist.</string>
+    <string name="audit_note_cancelled">No complete conclusion was issued because the test was cancelled.</string>
+    <string name="audit_note_engine_failed">The local engine failed before producing a useful conclusion.</string>
+    <string name="audit_note_structure">Structure: %1$s</string>
+    <string name="audit_note_verdict">Password verdict: %1$s (local model).</string>
+    <string name="audit_network_rating_high">High</string>
+    <string name="audit_network_rating_moderate">Moderate</string>
+    <string name="audit_network_rating_low">Low</string>
+    <string name="audit_network_rating_insecure">Insecure</string>
+
+    <plurals name="audit_plan_workers">
+        <item quantity="one">%d search worker</item>
+        <item quantity="other">%d search workers</item>
+    </plurals>
+    <plurals name="audit_plan_stages">
+        <item quantity="one">%d stage</item>
+        <item quantity="other">%d stages</item>
+    </plurals>
+    <plurals name="audit_budget_attempts">
+        <item quantity="one">%d attempt</item>
+        <item quantity="other">%d attempts</item>
+    </plurals>
+    <plurals name="audit_duration_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
 
     <string name="lab_title">Synthetic lab</string>
     <string name="lab_cd_network_context">Lab network context</string>

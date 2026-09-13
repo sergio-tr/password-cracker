@@ -1,11 +1,11 @@
 package com.wifiauditlab.android.ui.audit
 
-import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
+import com.wifiauditlab.assessment.domain.audit.AuditOutcomeHeadline
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
@@ -30,10 +30,13 @@ import com.wifiauditlab.assessment.domain.wifi.WifiSignal
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
+import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
+import com.wifiauditlab.lab.domain.audit.PlanExplanationDetail
+import com.wifiauditlab.lab.domain.audit.PlanExplanationHeadline
 import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,8 +89,8 @@ class PasswordAuditViewModelTest {
             val state = vm.state.value
             assertFalse(state.loadingPlan)
             assertNotNull(state.plan)
-            assertEquals("Configuración automática", state.explanation?.headline)
-            assertTrue(state.explanation!!.details.any { it.contains("procesos de búsqueda") })
+            assertEquals(PlanExplanationHeadline.AutomaticConfiguration, state.explanation?.headline)
+            assertTrue(state.explanation!!.details.any { it is PlanExplanationDetail.WorkerCount })
             assertEquals(PasswordAuditBudgetPreset.Standard, state.preset)
             assertEquals(PasswordAuditInteractionMode.Automatic, state.mode)
             assertFalse(state.advancedExpanded)
@@ -125,9 +128,9 @@ class PasswordAuditViewModelTest {
     fun startRequiresPassword() =
         runTest {
             val vm = viewModel(request = eligibleRequest())
-            assertEquals("Falta la contraseña conocida.", vm.state.value.startBlockedReason)
+            assertEquals(PasswordAuditUiError.PasswordRequired, vm.state.value.startBlockedReason)
             vm.onStartAuditClicked()
-            assertEquals("Introduce o selecciona la contraseña conocida.", vm.state.value.passwordError)
+            assertEquals(PasswordAuditUiError.MissingPassword, vm.state.value.passwordError)
             assertEquals(SearchState.Idle, vm.state.value.searchState)
         }
 
@@ -223,7 +226,7 @@ class PasswordAuditViewModelTest {
             assertNotNull(vm.state.value.strength)
             assertNotNull(vm.state.value.metrics)
             assertNotNull(vm.state.value.resultReport)
-            assertTrue(vm.state.value.resultReport!!.headline.isNotBlank())
+            assertEquals(AuditOutcomeHeadline.PasswordFound, vm.state.value.resultReport!!.headline)
             assertTrue(vm.state.value.resultReport!!.searchOutcome is PasswordSearchOutcomeKind.Found)
         }
 
@@ -332,7 +335,7 @@ class PasswordAuditViewModelTest {
                         ),
                 )
             assertNull(vm.state.value.plan)
-            assertNotNull(vm.state.value.planNotApplicableReason)
+            assertEquals(PasswordAuditInapplicableReason.OpenNetwork, vm.state.value.planNotApplicableReason)
             assertEquals(PasswordAuditScreenPhase.Invalid, vm.state.value.phase)
         }
 
@@ -384,35 +387,8 @@ class PasswordAuditViewModelTest {
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
             availableProcessors = 4,
             ioDispatcher = dispatcher,
-            uiStrings = spanishUiStrings,
         )
     }
-
-    private val spanishUiStrings =
-        UiStrings { id, _ ->
-            when (id) {
-                R.string.audit_err_missing_password -> "Introduce o selecciona la contraseña conocida."
-                R.string.audit_err_password_required -> "Falta la contraseña conocida."
-                R.string.audit_err_no_valid_plan -> "No hay un plan automático válido para esta red."
-                R.string.audit_err_invalid_config -> "La configuración actual no es válida para iniciar."
-                R.string.audit_err_not_connected ->
-                    "No estás conectado a esta red. Conéctate primero para realizar una auditoría local."
-                R.string.audit_err_connection_lost -> "Se ha perdido la conexión a esta red."
-                R.string.audit_err_no_longer_eligible -> "Esta red ya no es elegible para una auditoría de contraseña."
-                R.string.audit_err_password_unavailable -> "No se pudo obtener la contraseña conocida."
-                R.string.audit_err_vault_save_failed -> "La auditoría continúa; no se pudo guardar en el Vault."
-                R.string.audit_err_audit_failed -> "La auditoría se detuvo por un error."
-                R.string.audit_err_budget_required -> "Define al menos una duración o un límite de intentos."
-                R.string.audit_err_no_plan -> "Sin plan automático."
-                R.string.security_family_open -> "Abierta (Open)"
-                R.string.security_family_wpa2 -> "WPA2-Personal"
-                R.string.security_family_wpa3 -> "WPA3-Personal"
-                R.string.security_family_wpa2_wpa3 -> "WPA2/WPA3-Personal (transición)"
-                R.string.nearby_band_2_4 -> "2,4 GHz"
-                R.string.nearby_band_5 -> "5 GHz"
-                else -> error("Missing Spanish test string for resource id=$id")
-            }
-        }
 
     private fun eligibleRequest(
         family: SecurityFamily = SecurityFamily.WPA2_PERSONAL,

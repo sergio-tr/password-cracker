@@ -53,6 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
+import com.wifiauditlab.android.ui.audit.label
+import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.security.SecurityRating
@@ -216,7 +218,9 @@ private fun NetworkCard(
             if (item.alias != null) Text(item.observation.ssid.toString())
             val band = bandLabel(item.observation.channel.band)
             val quality = qualityLabel(item.observation.signal.quality)
-            Text("${item.observation.securityProfile.family.name} · $band · $quality")
+            Text(
+                "${stringResource(familyLabelRes(item.observation.securityProfile.family))} · $band · $quality",
+            )
         }
     }
 }
@@ -395,7 +399,7 @@ private fun PasswordAuditSection(
             ) { Text(openWifiSettings) }
         }
         is PasswordAuditEligibility.UnsupportedAuthenticationModel -> {
-            Text(eligibility.reason)
+            Text(eligibility.reason.label())
         }
         PasswordAuditEligibility.MissingPermissions -> {
             Text(stringResource(R.string.nearby_missing_permissions))

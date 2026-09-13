@@ -161,6 +161,77 @@
     <string name="audit_err_budget_required">Define al menos una duración o un límite de intentos.</string>
     <string name="audit_err_password_required">Falta la contraseña conocida.</string>
     <string name="audit_err_no_plan">Sin plan automático.</string>
+    <string name="audit_connected_badge">● %1$s</string>
+    <string name="audit_inapplicable_open">Esta red está abierta: no hay una contraseña Wi-Fi compartida que auditar.</string>
+    <string name="audit_inapplicable_owe">OWE (Enhanced Open) no usa una contraseña Wi-Fi compartida del mismo modo.</string>
+    <string name="audit_inapplicable_enterprise">La autenticación enterprise (802.1X) no se modela como una contraseña Wi-Fi compartida.</string>
+    <string name="audit_inapplicable_passpoint">Passpoint no utiliza una contraseña Wi-Fi compartida del mismo modo.</string>
+    <string name="audit_inapplicable_dpp">DPP (Easy Connect) no se representa como una contraseña compartida.</string>
+    <string name="audit_inapplicable_wep">WEP está obsoleto; esta auditoría se centra en contraseñas personales modernas (WPA/WPA2/WPA3).</string>
+    <string name="audit_inapplicable_unknown">No se puede determinar si esta red usa una contraseña Wi-Fi compartida.</string>
+    <string name="audit_inapplicable_unsupported">Este mecanismo de autenticación no admite una auditoría de contraseña compartida.</string>
+    <string name="audit_plan_device_adapted">Configuración adaptada automáticamente a este dispositivo</string>
+    <string name="audit_plan_budget_prefix">Límite: %1$s</string>
+    <string name="audit_duration_seconds">%1$d s</string>
+    <string name="audit_duration_min_sec">%1$d min %2$d s</string>
+    <string name="audit_duration_sec_frac">%1$d,%2$d s</string>
+    <string name="audit_budget_attempts_abbr">%1$s intentos</string>
+    <string name="audit_outcome_found">Contraseña encontrada</string>
+    <string name="audit_outcome_high_resistance">Alta resistencia dentro del modelo probado</string>
+    <string name="audit_outcome_not_found_limit">No se encontró dentro del límite</string>
+    <string name="audit_outcome_not_found_model">No encontrada dentro del modelo probado</string>
+    <string name="audit_outcome_stopped">Auditoría detenida</string>
+    <string name="audit_outcome_failed">La auditoría se detuvo por un error</string>
+    <string name="audit_resistance_very_low">Muy baja</string>
+    <string name="audit_resistance_low">Baja</string>
+    <string name="audit_resistance_moderate">Moderada</string>
+    <string name="audit_resistance_high">Alta</string>
+    <string name="audit_resistance_very_high">Muy alta</string>
+    <string name="audit_resistance_unknown">No determinada</string>
+    <string name="audit_metric_combinations">Combinaciones probadas</string>
+    <string name="audit_metric_measured_time">Tiempo medido</string>
+    <string name="audit_metric_attempts_done">Intentos realizados</string>
+    <string name="audit_metric_budget_capacity">Capacidad del presupuesto</string>
+    <string name="audit_metric_structure">Estructura modelada</string>
+    <string name="audit_metric_speed_value">%1$d intentos/s</string>
+    <string name="audit_metric_budget_value">~%1$s intentos</string>
+    <string name="audit_metric_structure_value">longitud %1$s · %2$s clases</string>
+    <string name="audit_recommend_longer">Utiliza una contraseña más larga.</string>
+    <string name="audit_recommend_structure">Evita estructuras sencillas o repetitivas.</string>
+    <string name="audit_recommend_charset">Combina mayúsculas, minúsculas, números y símbolos si tus dispositivos lo permiten.</string>
+    <string name="audit_recommend_upgrade_wifi">Mantén WPA2/WPA3 en lugar de protocolos heredados.</string>
+    <string name="audit_recommend_prefer_wpa3">Si todos tus dispositivos lo soportan, prefiere WPA3 Personal.</string>
+    <string name="audit_recommend_avoid_transition">Evita modos de transición si todos tus dispositivos soportan WPA3.</string>
+    <string name="audit_note_resistance_method">La resistencia observada combina el resultado de la búsqueda local y el análisis estructural.</string>
+    <string name="audit_note_no_absolute">No afirma el tiempo que necesitaría un atacante real ni seguridad absoluta.</string>
+    <string name="audit_note_found_budget">Encontrada dentro del presupuesto → la resistencia observada no supera Baja en este modelo.</string>
+    <string name="audit_note_survived_budget">La contraseña resistió el presupuesto de búsqueda seleccionado.</string>
+    <string name="audit_note_exhausted">Se agotó el espacio del plan automático; eso no significa que la contraseña «no exista».</string>
+    <string name="audit_note_cancelled">No se ha emitido una conclusión completa porque la prueba fue cancelada.</string>
+    <string name="audit_note_engine_failed">El motor local falló antes de producir una conclusión útil.</string>
+    <string name="audit_note_structure">Estructura: %1$s</string>
+    <string name="audit_note_verdict">Veredicto de contraseña: %1$s (modelo local).</string>
+    <string name="audit_network_rating_high">Alta</string>
+    <string name="audit_network_rating_moderate">Moderada</string>
+    <string name="audit_network_rating_low">Baja</string>
+    <string name="audit_network_rating_insecure">Insegura</string>
+
+    <plurals name="audit_plan_workers">
+        <item quantity="one">%d proceso de búsqueda</item>
+        <item quantity="other">%d procesos de búsqueda</item>
+    </plurals>
+    <plurals name="audit_plan_stages">
+        <item quantity="one">%d etapa</item>
+        <item quantity="other">%d etapas</item>
+    </plurals>
+    <plurals name="audit_budget_attempts">
+        <item quantity="one">%d intento</item>
+        <item quantity="other">%d intentos</item>
+    </plurals>
+    <plurals name="audit_duration_minutes">
+        <item quantity="one">%d minuto</item>
+        <item quantity="other">%d minutos</item>
+    </plurals>
 
     <!-- Lab -->
     <string name="lab_title">Laboratorio sintético</string>

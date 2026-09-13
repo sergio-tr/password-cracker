@@ -177,7 +177,7 @@ private fun BenchmarksCard(
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.settings_bench_title), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.settings_bench_status, state.statusLabel))
+            Text(stringResource(R.string.settings_bench_status, state.status.label()))
             state.comparison?.let { comparison ->
                 Text(stringResource(R.string.settings_bench_baseline, formatRate(comparison.baselineThroughput)))
                 Text(stringResource(R.string.settings_bench_parallel, formatRate(comparison.parallelThroughput)))
@@ -214,7 +214,7 @@ private fun BenchmarksCard(
             state.exportCsv?.let {
                 Text(stringResource(R.string.settings_bench_export_csv, it.lineSequence().count()))
             }
-            state.errorMessage?.let { Text(it) }
+            state.errorMessage?.let { Text(it.text()) }
             Button(
                 onClick = onRunSuite,
                 enabled = !state.running,
@@ -259,12 +259,23 @@ private fun CalibrationCard(
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.settings_cal_title), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.settings_cal_status, state.statusLabel))
-            Text(stringResource(R.string.settings_cal_last, state.lastCalibrationLabel))
-            Text(stringResource(R.string.settings_cal_throughput, state.throughputLabel))
-            Text(stringResource(R.string.settings_cal_sample, state.sampleDurationLabel))
-            Text(stringResource(R.string.settings_cal_fingerprint, state.fingerprintLabel))
-            state.errorMessage?.let { Text(it) }
+            Text(stringResource(R.string.settings_cal_status, state.status.label()))
+            Text(
+                stringResource(
+                    R.string.settings_cal_last,
+                    formatCalibrationTimestamp(state.lastCalibrationEpochMillis),
+                ),
+            )
+            Text(stringResource(R.string.settings_cal_throughput, formatCalibrationThroughput(state.throughput)))
+            state.sampleDurationMillis?.let {
+                Text(stringResource(R.string.settings_cal_sample, formatCalibrationSampleDuration(it)))
+            }
+            state.recordFingerprint?.let {
+                Text(stringResource(R.string.settings_cal_fingerprint, it.label()))
+            } ?: state.environmentFingerprint?.let {
+                Text(stringResource(R.string.settings_cal_fingerprint, it.label()))
+            }
+            state.errorMessage?.let { Text(it.text()) }
             Button(
                 onClick = onRecalibrate,
                 enabled = !state.loading && !state.recalibrating,

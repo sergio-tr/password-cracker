@@ -54,7 +54,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
-import com.wifiauditlab.assessment.domain.audit.EvidenceQuality
+import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.audit.PasswordSearchOutcomeKind
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.SearchOutcome
@@ -110,7 +110,7 @@ fun PasswordAuditScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         state.infoMessage?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall)
+                            Text(it.message(), style = MaterialTheme.typography.bodySmall)
                         }
                         if (state.isActive) {
                             Button(
@@ -148,7 +148,7 @@ fun PasswordAuditScreen(
                             }
                             state.startBlockedReason?.let {
                                 Text(
-                                    it,
+                                    it.message(),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -176,7 +176,7 @@ fun PasswordAuditScreen(
                 else -> {
                     NetworkBanner(state)
                     state.connectionLostMessage?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error)
+                        Text(it.message(), color = MaterialTheme.colorScheme.error)
                     }
                     if (state.isActive || state.outcome != null) {
                         ExecutionStatusCard(state)
@@ -216,9 +216,13 @@ private fun NetworkBanner(state: PasswordAuditUiState) {
             if (state.ssidLabel.isNotBlank() && state.ssidLabel != state.displayName) {
                 Text(state.ssidLabel)
             }
-            Text(state.familyLabel)
+            Text(stringResource(familyLabelRes(state.securityFamily)))
             Text(
-                "● ${state.connectedLabel}",
+                networkMetaLine(state.wifiStandard, state.band),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                stringResource(R.string.audit_connected_badge, stringResource(R.string.audit_connected_now)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -346,7 +350,7 @@ private fun ManualPasswordFields(
             }
         },
         supportingText = {
-            state.passwordError?.let { Text(it) }
+            state.passwordError?.let { Text(it.message()) }
         },
     )
 }
@@ -477,10 +481,11 @@ private fun PlanSection(
             Text(stringResource(R.string.audit_plan_title), fontWeight = FontWeight.SemiBold)
             when {
                 state.loadingPlan -> Text(stringResource(R.string.audit_plan_loading))
-                state.planNotApplicableReason != null -> Text(state.planNotApplicableReason)
+                state.planNotApplicableReason != null ->
+                    Text(state.planNotApplicableReason.label())
                 state.plan != null -> {
                     Text(stringResource(R.string.audit_plan_auto_config), fontWeight = FontWeight.Medium)
-                    state.novicePlanLines.forEach { Text("· $it") }
+                    state.explanation?.noviceLines(state.plan)?.forEach { Text("· $it") }
                     FeasibilityBlock(state.feasibilityRating)
                     TextButton(
                         onClick = { viewModel.setPlanDetailsExpanded(!state.planDetailsExpanded) },
@@ -495,7 +500,9 @@ private fun PlanSection(
                         )
                     }
                     if (state.planDetailsExpanded) {
-                        state.explanation?.details?.forEach { Text("· $it", style = MaterialTheme.typography.bodySmall) }
+                        state.explanation?.details?.forEach {
+                            Text("· ${it.line()}", style = MaterialTheme.typography.bodySmall)
+                        }
                         state.plan?.let { plan ->
                             Text(
                                 stringResource(
@@ -622,20 +629,20 @@ private fun AuditResultReportCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.audit_report_title), fontWeight = FontWeight.Bold)
             if (report != null) {
-                Text(report.headline, fontWeight = FontWeight.SemiBold)
+                Text(report.headline.label(), fontWeight = FontWeight.SemiBold)
                 Text(
                     stringResource(R.string.audit_observed_resistance),
                     style = MaterialTheme.typography.labelMedium,
                 )
                 Text(
-                    report.passwordResistanceLabel.uppercase(),
+                    report.passwordResistance.label().uppercase(),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary,
                 )
                 report.performanceMetrics.forEach { metric ->
                     MetricRow(
-                        "${evidenceLabel(metric.quality)} · ${metric.label}",
-                        metric.value,
+                        metric.displayLabel(),
+                        metric.displayValue(),
                     )
                 }
                 outcomeHint(report.searchOutcome)?.let {
@@ -645,19 +652,19 @@ private fun AuditResultReportCard(
                 Spacer(Modifier.size(4.dp))
                 Text(stringResource(R.string.audit_split_config), fontWeight = FontWeight.SemiBold)
                 Text(
-                    report.networkConfigLabel ?: state.familyLabel,
+                    report.networkConfig.displayLabel(state.securityFamily),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(stringResource(R.string.audit_split_password), fontWeight = FontWeight.SemiBold)
                 Text(
-                    report.passwordResistanceLabel.uppercase(),
+                    report.passwordResistance.label().uppercase(),
                     style = MaterialTheme.typography.bodyMedium,
                 )
 
                 if (report.recommendations.isNotEmpty()) {
                     Spacer(Modifier.size(4.dp))
                     Text(stringResource(R.string.audit_recommendations), fontWeight = FontWeight.SemiBold)
-                    report.recommendations.forEach { Text("· ${it.text}") }
+                    report.recommendations.forEach { Text("· ${it.label()}") }
                 }
 
                 OutlinedButton(
@@ -684,7 +691,7 @@ private fun AuditResultReportCard(
                 }
                 if (state.resultDetailsExpanded) {
                     report.classificationNotes.forEach {
-                        Text("· $it", style = MaterialTheme.typography.bodySmall)
+                        Text("· ${it.line()}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             } else {
@@ -697,7 +704,7 @@ private fun AuditResultReportCard(
                     MetricRow(stringResource(R.string.audit_metric_time), formatElapsed(m.elapsed.inWholeSeconds))
                 }
             }
-            state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            state.errorMessage?.let { Text(it.message(), color = MaterialTheme.colorScheme.error) }
             if (state.errorDetails != null) {
                 TextButton(onClick = viewModel::toggleErrorDetails) {
                     Text(
@@ -726,14 +733,6 @@ private fun outcomeHint(outcome: PasswordSearchOutcomeKind): String? =
         is PasswordSearchOutcomeKind.Cancelled ->
             stringResource(R.string.audit_cancelled_incomplete)
         else -> null
-    }
-
-@Composable
-private fun evidenceLabel(quality: EvidenceQuality): String =
-    when (quality) {
-        EvidenceQuality.Measured -> stringResource(R.string.audit_evidence_measured)
-        EvidenceQuality.Estimated -> stringResource(R.string.audit_evidence_estimated)
-        EvidenceQuality.Modelled -> stringResource(R.string.audit_evidence_modelled)
     }
 
 @Composable
