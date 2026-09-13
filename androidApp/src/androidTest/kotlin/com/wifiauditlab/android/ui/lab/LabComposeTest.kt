@@ -151,13 +151,21 @@ class LabComposeTest {
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_title)).assertIsDisplayed()
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
+            .performScrollTo()
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_guided_experiment)).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_guided_experiment))
+            .performScrollTo()
+            .assertIsDisplayed()
         // Technical knobs stay collapsed until the user opens advanced options.
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_advanced_options))
+            .performScrollTo()
             .performClick()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_challenge)).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_challenge))
+            .performScrollTo()
+            .assertIsDisplayed()
         val beforeStart = activity.getString(R.string.lab_before_start)
         waitForText(beforeStart)
         scrollToText(beforeStart)
@@ -180,6 +188,7 @@ class LabComposeTest {
         setLab(viewModel(ScriptedEngine(emptyList())))
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
+            .performScrollTo()
             .assertIsDisplayed()
         assertTrue(
             composeTestRule
@@ -311,11 +320,14 @@ class LabComposeTest {
     fun prototypeMode_showsLocalOnlyBannerAndStartsSearch() {
         val vm = viewModel(HangingEngine(metrics))
         setLab(vm)
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_mode_prototype)).performClick()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_mode_prototype))
+            .performScrollTo()
+            .performClick()
         composeTestRule.waitForIdle()
         val localOnly = activity.getString(R.string.lab_prototype_local_only)
         waitForText(localOnly)
-        composeTestRule.onNodeWithText(localOnly).assertIsDisplayed()
+        composeTestRule.onNodeWithText(localOnly).performScrollTo().assertIsDisplayed()
 
         composeTestRule
             .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
