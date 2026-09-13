@@ -16,6 +16,7 @@ import com.wifiauditlab.android.R
  */
 class LocaleProbeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(androidx.appcompat.R.style.Theme_AppCompat_Light_NoActionBar)
         super.onCreate(savedInstanceState)
         setContent {
             Text(
