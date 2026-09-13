@@ -57,11 +57,13 @@ class SearchCalibrationServiceTest {
             val repository = InMemoryCalibrationRepository()
             val svc = service(repository, clock = { 10_000.0 })
             svc.calibrate(strategyId = "length-prioritized", workerCount = 1, force = true)
-            val updated = service(repository, clock = { 20_000.0 }).calibrate(
-                strategyId = "length-prioritized",
-                workerCount = 1,
-                force = true,
-            )
+            val updated =
+                service(repository, clock = { 20_000.0 })
+                    .calibrate(
+                        strategyId = "length-prioritized",
+                        workerCount = 1,
+                        force = true,
+                    )
             assertEquals(20_000.0, updated.measuredAttemptsPerSecond)
             assertEquals(20_000.0, repository.load()!!.measuredAttemptsPerSecond)
         }
