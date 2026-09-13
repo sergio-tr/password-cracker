@@ -8,6 +8,10 @@ import com.wifiauditlab.assessment.application.RecordSavedNetworkSighting
 import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
 import com.wifiauditlab.assessment.application.SaveNearbyNetwork
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
+import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
+import com.wifiauditlab.assessment.domain.connection.CurrentWifiConnection
+import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
@@ -26,6 +30,7 @@ import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.domain.wifi.WifiSignal
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
+import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
@@ -154,8 +159,13 @@ class NearbyViewModelTest {
     private fun viewModel(
         scanner: FakeScanner,
         repo: FakeRepo,
-    ): NearbyViewModel =
-        NearbyViewModel(
+        connection: CurrentWifiConnection? = null,
+    ): NearbyViewModel {
+        val provider =
+            object : CurrentWifiConnectionProvider {
+                override suspend fun currentConnection(): CurrentWifiConnection? = connection
+            }
+        return NearbyViewModel(
             ObserveNearbyNetworks(scanner, repo, DefaultKnownNetworkMatcher()),
             RefreshNearbyNetworks(scanner),
             AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
@@ -165,7 +175,10 @@ class NearbyViewModelTest {
                 RecordSavedNetworkSighting(repo),
             ),
             RecordNearbySightings(RecordSavedNetworkSighting(repo)),
+            provider,
+            DefaultPasswordAuditEligibilityChecker(provider),
         )
+    }
 
     @Test
     fun state_maps_scan_results_to_unknown_items() =
@@ -177,6 +190,34 @@ class NearbyViewModelTest {
 
             assertEquals(1, vm.state.value.items.size)
             assertFalse(vm.state.value.items.first().isKnown)
+            assertFalse(vm.state.value.items.first().isCurrentlyConnected)
+            job.cancel()
+        }
+
+    @Test
+    fun connected_network_is_flagged_and_eligible_for_audit() =
+        runTest(dispatcher) {
+            val obs = observation()
+            val scanner = FakeScanner(WifiScanState.Results(listOf(obs)))
+            val connection =
+                CurrentWifiConnection(
+                    ssid = obs.ssid,
+                    bssid = obs.bssid,
+                    securityFamily = SecurityFamily.WPA2_PERSONAL,
+                    rssi = -45,
+                )
+            val vm = viewModel(scanner, FakeRepo(), connection)
+            val job = launch { vm.state.collect {} }
+            advanceUntilIdle()
+
+            val item = vm.state.value.items.single()
+            assertTrue(item.isCurrentlyConnected)
+            assertEquals(NetworkConnectionMatch.Exact, item.connectionMatch)
+
+            vm.select(item)
+            advanceUntilIdle()
+            val eligibility = vm.detail.value?.auditEligibility
+            assertTrue(eligibility is PasswordAuditEligibility.EligibleConnectedNetwork)
             job.cancel()
         }
 

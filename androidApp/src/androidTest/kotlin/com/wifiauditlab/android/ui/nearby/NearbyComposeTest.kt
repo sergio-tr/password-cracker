@@ -153,6 +153,8 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))))
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
+        waitForText("Abrir ajustes Wi-Fi")
+        composeTestRule.onNodeWithText("Abrir ajustes Wi-Fi").performScrollTo().assertIsDisplayed()
         waitForText("Probar en laboratorio")
         composeTestRule.onNodeWithText("Probar en laboratorio").performScrollTo().assertIsDisplayed()
         waitForText("Analizar seguridad")

@@ -19,9 +19,11 @@ import com.wifiauditlab.android.ui.security.SecurityAnalysisViewModel
 import com.wifiauditlab.android.ui.settings.SettingsBenchmarkViewModel
 import com.wifiauditlab.android.ui.settings.SettingsCalibrationViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
+import com.wifiauditlab.android.wifi.AndroidCurrentWifiConnectionProvider
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 import com.wifiauditlab.android.wifi.AndroidWifiScanner
+import com.wifiauditlab.android.wifi.hasConnectionInspectionPermission
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.DeleteSavedNetwork
@@ -41,10 +43,16 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
+import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
+import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.classifier.WifiSecurityClassifier
+import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMatcher
+import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.match.KnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
+import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 import com.wifiauditlab.assessment.port.OnboardingPreferences
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
@@ -79,6 +87,18 @@ val appModule =
         single { AndroidWifiMapper(get()) }
         single { AndroidWifiPermissionManager(androidContext()) }
         single<WifiScanner> { AndroidWifiScanner(androidContext(), get(), get()) }
+        single<CurrentWifiConnectionProvider> {
+            AndroidCurrentWifiConnectionProvider(androidContext(), get())
+        }
+        single<NetworkConnectionMatcher> { DefaultNetworkConnectionMatcher() }
+        single<PasswordAuditEligibilityChecker> {
+            val permissions: AndroidWifiPermissionManager = get()
+            DefaultPasswordAuditEligibilityChecker(
+                connectionProvider = get(),
+                connectionMatcher = get(),
+                permissionGate = ConnectionInspectionPermissionGate { permissions.hasConnectionInspectionPermission() },
+            )
+        }
         single<SecretVault> { KeystoreSecretVault(androidContext()) }
         single<OnboardingPreferences> { SharedPreferencesOnboardingPreferences(androidContext()) }
         single { SecurityAnalysisTargetStore() }
@@ -145,7 +165,7 @@ val appModule =
         factory { RefreshNearbyNetworks(get()) }
 
         // ViewModels
-        viewModel { NearbyViewModel(get(), get(), get(), get(), get()) }
+        viewModel { NearbyViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
         viewModel {
             VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
         }

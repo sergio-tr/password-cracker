@@ -21,6 +21,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiLock
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -47,6 +49,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.security.SecurityRating
 import com.wifiauditlab.assessment.domain.wifi.SignalQuality
@@ -60,6 +63,7 @@ fun NearbyScreen(
     viewModel: NearbyViewModel = koinViewModel(),
     onOpenSecurityAnalysis: (NearbyItem) -> Unit = {},
     onOpenLab: (NearbyItem, String?) -> Unit = { _, _ -> },
+    onOpenPasswordAudit: (NearbyItem) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val detail by viewModel.detail.collectAsStateWithLifecycle()
@@ -128,6 +132,14 @@ fun NearbyScreen(
                 onOpenLab(current.item, current.assessment?.headline)
                 viewModel.dismissDetail()
             },
+            onOpenPasswordAudit = {
+                onOpenPasswordAudit(current.item)
+                viewModel.dismissDetail()
+            },
+            onOpenWifiSettings = {
+                context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+            },
+            onRequestPermissions = { launcher.launch(permissions) },
         )
     }
 }
@@ -159,18 +171,34 @@ private fun NetworkCard(
                     item.alias ?: item.observation.ssid.toString(),
                     fontWeight = FontWeight.SemiBold,
                 )
-                AssistChip(
-                    onClick = { onSelect(item) },
-                    label = {
-                        Text(
-                            when {
-                                item.ambiguous -> "Ambigua"
-                                item.isKnown -> "Guardada"
-                                else -> "Desconocida"
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (item.isCurrentlyConnected) {
+                        AssistChip(
+                            onClick = { onSelect(item) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Wifi,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
                             },
+                            label = { Text("Conectado") },
+                            modifier = Modifier.semantics { contentDescription = "Red conectada actualmente" },
                         )
-                    },
-                )
+                    }
+                    AssistChip(
+                        onClick = { onSelect(item) },
+                        label = {
+                            Text(
+                                when {
+                                    item.ambiguous -> "Ambigua"
+                                    item.isKnown -> "Guardada"
+                                    else -> "Desconocida"
+                                },
+                            )
+                        },
+                    )
+                }
             }
             if (item.alias != null) Text(item.observation.ssid.toString())
             Text(
@@ -194,6 +222,9 @@ private fun NetworkDetailSheet(
     onSave: (String) -> Unit,
     onOpenSecurityAnalysis: () -> Unit,
     onOpenLab: () -> Unit,
+    onOpenPasswordAudit: () -> Unit,
+    onOpenWifiSettings: () -> Unit,
+    onRequestPermissions: () -> Unit,
 ) {
     val observation = detail.item.observation
     var alias by remember(detail.item) {
@@ -215,12 +246,28 @@ private fun NetworkDetailSheet(
             Text("Seguridad: ${observation.securityProfile.family.name}")
             Text("Señal: ${qualityLabel(observation.signal.quality)}")
             Text(
+                if (detail.item.isCurrentlyConnected) {
+                    "Estado: Conectado actualmente"
+                } else {
+                    "Estado: No conectado"
+                },
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
                 when {
                     detail.saved || (detail.item.isKnown && !detail.item.ambiguous) -> "Guardada en el Vault"
                     detail.item.ambiguous -> "Coincidencia ambigua"
                     else -> "No guardada"
                 },
                 fontWeight = FontWeight.SemiBold,
+            )
+
+            Spacer(Modifier.height(8.dp))
+            PasswordAuditSection(
+                eligibility = detail.auditEligibility,
+                onOpenPasswordAudit = onOpenPasswordAudit,
+                onOpenWifiSettings = onOpenWifiSettings,
+                onRequestPermissions = onRequestPermissions,
             )
 
             Spacer(Modifier.height(8.dp))
@@ -286,6 +333,63 @@ private fun NetworkDetailSheet(
                         Text("Cerrar")
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PasswordAuditSection(
+    eligibility: PasswordAuditEligibility?,
+    onOpenPasswordAudit: () -> Unit,
+    onOpenWifiSettings: () -> Unit,
+    onRequestPermissions: () -> Unit,
+) {
+    when (eligibility) {
+        null -> Text("Comprobando elegibilidad de auditoría…")
+        is PasswordAuditEligibility.EligibleConnectedNetwork -> {
+            Text("Conectado ahora", fontWeight = FontWeight.SemiBold)
+            Button(
+                onClick = onOpenPasswordAudit,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = "Auditar contraseña" },
+            ) {
+                Icon(Icons.Filled.WifiLock, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("Auditar contraseña")
+            }
+        }
+        PasswordAuditEligibility.NotCurrentlyConnected -> {
+            Text(
+                "Para realizar una auditoría de contraseña conocida, " +
+                    "conéctate primero a esta red.",
+            )
+            OutlinedButton(
+                onClick = onOpenWifiSettings,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = "Abrir ajustes Wi-Fi" },
+            ) { Text("Abrir ajustes Wi-Fi") }
+        }
+        is PasswordAuditEligibility.UnsupportedAuthenticationModel -> {
+            Text(eligibility.reason)
+        }
+        PasswordAuditEligibility.MissingPermissions -> {
+            Text("Se necesitan permisos para comprobar la red conectada.")
+            OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
+                Text("Conceder permiso")
+            }
+        }
+        PasswordAuditEligibility.InsufficientInformation -> {
+            Text(
+                "No se pudo leer el SSID/BSSID de la conexión actual. " +
+                    "Revisa los permisos de ubicación o redes cercanas.",
+            )
+            OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
+                Text("Revisar permisos")
             }
         }
     }

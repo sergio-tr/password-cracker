@@ -18,6 +18,8 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
+import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
@@ -36,6 +38,7 @@ import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.domain.wifi.WifiSignal
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
+import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
@@ -148,6 +151,12 @@ fun observation(
 fun nearbyViewModel(
     scanner: FakeWifiScanner,
     repo: FakeSavedNetworkRepository = FakeSavedNetworkRepository(),
+    connectionProvider: CurrentWifiConnectionProvider =
+        object : CurrentWifiConnectionProvider {
+            override suspend fun currentConnection() = null
+        },
+    eligibilityChecker: PasswordAuditEligibilityChecker =
+        DefaultPasswordAuditEligibilityChecker(connectionProvider),
 ): NearbyViewModel =
     NearbyViewModel(
         ObserveNearbyNetworks(scanner, repo, DefaultKnownNetworkMatcher()),
@@ -159,6 +168,8 @@ fun nearbyViewModel(
             RecordSavedNetworkSighting(repo),
         ),
         RecordNearbySightings(RecordSavedNetworkSighting(repo)),
+        connectionProvider,
+        eligibilityChecker,
     )
 
 fun vaultViewModel(

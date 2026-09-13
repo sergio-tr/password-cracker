@@ -30,6 +30,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
 | Lab desde red cercana | **Implemented** (UX-02): CTA + `LabNetworkContext`; sin auth a AP. |
 | Modo guiado del Lab | **Implemented** (UX-03): defaults automáticos; opciones técnicas colapsadas; mensaje PSK vs no-PSK. |
+| Red conectada + elegibilidad auditoría | **Implemented** (PR1 audit): `CurrentWifiConnectionProvider`, `NetworkConnectionMatch`, `PasswordAuditEligibilityChecker`; badge Conectado + CTA Auditar. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
