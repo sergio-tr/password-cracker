@@ -145,12 +145,17 @@ class LabComposeTest {
         composeTestRule.waitForIdle()
     }
 
+    /** Guided defaults to LocalPrototype; engine-scripted tests need RandomHidden. */
+    private fun useRandomHidden(vm: LabViewModel) {
+        vm.setSecretMode(LabSecretMode.RandomHidden)
+        composeTestRule.waitForIdle()
+    }
+
     @Test
     fun configAndFeasibility_areVisible() {
         val vm = viewModel(ScriptedEngine(emptyList()))
         setLab(vm)
-        vm.setSecretMode(LabSecretMode.RandomHidden)
-        composeTestRule.waitForIdle()
+        useRandomHidden(vm)
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_title)).assertIsDisplayed()
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
@@ -235,9 +240,11 @@ class LabComposeTest {
     fun invalidLimits_showsErrorAndBlocksStart() {
         val vm = viewModel(ScriptedEngine(emptyList()))
         setLab(vm)
+        useRandomHidden(vm)
         composeTestRule.waitForIdle()
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_advanced_options))
+            .performScrollTo()
             .performClick()
 
         // Clear both limit fields so config becomes invalid.
@@ -263,6 +270,7 @@ class LabComposeTest {
                 ),
             )
         setLab(vm)
+        useRandomHidden(vm)
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
         val outcomeFound = activity.getString(R.string.lab_outcome_found)
@@ -275,6 +283,7 @@ class LabComposeTest {
     fun stop_alwaysVisibleWithoutScroll_whileRunning() {
         val vm = viewModel(HangingEngine(metrics))
         setLab(vm)
+        useRandomHidden(vm)
         startSearch()
         composeTestRule.waitUntil(5_000) {
             vm.state.value.searchState == SearchState.Running ||
@@ -292,6 +301,7 @@ class LabComposeTest {
     fun stop_runsCancellingThenCancelled_withoutScroll() {
         val vm = viewModel(HangingEngine(metrics))
         setLab(vm)
+        useRandomHidden(vm)
         startSearch()
         composeTestRule.waitUntil(5_000) {
             vm.state.value.searchState == SearchState.Running ||
@@ -341,6 +351,7 @@ class LabComposeTest {
                 ),
             )
         setLab(vm)
+        useRandomHidden(vm)
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.LimitReached }
         val outcomeLimit = activity.getString(R.string.lab_outcome_limit)
