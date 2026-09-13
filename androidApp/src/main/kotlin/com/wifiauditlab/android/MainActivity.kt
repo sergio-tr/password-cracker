@@ -27,7 +27,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
 import com.wifiauditlab.android.ui.lab.LabScreen
+import com.wifiauditlab.android.ui.lab.labNetworkContextFromNearby
 import com.wifiauditlab.android.ui.nearby.NearbyScreen
 import com.wifiauditlab.android.ui.onboarding.OnboardingScreen
 import com.wifiauditlab.android.ui.permissions.PermissionCenterScreen
@@ -66,6 +68,8 @@ private object Routes {
 @Composable
 private fun AppRoot() {
     val onboardingPreferences: OnboardingPreferences = koinInject()
+    val analysisTarget: SecurityAnalysisTargetStore = koinInject()
+    val labContext: LabNetworkContextStore = koinInject()
     var showOnboarding by remember { mutableStateOf(!onboardingPreferences.isCompleted()) }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -92,6 +96,9 @@ private fun AppRoot() {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
+                                if (destination == Destination.Lab) {
+                                    labContext.clear()
+                                }
                                 navController.navigate(destination.route) {
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
@@ -106,7 +113,6 @@ private fun AppRoot() {
             }
         },
     ) { innerPadding ->
-        val analysisTarget: SecurityAnalysisTargetStore = koinInject()
         NavHost(
             navController = navController,
             startDestination = Destination.Nearby.route,
@@ -123,6 +129,14 @@ private fun AppRoot() {
                             ),
                         )
                         navController.navigate(Routes.SECURITY_ANALYSIS)
+                    },
+                    onOpenLab = { item, assessmentSummary ->
+                        labContext.set(labNetworkContextFromNearby(item, assessmentSummary))
+                        navController.navigate(Destination.Lab.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     },
                 )
             }

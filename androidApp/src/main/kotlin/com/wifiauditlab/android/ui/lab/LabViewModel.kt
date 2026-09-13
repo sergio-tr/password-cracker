@@ -67,6 +67,7 @@ data class LabConfig(
 
 data class LabUiState(
     val config: LabConfig = LabConfig(),
+    val networkContext: LabNetworkContext? = null,
     val searchState: SearchState = SearchState.Idle,
     val estimatedCombinations: CombinationCount = CombinationCount.ZERO,
     val feasibility: SearchFeasibility? = null,
@@ -88,6 +89,7 @@ class LabViewModel(
     private val estimator: SearchPerformanceEstimator,
     private val searchDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val calibration: SearchCalibrationService? = null,
+    private val networkContextStore: LabNetworkContextStore? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(LabUiState())
     val state = _state.asStateFlow()
@@ -96,6 +98,7 @@ class LabViewModel(
     private var cancellation: CancellationController? = null
 
     init {
+        refreshNetworkContext()
         recomputePreview(_state.value.config)
         val service = calibration
         if (service != null) {
@@ -110,6 +113,11 @@ class LabViewModel(
                 recomputePreview(_state.value.config)
             }
         }
+    }
+
+    /** Re-read the process-scoped store when Lab becomes visible (tab restore). */
+    fun refreshNetworkContext() {
+        _state.update { it.copy(networkContext = networkContextStore?.current) }
     }
 
     fun updateConfig(config: LabConfig) {

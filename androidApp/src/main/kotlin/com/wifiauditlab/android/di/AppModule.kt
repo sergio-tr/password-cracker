@@ -8,6 +8,7 @@ import com.wifiauditlab.android.platform.KeystoreSecretVault
 import com.wifiauditlab.android.platform.SharedPreferencesBenchmarkRepository
 import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
+import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
 import com.wifiauditlab.android.ui.lab.LabViewModel
 import com.wifiauditlab.android.ui.nearby.NearbyViewModel
 import com.wifiauditlab.android.ui.onboarding.OnboardingViewModel
@@ -81,6 +82,7 @@ val appModule =
         single<SecretVault> { KeystoreSecretVault(androidContext()) }
         single<OnboardingPreferences> { SharedPreferencesOnboardingPreferences(androidContext()) }
         single { SecurityAnalysisTargetStore() }
+        single { LabNetworkContextStore() }
         single<SqlDriver> { AndroidSqliteDriver(VaultDatabase.Schema, androidContext(), "vault.db") }
         single { VaultDatabase(get()) }
         single<SavedNetworkRepository> {
@@ -147,7 +149,7 @@ val appModule =
         viewModel {
             VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
         }
-        viewModel { LabViewModel(get(), get(), get(), get(), calibration = get()) }
+        viewModel { LabViewModel(get(), get(), get(), get(), calibration = get(), networkContextStore = get()) }
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
         viewModel { SettingsCalibrationViewModel(get(), get()) }

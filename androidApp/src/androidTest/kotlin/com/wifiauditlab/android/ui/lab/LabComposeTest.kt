@@ -10,6 +10,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wifiauditlab.android.support.observation
+import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
@@ -96,6 +98,7 @@ class LabComposeTest {
                 ) = SearchFeasibility(FeasibilityRating.Reasonable, 1.seconds, "ok")
             },
         estimator: SearchPerformanceEstimator = FixedThroughputEstimator(),
+        networkContextStore: LabNetworkContextStore? = null,
     ) = LabViewModel(
         engine,
         optimizer,
@@ -103,6 +106,7 @@ class LabComposeTest {
         estimator,
         // Keep search collection on Main so Compose UI tests observe emissions deterministically.
         searchDispatcher = Dispatchers.Main.immediate,
+        networkContextStore = networkContextStore,
     )
 
     private fun setLab(vm: LabViewModel) {
@@ -246,5 +250,29 @@ class LabComposeTest {
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.LimitReached }
         waitForText("LÍMITE ALCANZADO")
         scrollToText("LÍMITE ALCANZADO")
+    }
+
+    @Test
+    fun networkContextBanner_showsSimulationLocalDisclaimer() {
+        val store = LabNetworkContextStore()
+        store.set(
+            labNetworkContextFromNearby(
+                NearbyItem(
+                    observation = observation(ssid = "MOVISTAR_XXXX"),
+                    alias = "Casa",
+                    savedNetworkId = null,
+                    isKnown = true,
+                    ambiguous = false,
+                ),
+                assessmentSummary = null,
+            ),
+        )
+        setLab(viewModel(ScriptedEngine(emptyList()), networkContextStore = store))
+        waitForText("Simulación local")
+        composeTestRule.onNodeWithContentDescription("Contexto de red del laboratorio").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Casa").assertIsDisplayed()
+        composeTestRule.onNodeWithText("MOVISTAR_XXXX").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Simulación local").assertIsDisplayed()
+        waitForText("no realiza intentos de conexión")
     }
 }

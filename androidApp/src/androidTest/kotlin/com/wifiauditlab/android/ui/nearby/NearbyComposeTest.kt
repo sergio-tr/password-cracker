@@ -35,11 +35,16 @@ class NearbyComposeTest {
         scanner: FakeWifiScanner,
         repo: FakeSavedNetworkRepository = FakeSavedNetworkRepository(),
         onOpenSecurityAnalysis: (NearbyItem) -> Unit = {},
+        onOpenLab: (NearbyItem, String?) -> Unit = { _, _ -> },
     ): NearbyViewModel {
         val vm = nearbyViewModel(scanner, repo)
         composeTestRule.setContent {
             WifiAuditLabTheme {
-                NearbyScreen(viewModel = vm, onOpenSecurityAnalysis = onOpenSecurityAnalysis)
+                NearbyScreen(
+                    viewModel = vm,
+                    onOpenSecurityAnalysis = onOpenSecurityAnalysis,
+                    onOpenLab = onOpenLab,
+                )
             }
         }
         composeTestRule.waitForIdle()
@@ -148,8 +153,10 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))))
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        waitForText("Ver análisis de seguridad")
-        composeTestRule.onNodeWithText("Ver análisis de seguridad").performScrollTo().assertIsDisplayed()
+        waitForText("Probar en laboratorio")
+        composeTestRule.onNodeWithText("Probar en laboratorio").performScrollTo().assertIsDisplayed()
+        waitForText("Analizar seguridad")
+        composeTestRule.onNodeWithText("Analizar seguridad").performScrollTo().assertIsDisplayed()
         waitForText("Guardar en el Vault")
         composeTestRule.onNodeWithText("Guardar en el Vault").performScrollTo().assertIsDisplayed()
     }
@@ -161,9 +168,9 @@ class NearbyComposeTest {
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
         waitForText("Alias")
-        composeTestRule.onNodeWithText("Alias").performTextClearance()
+        composeTestRule.onNodeWithText("Alias").performScrollTo().performTextClearance()
         composeTestRule.onNodeWithText("Alias").performTextInput("Lab-Casa")
-        composeTestRule.onNodeWithText("Guardar en el Vault").performClick()
+        composeTestRule.onNodeWithText("Guardar en el Vault").performScrollTo().performClick()
         composeTestRule.waitUntil(5_000) { repo.networks.value.isNotEmpty() }
         assertEquals("Lab-Casa", repo.networks.value.single().alias)
         waitForText("Guardada en el Vault.")
@@ -178,8 +185,23 @@ class NearbyComposeTest {
         )
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        waitForText("Ver análisis de seguridad")
-        composeTestRule.onNodeWithText("Ver análisis de seguridad").performClick()
+        waitForText("Analizar seguridad")
+        composeTestRule.onNodeWithText("Analizar seguridad").performClick()
+        composeTestRule.waitUntil(5_000) { opened != null }
+        assertTrue(opened!!.observation.ssid.value == "Home")
+    }
+
+    @Test
+    fun openLabCallback_isFlagged() {
+        var opened: NearbyItem? = null
+        setNearby(
+            FakeWifiScanner(WifiScanState.Results(listOf(observation()))),
+            onOpenLab = { item, _ -> opened = item },
+        )
+        waitForText("Home")
+        composeTestRule.onNodeWithText("Home").performClick()
+        waitForText("Probar en laboratorio")
+        composeTestRule.onNodeWithText("Probar en laboratorio").performClick()
         composeTestRule.waitUntil(5_000) { opened != null }
         assertTrue(opened!!.observation.ssid.value == "Home")
     }
