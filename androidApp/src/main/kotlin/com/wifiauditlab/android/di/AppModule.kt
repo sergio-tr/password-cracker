@@ -8,6 +8,8 @@ import com.wifiauditlab.android.platform.KeystoreSecretVault
 import com.wifiauditlab.android.platform.SharedPreferencesBenchmarkRepository
 import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
+import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
+import com.wifiauditlab.android.ui.audit.PasswordAuditViewModel
 import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
 import com.wifiauditlab.android.ui.lab.LabViewModel
 import com.wifiauditlab.android.ui.nearby.NearbyViewModel
@@ -45,7 +47,9 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
 import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.classifier.WifiSecurityClassifier
 import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
@@ -59,6 +63,8 @@ import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanner
 import com.wifiauditlab.lab.domain.BenchmarkRepository
 import com.wifiauditlab.lab.domain.CalibrationRepository
+import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.engine.CalibrationEnvironmentProvider
 import com.wifiauditlab.lab.domain.engine.LabBenchmarkService
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
@@ -103,6 +109,9 @@ val appModule =
         single<OnboardingPreferences> { SharedPreferencesOnboardingPreferences(androidContext()) }
         single { SecurityAnalysisTargetStore() }
         single { LabNetworkContextStore() }
+        single { PasswordAuditTargetStore() }
+        single<AutomaticPasswordAuditPlanner> { DefaultAutomaticPasswordAuditPlanner() }
+        single<SecretStrengthAnalyzer> { HeuristicSecretStrengthAnalyzer() }
         single<SqlDriver> { AndroidSqliteDriver(VaultDatabase.Schema, androidContext(), "vault.db") }
         single { VaultDatabase(get()) }
         single<SavedNetworkRepository> {
@@ -172,6 +181,16 @@ val appModule =
         viewModel { LabViewModel(get(), get(), get(), get(), calibration = get(), networkContextStore = get()) }
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
+        viewModel {
+            PasswordAuditViewModel(
+                targetStore = get(),
+                planner = get(),
+                getSavedNetwork = get(),
+                revealSecret = get(),
+                calibration = get(),
+                strengthAnalyzer = get(),
+            )
+        }
         viewModel { SettingsCalibrationViewModel(get(), get()) }
         viewModel { SettingsBenchmarkViewModel(get()) }
         viewModel {
