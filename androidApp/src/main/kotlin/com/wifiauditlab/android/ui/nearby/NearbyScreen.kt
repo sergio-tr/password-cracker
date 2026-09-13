@@ -44,11 +44,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.security.SecurityRating
@@ -345,6 +347,7 @@ private fun PasswordAuditSection(
     onOpenWifiSettings: () -> Unit,
     onRequestPermissions: () -> Unit,
 ) {
+    val auditCta = stringResource(R.string.audit_cta_nearby)
     when (eligibility) {
         null -> Text("Comprobando elegibilidad de auditoría…")
         is PasswordAuditEligibility.EligibleConnectedNetwork -> {
@@ -354,11 +357,11 @@ private fun PasswordAuditSection(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "Auditar contraseña" },
+                        .semantics { contentDescription = auditCta },
             ) {
                 Icon(Icons.Filled.WifiLock, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.size(8.dp))
-                Text("Auditar contraseña")
+                Text(auditCta)
             }
         }
         PasswordAuditEligibility.NotCurrentlyConnected -> {

@@ -121,4 +121,5 @@ intentos). No puede recibir contraseña, longitud real, ni salida de
 - `AutomaticPlanExplanation` para UI Quick Audit (sin class names / bucket IDs).
 
 Presets de dominio: Quick / Standard / Deep / Custom. UI Quick Audit =
-`PasswordAuditScreen` (PR4); ejecución del motor = PR siguiente.
+`PasswordAuditScreen` con ejecución local, STOP e informe combinado
+(walkthrough: `docs/13-known-password-audit-walkthrough.md`).

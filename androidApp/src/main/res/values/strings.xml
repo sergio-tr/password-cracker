@@ -1,3 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wi-Fi Audit Lab</string>
+
+    <!-- Password audit (Quick Audit) -->
+    <string name="audit_title">Auditoría rápida</string>
+    <string name="audit_back">Atrás</string>
+    <string name="audit_start">INICIAR AUDITORÍA</string>
+    <string name="audit_stop">DETENER</string>
+    <string name="audit_stopping">Deteniendo…</string>
+    <string name="audit_connected_network">Red conectada</string>
+    <string name="audit_local_only_banner">La búsqueda es solo local: no se autentica contra el router.</string>
+    <string name="audit_local_only_running">Verificación local — no se autentica contra el router.</string>
+    <string name="audit_password_section">Contraseña conocida</string>
+    <string name="audit_password_help">Introduce la contraseña de esta red o recupérala del Vault. No se usa para priorizar la búsqueda automática.</string>
+    <string name="audit_password_label">Contraseña</string>
+    <string name="audit_password_from_vault">Recuperada del Vault (solo en memoria)</string>
+    <string name="audit_use_vault">Usar del Vault</string>
+    <string name="audit_show">Mostrar</string>
+    <string name="audit_hide">Ocultar</string>
+    <string name="audit_clear">Borrar</string>
+    <string name="audit_budget">Presupuesto</string>
+    <string name="audit_preset_quick">Rápida</string>
+    <string name="audit_preset_standard">Estándar</string>
+    <string name="audit_preset_deep">Profunda</string>
+    <string name="audit_preset_custom">Personalizada</string>
+    <string name="audit_advanced_show">Opciones avanzadas</string>
+    <string name="audit_advanced_hide">Ocultar opciones avanzadas</string>
+    <string name="audit_plan_title">Plan automático</string>
+    <string name="audit_plan_loading">Calculando plan…</string>
+    <string name="audit_missing_target">No hay una red seleccionada para auditar.</string>
+    <string name="audit_report_title">Informe</string>
+    <string name="audit_evidence_measured">Medido</string>
+    <string name="audit_evidence_estimated">Estimado</string>
+    <string name="audit_evidence_modelled">Modelado</string>
+    <string name="audit_cta_nearby">Auditar contraseña</string>
 </resources>
