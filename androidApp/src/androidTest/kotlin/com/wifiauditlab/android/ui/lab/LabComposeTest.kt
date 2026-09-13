@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.observation
@@ -150,13 +151,21 @@ class LabComposeTest {
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_title)).assertIsDisplayed()
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
+            .performScrollTo()
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_guided_experiment)).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_guided_experiment))
+            .performScrollTo()
+            .assertIsDisplayed()
         // Technical knobs stay collapsed until the user opens advanced options.
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_advanced_options))
+            .performScrollTo()
             .performClick()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_challenge)).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_challenge))
+            .performScrollTo()
+            .assertIsDisplayed()
         val beforeStart = activity.getString(R.string.lab_before_start)
         waitForText(beforeStart)
         scrollToText(beforeStart)
@@ -179,6 +188,7 @@ class LabComposeTest {
         setLab(viewModel(ScriptedEngine(emptyList())))
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
+            .performScrollTo()
             .assertIsDisplayed()
         assertTrue(
             composeTestRule
@@ -304,6 +314,40 @@ class LabComposeTest {
         val outcomeLimit = activity.getString(R.string.lab_outcome_limit)
         waitForText(outcomeLimit)
         scrollToText(outcomeLimit)
+    }
+
+    @Test
+    fun prototypeMode_showsLocalOnlyBannerAndStartsSearch() {
+        val vm = viewModel(HangingEngine(metrics))
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_mode_prototype))
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+        val localOnly = activity.getString(R.string.lab_prototype_local_only)
+        waitForText(localOnly)
+        composeTestRule.onNodeWithText(localOnly).performScrollTo().assertIsDisplayed()
+
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextClearance()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("TestSSID")
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_password))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        composeTestRule.waitForIdle()
+
+        startSearch()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.searchState == SearchState.Running ||
+                vm.state.value.searchState == SearchState.Preparing
+        }
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_stop_search))
+            .assertIsDisplayed()
     }
 
     @Test

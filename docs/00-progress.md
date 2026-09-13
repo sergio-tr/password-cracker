@@ -60,7 +60,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | --- | --- |
 | Localización ES/EN (runtime) | **Partial** (FIX-01 en curso): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings migrados a `values`/`values-en`. No marcar Implemented hasta CI+flujo manual (FIX-05). |
 | Navegación Material (child screens) | **Partial** (FIX-02 en curso): ArrowBack en Audit/Security/Permission Center; CD `navigate_back` unificado; iconografía CTAs. Pendiente pase manual (FIX-05). |
-| Prototipo local de red (Lab) | **Partial / ausente en UI**: motor local sí; no hay perfil red + auth + password custom en Lab. FIX-03/04. |
+| Prototipo local de red (Lab) | **Partial (FIX-03)**: UI prototipo local (SSID, PSK, password custom, banner local-only) + motor `withEncapsulatedVerifier`. Pendiente FIX-04/05 manual. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |
