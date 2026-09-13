@@ -150,6 +150,7 @@ class NearbyComposeTest {
         composeTestRule.onNodeWithText("Home").performClick()
         waitForText("Ver análisis de seguridad")
         composeTestRule.onNodeWithText("Ver análisis de seguridad").performScrollTo().assertIsDisplayed()
+        waitForText("Guardar en el Vault")
         composeTestRule.onNodeWithText("Guardar en el Vault").performScrollTo().assertIsDisplayed()
     }
 

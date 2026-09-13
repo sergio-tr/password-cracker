@@ -42,8 +42,8 @@ Sin emulador / `androidTest`.
 | Search plan strategies (5) | Implemented | **Implemented** | Coverage + scorer tests | Strategy chips | — | **Keep** |
 | Lab execution UX (preview/STOP/result card) | Implemented (integrated) | **Implemented** on **same** Lab screen (`ResultCard`) | `LabViewModelTest` | Yes | Separate “Lab Result” route Deferred | **Keep integrated result**; optional own screen stays Deferred (FASE deferred, not contradiction) |
 | Feasibility analyzer | Implemented | **Implemented** | Plan/feasibility tests | Estimates card | — | **Keep** |
-| Calibration service | Implemented / Partial | **Implemented** run + refine | `SearchCalibrationServiceTest` | Auto on Lab VM init | **`InMemoryCalibrationStore` only** — lost on process death | **Document Partial**; durable store = FASE 22 |
-| Calibration persistence | RC: in-memory | **Partial** — memory only | In-memory store tested | No Settings UI | Not durable | **FASE 22** |
+| Calibration service | Implemented | **Implemented** run + refine + invalidation | `SearchCalibrationServiceTest` | Auto on Lab VM init + Settings | — | **Keep** |
+| Calibration persistence | Implemented (FASE 22) | **Implemented** `SharedPreferencesCalibrationRepository` | JVM + androidTest | Settings: last / throughput / Recalibrate | No PII stored | **Keep** |
 | Benchmark module / dashboard | Partial / Deferred | **Missing** | None | None | No dedicated module | **FASE 23** |
 | ViewModel unit tests | `00-progress` yes; `10-testing` was “pending” | **Implemented** Nearby/Vault/Lab | 3 files under `androidApp/src/test` | N/A | Doc contradiction | **Docs reconciled** in this audit lineage |
 | Compose UI tests | Implemented (FASE 20+21) | **Implemented** + **CI emulator** | androidTest | N/A | Wi‑Fi físico manual | **Keep**; nightly API extra opcional |
@@ -73,8 +73,8 @@ Sin emulador / `androidTest`.
 
 ### 3. Calibration: “exists” vs “memory only”
 
-- **Reality:** calibration **runs** and refines throughput; store is `InMemoryCalibrationStore`.
-- **Resolution:** capability split — **Calibration run = Implemented**; **Persistent calibration = Partial** (FASE 22).
+- **Reality (FASE 22):** `CalibrationRepository` + `SharedPreferencesCalibrationRepository`; invalidation by engine/strategy/workers/ABI/appVersion/age; Settings UI.
+- **Resolution:** **Calibration run + persistence = Implemented**.
 
 ### 4. Lab result: integrated vs pending dedicated screen
 
