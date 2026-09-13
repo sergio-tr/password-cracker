@@ -17,6 +17,7 @@ import com.wifiauditlab.lab.domain.engine.SearchFeasibility
 import com.wifiauditlab.lab.domain.engine.SearchFeasibilityAnalyzer
 import com.wifiauditlab.lab.domain.engine.SearchPerformanceEstimator
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
+import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import com.wifiauditlab.lab.engine.DefaultSearchPlanOptimizer
 import com.wifiauditlab.lab.engine.FixedThroughputEstimator
 import com.wifiauditlab.lab.engine.LengthPrioritizedStrategy
@@ -59,6 +60,23 @@ class LabViewModelTest {
             limits: SearchLimits,
             cancellation: CancellationSignal,
         ): Flow<LabSearchEvent> = flow { events.forEach { emit(it) } }
+    }
+
+    private class CapturingEngine(
+        private val delegate: LabSearchEngine = ScriptedEngine(emptyList()),
+    ) : LabSearchEngine {
+        var lastChallenge: LabChallenge? = null
+            private set
+
+        override fun run(
+            challenge: LabChallenge,
+            plan: LabSearchPlan,
+            limits: SearchLimits,
+            cancellation: CancellationSignal,
+        ): Flow<LabSearchEvent> {
+            lastChallenge = challenge
+            return delegate.run(challenge, plan, limits, cancellation)
+        }
     }
 
     private class RecordingCancelEngine(
@@ -201,5 +219,86 @@ class LabViewModelTest {
             advanceUntilIdle()
             assertEquals(SearchOutcome.Failed, vm.state.value.outcome)
             assertEquals("boom", vm.state.value.errorMessage)
+        }
+
+    @Test
+    fun prototypeMode_findsShortDigitPasswordLocally() =
+        runTest(dispatcher) {
+            val vm = viewModel(DefaultLabSearchEngine())
+            advanceUntilIdle()
+            vm.setSecretMode(LabSecretMode.LocalPrototype)
+            vm.updatePrototype(LocalNetworkPrototype(ssidLabel = "LabNet"))
+            vm.onTargetPasswordChanged("1234")
+            vm.updateConfig(
+                vm.state.value.config.copy(
+                    alphabet = AlphabetChoice.DIGITS,
+                    secretLength = 4,
+                    maxAttempts = 1_000_000,
+                    maxDurationSeconds = 60,
+                    workers = 1,
+                    seed = 1,
+                ),
+            )
+            advanceUntilIdle()
+            assertNull(vm.state.value.configErrorRes)
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(SearchOutcome.Found, vm.state.value.outcome)
+            assertEquals("1234", vm.state.value.foundCandidate)
+            assertEquals("", vm.state.value.targetPassword)
+        }
+
+    @Test
+    fun prototypeMode_blocksStartWhenPasswordEmpty() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.setSecretMode(LabSecretMode.LocalPrototype)
+            vm.updatePrototype(LocalNetworkPrototype(ssidLabel = "LabNet"))
+            advanceUntilIdle()
+            assertEquals(com.wifiauditlab.android.R.string.lab_err_password_required, vm.state.value.configErrorRes)
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(SearchState.Idle, vm.state.value.searchState)
+        }
+
+    @Test
+    fun prototypeMode_blocksStartWhenPasswordOutsideAlphabet() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.setSecretMode(LabSecretMode.LocalPrototype)
+            vm.updatePrototype(LocalNetworkPrototype(ssidLabel = "LabNet"))
+            vm.onTargetPasswordChanged("12ab")
+            vm.updateConfig(vm.state.value.config.copy(alphabet = AlphabetChoice.DIGITS))
+            advanceUntilIdle()
+            assertEquals(com.wifiauditlab.android.R.string.lab_err_password_alphabet, vm.state.value.configErrorRes)
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(SearchState.Idle, vm.state.value.searchState)
+        }
+
+    @Test
+    fun randomMode_usesHiddenSecretChallenge() =
+        runTest(dispatcher) {
+            val engine = CapturingEngine()
+            val vm = viewModel(engine)
+            advanceUntilIdle()
+            vm.setSecretMode(LabSecretMode.RandomHidden)
+            vm.updateConfig(
+                vm.state.value.config.copy(
+                    alphabet = AlphabetChoice.DIGITS,
+                    secretLength = 4,
+                    maxAttempts = 500_000,
+                    maxDurationSeconds = 30,
+                    seed = 1,
+                ),
+            )
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+            val challenge = engine.lastChallenge
+            assertNotNull(challenge)
+            assertTrue(challenge.toString().contains("verifier=internal"))
         }
 }

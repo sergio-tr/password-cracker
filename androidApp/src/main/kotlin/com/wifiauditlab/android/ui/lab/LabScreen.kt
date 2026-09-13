@@ -15,11 +15,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.security.familyLabelRes
+import com.wifiauditlab.assessment.domain.wifi.WifiBand
+import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
@@ -86,10 +91,20 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
         ) {
             Spacer(Modifier.height(4.dp))
             state.networkContext?.let { NetworkContextBanner(it) }
+            if (state.secretMode == LabSecretMode.LocalPrototype) {
+                LocalPrototypeBanner(state.prototype)
+            }
             state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
             if (running) {
                 ExecutionStatusCard(state = state)
             } else {
+                SecretModeCard(
+                    state = state,
+                    onSecretModeChange = viewModel::setSecretMode,
+                    onPrototypeChange = viewModel::updatePrototype,
+                    onPasswordChange = viewModel::onTargetPasswordChanged,
+                    onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                )
                 GuidedModeCard(
                     state = state,
                     onExpandAdvanced = { viewModel.setAdvancedExpanded(true) },
@@ -107,6 +122,189 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
         }
     }
 }
+
+@Composable
+private fun LocalPrototypeBanner(prototype: LocalNetworkPrototype) {
+    val localOnlyCd = stringResource(R.string.lab_cd_local_only_banner)
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = localOnlyCd },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.lab_prototype_local_only), fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.lab_prototype_local_only_body))
+            if (prototype.ssidLabel.isNotBlank()) {
+                Text(prototype.ssidLabel, fontWeight = FontWeight.SemiBold)
+            }
+            Text(stringResource(familyLabelRes(prototype.securityFamily)))
+            val meta =
+                listOfNotNull(
+                    prototype.wifiStandard?.let { standardLabel(it) },
+                    prototype.band?.let { stringResource(bandDisplayLabelRes(it)) },
+                ).joinToString(" · ").ifEmpty { null }
+            meta?.let { Text(it) }
+        }
+    }
+}
+
+@Composable
+private fun SecretModeCard(
+    state: LabUiState,
+    onSecretModeChange: (LabSecretMode) -> Unit,
+    onPrototypeChange: (LocalNetworkPrototype) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+) {
+    val secretModeCd = stringResource(R.string.lab_cd_secret_mode)
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = secretModeCd },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.lab_secret_mode_heading), fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = state.secretMode == LabSecretMode.RandomHidden,
+                    onClick = { onSecretModeChange(LabSecretMode.RandomHidden) },
+                    label = { Text(stringResource(R.string.lab_mode_random)) },
+                )
+                FilterChip(
+                    selected = state.secretMode == LabSecretMode.LocalPrototype,
+                    onClick = { onSecretModeChange(LabSecretMode.LocalPrototype) },
+                    label = { Text(stringResource(R.string.lab_mode_prototype)) },
+                )
+            }
+            if (state.secretMode == LabSecretMode.LocalPrototype) {
+                PrototypeForm(
+                    prototype = state.prototype,
+                    password = state.targetPassword,
+                    passwordVisible = state.passwordVisible,
+                    configErrorRes = state.configErrorRes,
+                    onPrototypeChange = onPrototypeChange,
+                    onPasswordChange = onPasswordChange,
+                    onTogglePasswordVisibility = onTogglePasswordVisibility,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrototypeForm(
+    prototype: LocalNetworkPrototype,
+    password: String,
+    passwordVisible: Boolean,
+    configErrorRes: Int?,
+    onPrototypeChange: (LocalNetworkPrototype) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+) {
+    OutlinedTextField(
+        value = prototype.ssidLabel,
+        onValueChange = { onPrototypeChange(prototype.copy(ssidLabel = it)) },
+        label = { Text(stringResource(R.string.lab_prototype_ssid)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Text(stringResource(R.string.lab_prototype_security), fontWeight = FontWeight.Medium)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
+        LAB_PERSONAL_PSK_FAMILIES.forEach { family ->
+            FilterChip(
+                selected = prototype.securityFamily == family,
+                onClick = { onPrototypeChange(prototype.copy(securityFamily = family)) },
+                label = { Text(stringResource(familyLabelRes(family))) },
+            )
+        }
+    }
+    Text(stringResource(R.string.lab_prototype_standard), fontWeight = FontWeight.Medium)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
+        FilterChip(
+            selected = prototype.wifiStandard == null,
+            onClick = { onPrototypeChange(prototype.copy(wifiStandard = null)) },
+            label = { Text(stringResource(R.string.lab_prototype_optional_none)) },
+        )
+        LAB_OPTIONAL_WIFI_STANDARDS.forEach { standard ->
+            FilterChip(
+                selected = prototype.wifiStandard == standard,
+                onClick = { onPrototypeChange(prototype.copy(wifiStandard = standard)) },
+                label = { Text(standardLabel(standard)) },
+            )
+        }
+    }
+    Text(stringResource(R.string.lab_prototype_band), fontWeight = FontWeight.Medium)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
+        FilterChip(
+            selected = prototype.band == null,
+            onClick = { onPrototypeChange(prototype.copy(band = null)) },
+            label = { Text(stringResource(R.string.lab_prototype_optional_none)) },
+        )
+        LAB_OPTIONAL_WIFI_BANDS.forEach { band ->
+            FilterChip(
+                selected = prototype.band == band,
+                onClick = { onPrototypeChange(prototype.copy(band = band)) },
+                label = { Text(stringResource(bandDisplayLabelRes(band))) },
+            )
+        }
+    }
+    OutlinedTextField(
+        value = password,
+        onValueChange = onPasswordChange,
+        label = { Text(stringResource(R.string.lab_prototype_password)) },
+        singleLine = true,
+        visualTransformation =
+            if (passwordVisible) {
+                androidx.compose.ui.text.input.VisualTransformation.None
+            } else {
+                androidx.compose.ui.text.input.PasswordVisualTransformation()
+            },
+        trailingIcon = {
+            IconButton(onClick = onTogglePasswordVisibility) {
+                Icon(
+                    imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription =
+                        stringResource(
+                            if (passwordVisible) {
+                                R.string.lab_prototype_hide_password
+                            } else {
+                                R.string.lab_prototype_show_password
+                            },
+                        ),
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+    configErrorRes?.let { Text(stringResource(it)) }
+}
+
+private val LAB_OPTIONAL_WIFI_STANDARDS =
+    listOf(
+        WifiStandard.WIFI_4,
+        WifiStandard.WIFI_5,
+        WifiStandard.WIFI_6,
+        WifiStandard.WIFI_6E,
+        WifiStandard.WIFI_7,
+    )
+
+private val LAB_OPTIONAL_WIFI_BANDS =
+    listOf(
+        WifiBand.GHZ_2_4,
+        WifiBand.GHZ_5,
+        WifiBand.GHZ_6,
+    )
 
 @Composable
 private fun NetworkContextBanner(context: LabNetworkContext) {
@@ -423,7 +621,7 @@ private fun EstimatesCard(state: LabUiState) {
                 stringResource(
                     R.string.lab_before_challenge,
                     stringResource(state.config.alphabet.labelRes),
-                    state.config.secretLength,
+                    state.effectiveSecretLength,
                 ),
             )
             Text(stringResource(R.string.lab_strategy, stringResource(state.config.strategy.labelRes)))

@@ -1,17 +1,20 @@
 # 07 · Security Lab
 
 El Search Engine funciona exclusivamente de forma local. Puede utilizarse con
-challenges sintéticos; y con contraseñas conocidas aportadas por el usuario para
-auditorías locales. Nunca envía candidatos a redes externas ni realiza
-autenticaciones contra access points (sin handshakes, PMKID, deauth ni envío al
-router).
+challenges sintéticos; con un **prototipo de red local** configurable en la UI
+del Lab; y con contraseñas conocidas aportadas por el usuario para auditorías
+locales. Nunca envía candidatos a redes externas ni realiza autenticaciones
+contra access points (sin handshakes, PMKID, deauth ni envío al router).
 
 Modos de verificación:
 
-- **Sintético** — `LabChallenge.withHiddenSecret` / `withKnownSecret` (tests,
-  benchmarks, laboratorio didáctico).
-- **Known-password audit** — `EncapsulatedPasswordVerifier` +
-  `LabChallenge.withEncapsulatedVerifier` (contraseña del usuario, solo en memoria).
+- **Sintético aleatorio** — `LabChallenge.withHiddenSecret` (secreto oculto
+  generado localmente; modo por defecto del Lab).
+- **Prototipo local** — perfil Wi-Fi sintético (SSID, familia PSK, banda/estándar
+  opcionales) + contraseña objetivo en memoria; verificación vía
+  `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`.
+- **Known-password audit** — mismo encapsulado en Password Audit (red real
+  conectada); `withKnownSecret` queda reservado a tests/benchmarks.
 
 La UI puede contextualizar el experimento con una red observada
 (`LabNetworkContext` en androidApp): muestra SSID/familia/banda y un banner de

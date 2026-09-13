@@ -47,14 +47,16 @@ La prueba manual del usuario (textos «Atrás» / acciones textuales confusas) s
 
 ### P4 — Lab sin prototipo local de red
 
-El Lab actual:
+**Partial (FIX-03):** el Lab permite crear un prototipo local configurable (`LabSecretMode.LocalPrototype`):
 
-* configura alfabeto, longitud, estrategia, límites, workers;
-* genera secreto **oculto aleatorio** (`withHiddenSecret`);
-* puede mostrar contexto **solo lectura** desde Nearby;
-* **no** permite: perfil de red editable, mecanismo de auth seleccionable, contraseña objetivo custom, ni `EncapsulatedPasswordVerifier` / `withKnownSecret` desde la UI del Lab.
+* SSID editable, familia PSK personal (WPA/WPA2/WPA3/WPA2+WPA3), banda/estándar opcionales;
+* contraseña objetivo en memoria (se borra al iniciar);
+* búsqueda local vía `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`;
+* banner «Búsqueda solo local» siempre visible en modo prototipo.
 
-La auditoría known-password vive en **Password Audit** (red real conectada), no como prototipo local en Laboratorio.
+Pendiente FIX-04 (flujo guiado novice) y FIX-05 (regresión manual + docs `Implemented`).
+
+El modo **Random hidden** sigue usando `withHiddenSecret`. La auditoría known-password contra red conectada permanece en **Password Audit**.
 
 ## Correcciones planificadas (prioridad bloqueante)
 
