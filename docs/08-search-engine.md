@@ -19,12 +19,20 @@ disjuntos (uno por longitud). Las estrategias (`UniformBaseline`,
 en el engine. Las dos estrategias ponderadas usan únicamente la distribución
 declarada en `LabSecretPolicy`, nunca datasets de credenciales reales.
 
+## Acceso indexado (V2)
+
+`IndexedCandidateSpace` / `OdometerIndexedCandidateSpace` permiten
+`candidateAt(index)` con codificación base-N sobre el mismo orden (y seed) que el
+odómetro. Los workers saltan a un rango `[startInclusive, endExclusive)` sin
+enumerar candidatos previos; dentro del rango se avanza como odómetro. El índice
+usa `CombinationCount` (espacios > 64 bits).
+
 ## Tamaño del espacio: `CombinationCount`
 
 El espacio puede superar 64 bits, así que no se usan `Int`, `Long` ni `Double`
 para contarlo. `CombinationCount` envuelve un entero de precisión arbitraria
-(`com.ionspin.kotlin:bignum`, ver ADR 0004) y soporta suma, multiplicación,
-potencia, comparación, porcentajes y formato:
+(`com.ionspin.kotlin:bignum`, ver ADR 0004) y soporta suma, resta, división,
+resto, multiplicación, potencia, comparación, porcentajes y formato:
 
 ```
 12,340        8.2 M        17.4 B        2.3 × 10^24
@@ -66,10 +74,30 @@ años como una operación normal.
 ## Paralelismo
 
 El baseline **determinista de un solo worker** (`DefaultLabSearchEngine`) sigue
-siendo la referencia de corrección. Sobre él existe un pool acotado
-(`WorkerPoolConfig`, `ParallelLabSearchEngine`, `WorkerAwareLabSearchEngine`)
-que parte cada bucket en rangos disjuntos: sin candidatos duplicados, sin
-contadores inventados y con la misma señal cooperativa de cancelación
-(ADR 0006). La UI permite elegir 1 / 2 / 4 workers; más workers no se asumen
-mejores. Un módulo de benchmarks formales (throughput/CPU/latencia de cancel)
-sigue **Partial** / pendiente de documentar evidencia numérica.
+siendo la referencia de corrección. Sobre él:
+
+| Versión | Mecanismo | Notas |
+| --- | --- | --- |
+| V1 | `ParallelLabSearchEngine` + partición estática + `drop` | Referencia; seleccionable vía `LabParallelEngineVersion.V1`. |
+| V2 (default multi-worker) | `IndexedParallelLabSearchEngine` + `DynamicRangeScheduler` | Rangos dinámicos, sin gaps/duplicados, cancelable; contadores exactos. |
+
+`WorkerAwareLabSearchEngine` elige baseline (1 worker) o V2 (≥2).
+`WorkerPoolConfig.recommendedWorkerCount` combina throughput de calibración +
+clamp a `availableProcessors` (override permitido).
+
+### Evidencia micro-benchmark (FASE 24)
+
+Carga sintética: exhaustivo sobre espacio decimal length=2 (100 candidatos),
+4 workers donde aplica. Los ms absolutos varían por máquina; la estructura sirve
+para comparar en CI local (`SearchEngineV2BenchmarkTest`).
+
+| engine | duration_ms (ejemplo local) | attempts |
+| --- | ---: | ---: |
+| sequential-baseline | 2 | 100 |
+| indexed-sequential | 1 | 100 |
+| parallel-v1 | 6 | 100 |
+| parallel-v2-indexed | 1 | 100 |
+
+En esta carga V2 no es peor que V1 (y evita el `drop` O(n)); por eso V2 es el
+default multi-worker. `IndexedSequentialLabSearchEngine` queda opcional para
+comparación; el baseline de corrección sigue siendo `DefaultLabSearchEngine`.

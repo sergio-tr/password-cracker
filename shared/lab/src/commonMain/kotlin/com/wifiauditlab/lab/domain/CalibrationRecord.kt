@@ -96,5 +96,6 @@ data class CalibrationEnvironment(
 )
 
 object LabEngineVersion {
-    const val CURRENT: String = "1"
+    /** Parallel indexed engine (FASE 24) is the multi-worker default. */
+    const val CURRENT: String = "2"
 }

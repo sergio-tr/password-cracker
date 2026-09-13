@@ -30,6 +30,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | UX de ejecución del lab | Preview, STOP, límites, resultado + métricas. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
+| Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
 | Resultado del Lab en UI | **Implemented** integrado en la pantalla Lab (`ResultCard`). Ruta propia = Deferred. |
 | Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes. |
 | Onboarding (primera ejecución) | 3 pantallas; Omitir/Continuar; persistido; replay desde Ajustes. |
@@ -56,7 +57,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | --- | --- |
 | Revelar secreto con biometría | Arquitectura lista (`RevealSavedNetworkSecret`). |
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
-| Search engine v2 (indexed/scheduler) | Tras baseline FASE 23 (`perf/lab-search-engine-v2`). |
 | Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |
 | Biometría Vault + hardening | FASE 26–27. |
 | Observabilidad local + evidence RC + release eng. | FASE 28–30. |

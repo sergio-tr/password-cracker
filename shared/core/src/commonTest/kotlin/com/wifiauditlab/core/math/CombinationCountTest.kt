@@ -81,6 +81,18 @@ class CombinationCountTest {
     }
 
     @Test
+    fun subtraction_division_and_remainder() {
+        assertEquals(CombinationCount.of(10), CombinationCount.of(42) - CombinationCount.of(32))
+        assertEquals(CombinationCount.of(43), CombinationCount.of(42) + 1L)
+        assertEquals(CombinationCount.of(12), CombinationCount.of(100) / 8)
+        assertEquals(CombinationCount.of(4), CombinationCount.of(100) % 8)
+        assertEquals(CombinationCount.of(5), CombinationCount.of(10).coerceAtMost(CombinationCount.of(5)))
+        val huge = CombinationCount.of("100000000000000000000")
+        assertEquals(CombinationCount.of("10000000000000000000"), huge / 10)
+        assertEquals(CombinationCount.ZERO, huge % 10)
+    }
+
+    @Test
     fun percentage_is_null_when_total_is_zero() {
         assertNull(CombinationCount.of(5).percentageOf(CombinationCount.ZERO))
     }
