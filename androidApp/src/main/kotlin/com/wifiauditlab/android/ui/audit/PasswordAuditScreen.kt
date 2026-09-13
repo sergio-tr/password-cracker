@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wifiauditlab.assessment.domain.audit.EvidenceQuality
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
@@ -129,7 +130,7 @@ fun PasswordAuditScreen(
                         ExecutionStatusCard(state)
                     }
                     if (state.outcome != null && !state.isActive) {
-                        BasicResultCard(state)
+                        AuditResultReportCard(state)
                     }
                     if (!state.isActive) {
                         PasswordSection(state, viewModel)
@@ -139,7 +140,9 @@ fun PasswordAuditScreen(
                         }
                     }
                     PlanSection(state)
-                    state.strength?.let { StrengthHint(it.summary) }
+                    if (state.resultReport == null) {
+                        state.strength?.let { StrengthHint(it.summary) }
+                    }
                 }
             }
         }
@@ -384,19 +387,44 @@ private fun ExecutionStatusCard(state: PasswordAuditUiState) {
 }
 
 @Composable
-private fun BasicResultCard(state: PasswordAuditUiState) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Resultado", fontWeight = FontWeight.Bold)
-            Text(resultHeadline(state))
-            state.metrics?.let { m ->
-                MetricRow("Intentos", m.attempts.toExactString())
-                MetricRow("Tiempo", formatElapsed(m.elapsed.inWholeSeconds))
+private fun AuditResultReportCard(state: PasswordAuditUiState) {
+    val report = state.resultReport
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Informe de auditoría" },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Informe", fontWeight = FontWeight.Bold)
+            if (report != null) {
+                Text(report.headline, fontWeight = FontWeight.SemiBold)
+                Text(report.resistanceLabel, color = MaterialTheme.colorScheme.secondary)
+                report.details.forEach { Text("· $it", style = MaterialTheme.typography.bodySmall) }
+                report.evidenceNotes.forEach { (quality, note) ->
+                    Text(
+                        "${evidenceLabel(quality)}: $note",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            } else {
+                Text(resultHeadline(state))
+                state.metrics?.let { m ->
+                    MetricRow("Intentos", m.attempts.toExactString())
+                    MetricRow("Tiempo", formatElapsed(m.elapsed.inWholeSeconds))
+                }
             }
             state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }
 }
+
+private fun evidenceLabel(quality: EvidenceQuality): String =
+    when (quality) {
+        EvidenceQuality.Measured -> "Medido"
+        EvidenceQuality.Estimated -> "Estimado"
+        EvidenceQuality.Modelled -> "Modelado"
+    }
 
 @Composable
 private fun MetricRow(

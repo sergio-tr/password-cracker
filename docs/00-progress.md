@@ -35,6 +35,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planner automático de auditoría | **Implemented** (PR3): `AutomaticPasswordAuditPlanner` multi-stage, ciego al target; presets Quick/Standard/Deep. |
 | Quick Audit UI | **Implemented** (PR4): pantalla Auditoría rápida; presets + explicación; Vault/manual. |
 | Ejecución auditoría + STOP | **Implemented** (PR5): Search Engine local + DETENER; verifier encapsulado; sin auth al AP. |
+| Informe resultado + strength | **Implemented** (PR6): `PasswordAuditResultComposer` + UI Medido/Estimado/Modelado. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |

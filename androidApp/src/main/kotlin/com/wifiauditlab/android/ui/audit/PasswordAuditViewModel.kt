@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultComposer
 import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.supportsSharedPasswordAudit
 import com.wifiauditlab.assessment.domain.audit.unsupportedAuditReason
@@ -226,6 +227,7 @@ class PasswordAuditViewModel(
                 outcome = null,
                 discoveredWithinBudget = false,
                 errorMessage = null,
+                resultReport = null,
             )
         }
 
@@ -263,35 +265,52 @@ class PasswordAuditViewModel(
                     metrics = event.metrics,
                     outcome = SearchOutcome.Found,
                     discoveredWithinBudget = true,
-                )
+                ).withResultReport(cancelled = false, failed = false)
             is LabSearchEvent.LimitReached ->
                 copy(
                     searchState = SearchState.LimitReached,
                     metrics = event.metrics,
                     outcome = SearchOutcome.LimitReached,
                     discoveredWithinBudget = false,
-                )
+                ).withResultReport(cancelled = false, failed = false)
             is LabSearchEvent.Cancelled ->
                 copy(
                     searchState = SearchState.Cancelled,
                     metrics = event.metrics,
                     outcome = SearchOutcome.Cancelled,
-                )
+                ).withResultReport(cancelled = true, failed = false)
             is LabSearchEvent.Completed ->
                 copy(
                     searchState = SearchState.Completed,
                     metrics = event.metrics,
                     outcome = SearchOutcome.NotFound,
                     discoveredWithinBudget = false,
-                )
+                ).withResultReport(cancelled = false, failed = false)
             is LabSearchEvent.Failed ->
                 copy(
                     searchState = SearchState.Failed,
                     metrics = event.metrics ?: metrics,
                     outcome = SearchOutcome.Failed,
                     errorMessage = event.message,
-                )
+                ).withResultReport(cancelled = false, failed = true)
         }
+
+    private fun PasswordAuditUiState.withResultReport(
+        cancelled: Boolean,
+        failed: Boolean,
+    ): PasswordAuditUiState =
+        copy(
+            resultReport =
+                PasswordAuditResultComposer.compose(
+                    discoveredWithinBudget = discoveredWithinBudget,
+                    cancelled = cancelled,
+                    failed = failed,
+                    structural = strength,
+                    measuredAttempts = metrics?.attempts,
+                    measuredDuration = metrics?.elapsed,
+                    budgetedAttemptCapacity = plan?.budgetedAttemptCapacity,
+                ),
+        )
 
     private fun rebuildPlan() {
         val req = request ?: return
