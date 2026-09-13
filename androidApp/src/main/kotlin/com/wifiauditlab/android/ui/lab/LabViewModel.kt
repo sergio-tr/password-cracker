@@ -66,7 +66,9 @@ data class LabConfig(
 }
 
 data class LabUiState(
-    val config: LabConfig = LabConfig(),
+    val config: LabConfig = GuidedLabDefaults.recommendedConfig(),
+    val mode: LabInteractionMode = LabInteractionMode.Guided,
+    val advancedExpanded: Boolean = false,
     val networkContext: LabNetworkContext? = null,
     val searchState: SearchState = SearchState.Idle,
     val estimatedCombinations: CombinationCount = CombinationCount.ZERO,
@@ -99,18 +101,22 @@ class LabViewModel(
 
     init {
         refreshNetworkContext()
-        recomputePreview(_state.value.config)
+        applyGuidedDefaults(calibratedAttemptsPerSecond = null)
         val service = calibration
         if (service != null) {
             viewModelScope.launch(searchDispatcher) {
-                val config = _state.value.config
+                val guided = GuidedLabDefaults.recommendedConfig()
                 val record =
                     service.calibrate(
-                        strategyId = config.strategy.id.value,
-                        workerCount = config.workers,
+                        strategyId = guided.strategy.id.value,
+                        workerCount = guided.workers,
                     )
                 estimator.refine(record.measuredAttemptsPerSecond)
-                recomputePreview(_state.value.config)
+                if (_state.value.mode == LabInteractionMode.Guided) {
+                    applyGuidedDefaults(calibratedAttemptsPerSecond = record.measuredAttemptsPerSecond)
+                } else {
+                    recomputePreview(_state.value.config)
+                }
             }
         }
     }
@@ -118,6 +124,33 @@ class LabViewModel(
     /** Re-read the process-scoped store when Lab becomes visible (tab restore). */
     fun refreshNetworkContext() {
         _state.update { it.copy(networkContext = networkContextStore?.current) }
+    }
+
+    fun setMode(mode: LabInteractionMode) {
+        _state.update {
+            it.copy(
+                mode = mode,
+                advancedExpanded = mode == LabInteractionMode.Advanced,
+            )
+        }
+        if (mode == LabInteractionMode.Guided) {
+            applyGuidedDefaults(calibratedAttemptsPerSecond = null)
+        }
+    }
+
+    fun setAdvancedExpanded(expanded: Boolean) {
+        _state.update { it.copy(advancedExpanded = expanded) }
+    }
+
+    fun resetToGuidedDefaults() {
+        setMode(LabInteractionMode.Guided)
+        applyGuidedDefaults(calibratedAttemptsPerSecond = null)
+    }
+
+    fun applyGuidedDefaults(calibratedAttemptsPerSecond: Double?) {
+        val config = GuidedLabDefaults.recommendedConfig(calibratedAttemptsPerSecond = calibratedAttemptsPerSecond)
+        _state.update { it.copy(config = config, mode = LabInteractionMode.Guided) }
+        recomputePreview(config)
     }
 
     fun updateConfig(config: LabConfig) {

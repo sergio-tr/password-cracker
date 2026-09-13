@@ -105,6 +105,16 @@ class LabViewModelTest {
     ) = LabViewModel(engine, optimizer, analyzer, estimator, dispatcher)
 
     @Test
+    fun guided_defaults_applied_on_init() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            assertEquals(LabInteractionMode.Guided, vm.state.value.mode)
+            assertEquals(StrategyChoice.LENGTH, vm.state.value.config.strategy)
+            assertNull(vm.state.value.configError)
+        }
+
+    @Test
     fun preview_shows_combinations_and_feasibility() =
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
