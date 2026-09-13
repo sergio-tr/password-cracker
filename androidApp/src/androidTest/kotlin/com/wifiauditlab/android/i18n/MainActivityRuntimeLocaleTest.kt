@@ -70,12 +70,55 @@ class MainActivityRuntimeLocaleTest {
         assertEquals(AppLanguage.SYSTEM, AppLanguagePreferences.current(appContext))
     }
 
+    @Test
+    fun englishLocale_persistsAfterActivityRecreate() {
+        applyLanguageAndWait(AppLanguage.ENGLISH)
+        assertProbeLabel(englishNearby())
+
+        recreateActivityAndWait()
+        assertProbeLabel(englishNearby())
+        assertEquals(AppLanguage.ENGLISH, AppLanguagePreferences.current(appContext))
+    }
+
+    @Test
+    fun spanishLocale_persistsAfterActivityRecreate() {
+        applyLanguageAndWait(AppLanguage.SPANISH)
+        assertProbeLabel(spanishNearby())
+
+        recreateActivityAndWait()
+        assertProbeLabel(spanishNearby())
+        assertEquals(AppLanguage.SPANISH, AppLanguagePreferences.current(appContext))
+    }
+
+    @Test
+    fun systemLocale_persistsAfterActivityRecreate() {
+        applyLanguageAndWait(AppLanguage.SYSTEM)
+        composeRule.waitUntil(timeoutMillis = 15_000) {
+            val label = activityNavLabel()
+            label == englishNearby() || label == spanishNearby()
+        }
+
+        recreateActivityAndWait()
+        assertEquals(AppLanguage.SYSTEM, AppLanguagePreferences.current(appContext))
+        composeRule.waitUntil(timeoutMillis = 15_000) {
+            val label = activityNavLabel()
+            label == englishNearby() || label == spanishNearby()
+        }
+    }
+
     private fun applyLanguageAndWait(language: AppLanguage) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             AppLanguagePreferences.apply(appContext, language)
         }
         composeRule.waitUntil(timeoutMillis = 15_000) {
             AppLanguagePreferences.current(appContext) == language
+        }
+        composeRule.waitForIdle()
+    }
+
+    private fun recreateActivityAndWait() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            composeRule.activity.recreate()
         }
         composeRule.waitForIdle()
     }

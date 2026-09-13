@@ -37,7 +37,9 @@ Artifacts (siempre / al fallar JVM): reports JUnit/HTML, logcat **sanitizado**
 | Clase | Tipo |
 | --- | --- |
 | `NearbyComposeTest` … `LabComposeTest` | Compose UI (fakes; sin Wi‑Fi físico) |
-| `ProductRegressionComposeTest` | Regresión FIX-01..04: i18n packs, ArrowBack Permisos, Lab guiado SSID |
+| `ProductRegressionComposeTest` | FIX-05 regresión producto: i18n packs, nav chrome, Lab guiado + prototipo OPEN/Enterprise/WPA2 STOP→editar |
+| `MainActivityRuntimeLocaleTest` | FIX-01A runtime locale ES/EN/SYSTEM + persistencia tras recreate |
+| `ComposeHardcodedStringGuardTest` (JVM) | FIX-05 static guard literales Compose user-facing |
 | `AppLanguagePreferencesInstrumentedTest` | Persistencia idioma + divergencia ES/EN |
 | `PasswordAuditComposeTest` | Quick Audit — STOP bottomBar, found, vault deferred, restore automático |
 | `AndroidSqlDelightRepositoryTest` | SQLDelight Android |
@@ -51,7 +53,8 @@ Sin dependencia de APs reales, Internet ni diálogos OEM.
 ## Localización (testing)
 
 - Post FIX-01: Compose tests usan `R.string.*` / `activity.getString(R.string.*)`.
-- `ProductRegressionComposeTest` + `AppLanguagePreferencesInstrumentedTest` verifican divergencia ES/EN (`nav_nearby`, `lab_title`).
+- `ProductRegressionComposeTest` + `AppLanguagePreferencesInstrumentedTest` + `MainActivityRuntimeLocaleTest` verifican divergencia ES/EN y persistencia runtime.
+- `ComposeHardcodedStringGuardTest` evita regresiones de literales hardcoded en pantallas Compose.
 - Mensajes dinámicos del `PasswordAuditViewModel` no tienen cobertura i18n completa.
 
 ## Cobertura JVM / KMP

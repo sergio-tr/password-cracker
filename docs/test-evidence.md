@@ -42,9 +42,11 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 
 | Campo | Valor |
 | --- | --- |
-| Suite Compose + instrumentación | 15 clases `androidTest` (incl. `ProductRegressionComposeTest`, `AppLanguagePreferencesInstrumentedTest`) |
+| Suite Compose + instrumentación | 16 clases `androidTest` + `ComposeHardcodedStringGuardTest` (JVM static guard) |
 | `PasswordAuditComposeTest` | STOP bottomBar, found + recommendations, vault deferred, advanced restore |
-| `ProductRegressionComposeTest` | Guided Lab SSID sin Avanzado; Permission Center `navigate_back`; packs ES/EN divergen |
+| `ProductRegressionComposeTest` | Nav top-level sin back / child con back; Lab guiado; WPA2 STOP→editar→repetir; OPEN/Enterprise sin PSK; packs ES/EN |
+| `MainActivityRuntimeLocaleTest` | ES/EN/SYSTEM + locale persiste tras `Activity.recreate()` |
+| `ComposeHardcodedStringGuardTest` | Static guard: no nuevos `Text("…")` / `contentDescription = "…"` user-facing en UI Compose |
 | Keystore / SQLDelight / Compose | PASS en emulador |
 | Calibración persistente | SharedPreferences + Settings (FASE 22) |
 

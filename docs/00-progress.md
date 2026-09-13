@@ -58,9 +58,9 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 
 | Área | Notas |
 | --- | --- |
-| Localización ES/EN (runtime) | **Partial** (FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings en `values`/`values-en`. **No** marcar Implemented hasta pase manual del usuario. |
-| Navegación Material (child screens) | **Partial** (FIX-02 merged [#45](https://github.com/sergio-tr/password-cracker/pull/45), CI green): ArrowBack en Audit/Security/Permission Center; CD `navigate_back` unificado; iconografía CTAs. Manual pendiente usuario. |
-| Prototipo local de red (Lab) | **Partial** (FIX-03A + FIX-03B + FIX-04): prototipo + evaluación + búsqueda PSK encapsulada + bucle guiado novice; FIX-05 (regresión producto honesta) pendiente. |
+| Localización ES/EN (runtime) | **Partial** (FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), FIX-05 CI green): `AppCompatActivity` + `localeConfig` + recreate; strings migrados; `MainActivityRuntimeLocaleTest` (ES/EN/SYSTEM + recreate), `ComposeHardcodedStringGuardTest`. **No** Implemented sin pase manual usuario. |
+| Navegación Material (child screens) | **Partial** (FIX-02 merged [#45](https://github.com/sergio-tr/password-cracker/pull/45), FIX-05 CI green): ArrowBack child screens / sin ArrowBack top-level verificado en `ProductRegressionComposeTest`. Manual pendiente usuario. |
+| Prototipo local de red (Lab) | **Partial** (FIX-03A + FIX-03B + FIX-04, FIX-05 CI green): prototipo + bucle guiado; regresión STOP→editar→repetir, OPEN/Enterprise sin PSK en `ProductRegressionComposeTest` + `LabComposeTest`. Manual pendiente usuario. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |
