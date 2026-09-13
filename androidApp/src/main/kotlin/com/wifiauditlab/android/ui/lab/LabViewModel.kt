@@ -61,6 +61,7 @@ enum class StrategyChoice(
 
 data class LabConfig(
     val alphabet: AlphabetChoice = AlphabetChoice.DIGITS,
+    val customAlphabet: Alphabet? = null,
     val strategy: StrategyChoice = StrategyChoice.LENGTH,
     val secretLength: Int = 4,
     val maxAttempts: Long? = 5_000_000,
@@ -68,6 +69,8 @@ data class LabConfig(
     val workers: Int = 1,
     val seed: Long? = 1,
 ) {
+    fun resolvedAlphabet(): Alphabet = customAlphabet ?: alphabet.alphabet
+
     fun activeLimitsDescription(): String =
         buildList {
             maxAttempts?.let { add("$it intentos") }
@@ -78,7 +81,7 @@ data class LabConfig(
 data class LabUiState(
     val config: LabConfig = GuidedLabDefaults.recommendedConfig(),
     val mode: LabInteractionMode = LabInteractionMode.Guided,
-    val secretMode: LabSecretMode = LabSecretMode.RandomHidden,
+    val secretMode: LabSecretMode = LabSecretMode.LocalPrototype,
     val prototype: LocalNetworkPrototype = LocalNetworkPrototype(),
     val targetPassword: String = "",
     val passwordVisible: Boolean = false,
@@ -178,12 +181,15 @@ class LabViewModel(
 
     fun onTargetPasswordChanged(value: String) {
         _state.update { current ->
-            val syncedConfig =
-                if (value.isNotEmpty() && value.length != current.config.secretLength) {
-                    current.config.copy(secretLength = value.length)
-                } else {
-                    current.config
+            var syncedConfig = current.config
+            if (value.isNotEmpty()) {
+                syncedConfig = syncedConfig.copy(secretLength = value.length)
+                if (current.mode == LabInteractionMode.Guided &&
+                    current.secretMode == LabSecretMode.LocalPrototype
+                ) {
+                    syncedConfig = syncedConfig.withAutoFitAlphabet(value)
                 }
+            }
             current.copy(
                 targetPassword = value,
                 config = syncedConfig,
@@ -191,6 +197,14 @@ class LabViewModel(
             )
         }
         recomputePreview()
+    }
+
+    private fun LabConfig.withAutoFitAlphabet(password: String): LabConfig {
+        val fit = GuidedAlphabetFitter.fit(password) ?: return this
+        return copy(
+            alphabet = fit.choice,
+            customAlphabet = fit.customAlphabet,
+        )
     }
 
     fun togglePasswordVisibility() {
@@ -208,12 +222,27 @@ class LabViewModel(
 
     fun applyGuidedDefaults(calibratedAttemptsPerSecond: Double?) {
         val config = GuidedLabDefaults.recommendedConfig(calibratedAttemptsPerSecond = calibratedAttemptsPerSecond)
-        _state.update { it.copy(config = config, mode = LabInteractionMode.Guided) }
+        _state.update {
+            it.copy(
+                config = config,
+                mode = LabInteractionMode.Guided,
+                secretMode = LabSecretMode.LocalPrototype,
+                advancedExpanded = false,
+            )
+        }
         recomputePreview()
     }
 
     fun updateConfig(config: LabConfig) {
-        _state.update { it.copy(config = config) }
+        _state.update { current ->
+            val normalized =
+                if (config.alphabet != current.config.alphabet) {
+                    config.copy(customAlphabet = null)
+                } else {
+                    config
+                }
+            current.copy(config = normalized)
+        }
         recomputePreview()
     }
 
@@ -305,7 +334,7 @@ class LabViewModel(
         return when (state.secretMode) {
             LabSecretMode.RandomHidden ->
                 LabChallenge.withHiddenSecret(
-                    alphabet = config.alphabet.alphabet,
+                    alphabet = config.resolvedAlphabet(),
                     lengthPolicy = LengthPolicy.exactly(config.secretLength),
                     seed = config.seed,
                 )
@@ -314,7 +343,7 @@ class LabViewModel(
                 if (password.isBlank()) {
                     require(forPreview) { "Local prototype requires a target password to start" }
                     LabChallenge.withHiddenSecret(
-                        alphabet = config.alphabet.alphabet,
+                        alphabet = config.resolvedAlphabet(),
                         lengthPolicy = LengthPolicy.exactly(state.effectiveSecretLength),
                         seed = config.seed,
                     )
@@ -322,7 +351,7 @@ class LabViewModel(
                     LabChallenge.withEncapsulatedVerifier(
                         policy =
                             LabSecretPolicy(
-                                alphabet = config.alphabet.alphabet,
+                                alphabet = config.resolvedAlphabet(),
                                 length = LengthPolicy.exactly(password.length),
                             ),
                         verifier = EncapsulatedPasswordVerifier.encapsulate(password),
@@ -348,9 +377,13 @@ class LabViewModel(
             return R.string.lab_err_family_not_psk
         }
         if (state.targetPassword.isBlank()) return R.string.lab_err_password_required
-        val alphabet = config.alphabet.alphabet
+        val alphabet = config.resolvedAlphabet()
         if (!state.targetPassword.all { alphabet.symbols.contains(it) }) {
-            return R.string.lab_err_password_alphabet
+            return if (state.mode == LabInteractionMode.Guided) {
+                R.string.lab_err_password_alphabet_guided
+            } else {
+                R.string.lab_err_password_alphabet
+            }
         }
         return null
     }

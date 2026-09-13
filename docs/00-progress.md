@@ -29,7 +29,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
 | Lab desde red cercana | **Partial** (UX-02): CTA + contexto solo lectura; **sin** prototipo de red editable (ver `docs/13-manual-ux-gap-audit.md`). |
-| Modo guiado del Lab | **Partial** (UX-03): defaults por familia observada; no sustituye prototipo local configurable. |
+| Modo guiado del Lab | **Partial** (FIX-04): prototipo local por defecto, pasos novice, auto-alfabeto/longitud, resumen local-only; pendiente FIX-05 manual. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
@@ -60,7 +60,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | --- | --- |
 | Localización ES/EN (runtime) | **Partial** (FIX-01 en curso): `AppCompatActivity` + `localeConfig` + recreate; strings Lab/Nearby/Vault/Onboarding/Permissions/Security/Settings migrados a `values`/`values-en`. No marcar Implemented hasta CI+flujo manual (FIX-05). |
 | Navegación Material (child screens) | **Partial** (FIX-02 en curso): ArrowBack en Audit/Security/Permission Center; CD `navigate_back` unificado; iconografía CTAs. Pendiente pase manual (FIX-05). |
-| Prototipo local de red (Lab) | **Partial (FIX-03)**: UI prototipo local (SSID, PSK, password custom, banner local-only) + motor `withEncapsulatedVerifier`. Pendiente FIX-04/05 manual. |
+| Prototipo local de red (Lab) | **Partial (FIX-03/04)**: UI prototipo + flujo guiado novice (FIX-04); motor `withEncapsulatedVerifier`. Pendiente FIX-05 manual. |
 | GeoLocation en UI | Dominio/persistencia listos; UI usa sólo `LocationLabel`. |
 | Hardening RC | Auditoría #17; pase manual pendiente. |
 | Compose / androidTest | Suite en CI emulador (API 29+35). Wi‑Fi físico sigue manual. |

@@ -9,7 +9,11 @@ contra access points (sin handshakes, PMKID, deauth ni envío al router).
 Modos de verificación:
 
 - **Sintético aleatorio** — `LabChallenge.withHiddenSecret` (secreto oculto
-  generado localmente; modo por defecto del Lab).
+  generado localmente; disponible vía chip en modo guiado o por defecto en Avanzado).
+- **Prototipo guiado (novice)** — modo guiado del Lab arranca en prototipo local
+  (`LocalPrototype`): pasos SSID → seguridad PSK → contraseña → Iniciar; alfabeto
+  y longitud se ajustan automáticamente; workers/estrategia/alfabeto solo en
+  Opciones avanzadas; resumen novice tras Found/Límite/Cancelado.
 - **Prototipo local** — perfil Wi-Fi sintético (SSID, familia PSK, banda/estándar
   opcionales) + contraseña objetivo en memoria; verificación vía
   `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`.

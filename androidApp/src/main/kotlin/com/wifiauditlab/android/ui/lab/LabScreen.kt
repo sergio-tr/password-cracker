@@ -34,6 +34,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -94,29 +97,62 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             if (state.secretMode == LabSecretMode.LocalPrototype) {
                 LocalPrototypeBanner(state.prototype)
             }
-            state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
+            state.outcome?.let {
+                ResultCard(
+                    outcome = it,
+                    found = state.foundCandidate,
+                    errorMessage = state.errorMessage,
+                    metrics = state.metrics,
+                    showNoviceSummary =
+                        state.mode == LabInteractionMode.Guided &&
+                            state.secretMode == LabSecretMode.LocalPrototype &&
+                            it in
+                            setOf(
+                                SearchOutcome.Found,
+                                SearchOutcome.LimitReached,
+                                SearchOutcome.Cancelled,
+                            ),
+                )
+            }
             if (running) {
                 ExecutionStatusCard(state = state)
             } else {
-                SecretModeCard(
-                    state = state,
-                    onSecretModeChange = viewModel::setSecretMode,
-                    onPrototypeChange = viewModel::updatePrototype,
-                    onPasswordChange = viewModel::onTargetPasswordChanged,
-                    onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
-                )
-                GuidedModeCard(
-                    state = state,
-                    onExpandAdvanced = { viewModel.setAdvancedExpanded(true) },
-                    onCollapseAdvanced = { viewModel.setAdvancedExpanded(false) },
-                    onResetGuided = viewModel::resetToGuidedDefaults,
-                    onOpenAdvancedMode = { viewModel.setMode(LabInteractionMode.Advanced) },
-                    onOpenGuidedMode = { viewModel.setMode(LabInteractionMode.Guided) },
-                )
+                if (state.mode == LabInteractionMode.Guided && state.secretMode == LabSecretMode.LocalPrototype) {
+                    GuidedPrototypeCard(
+                        state = state,
+                        onSecretModeChange = viewModel::setSecretMode,
+                        onPrototypeChange = viewModel::updatePrototype,
+                        onPasswordChange = viewModel::onTargetPasswordChanged,
+                        onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                        onExpandAdvanced = { viewModel.setAdvancedExpanded(true) },
+                        onCollapseAdvanced = { viewModel.setAdvancedExpanded(false) },
+                        onOpenAdvancedMode = { viewModel.setMode(LabInteractionMode.Advanced) },
+                    )
+                } else {
+                    SecretModeCard(
+                        state = state,
+                        onSecretModeChange = viewModel::setSecretMode,
+                        onPrototypeChange = viewModel::updatePrototype,
+                        onPasswordChange = viewModel::onTargetPasswordChanged,
+                        onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                    )
+                    GuidedModeCard(
+                        state = state,
+                        onExpandAdvanced = { viewModel.setAdvancedExpanded(true) },
+                        onCollapseAdvanced = { viewModel.setAdvancedExpanded(false) },
+                        onResetGuided = viewModel::resetToGuidedDefaults,
+                        onOpenAdvancedMode = { viewModel.setMode(LabInteractionMode.Advanced) },
+                        onOpenGuidedMode = { viewModel.setMode(LabInteractionMode.Guided) },
+                    )
+                }
                 if (state.mode == LabInteractionMode.Advanced || state.advancedExpanded) {
                     ConfigCard(state = state, enabled = true, onChange = viewModel::updateConfig)
                 }
-                EstimatesCard(state)
+                if (state.mode == LabInteractionMode.Advanced ||
+                    state.secretMode != LabSecretMode.LocalPrototype
+                ) {
+                    EstimatesCard(state)
+                }
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -147,6 +183,196 @@ private fun LocalPrototypeBanner(prototype: LocalNetworkPrototype) {
             meta?.let { Text(it) }
         }
     }
+}
+
+@Composable
+private fun GuidedPrototypeCard(
+    state: LabUiState,
+    onSecretModeChange: (LabSecretMode) -> Unit,
+    onPrototypeChange: (LocalNetworkPrototype) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+    onExpandAdvanced: () -> Unit,
+    onCollapseAdvanced: () -> Unit,
+    onOpenAdvancedMode: () -> Unit,
+) {
+    val guidedPrototypeCd = stringResource(R.string.lab_cd_guided_prototype)
+    val advancedOptionsCd = stringResource(R.string.lab_cd_advanced_options)
+    val advancedShow = stringResource(R.string.lab_advanced_show)
+    val advancedHide = stringResource(R.string.lab_advanced_hide)
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = guidedPrototypeCd },
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.lab_guided_prototype_title), fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.lab_guided_prototype_intro))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = state.secretMode == LabSecretMode.LocalPrototype,
+                    onClick = { onSecretModeChange(LabSecretMode.LocalPrototype) },
+                    label = { Text(stringResource(R.string.lab_mode_prototype)) },
+                )
+                FilterChip(
+                    selected = state.secretMode == LabSecretMode.RandomHidden,
+                    onClick = { onSecretModeChange(LabSecretMode.RandomHidden) },
+                    label = { Text(stringResource(R.string.lab_mode_random)) },
+                )
+            }
+            GuidedStep(
+                step = 1,
+                title = stringResource(R.string.lab_guided_step_ssid),
+            ) {
+                OutlinedTextField(
+                    value = state.prototype.ssidLabel,
+                    onValueChange = { onPrototypeChange(state.prototype.copy(ssidLabel = it)) },
+                    label = { Text(stringResource(R.string.lab_prototype_ssid)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            GuidedStep(
+                step = 2,
+                title = stringResource(R.string.lab_guided_step_security),
+            ) {
+                GuidedSecurityPicker(
+                    prototype = state.prototype,
+                    onPrototypeChange = onPrototypeChange,
+                )
+            }
+            GuidedStep(
+                step = 3,
+                title = stringResource(R.string.lab_guided_step_password),
+            ) {
+                PrototypePasswordField(
+                    password = state.targetPassword,
+                    passwordVisible = state.passwordVisible,
+                    onPasswordChange = onPasswordChange,
+                    onTogglePasswordVisibility = onTogglePasswordVisibility,
+                )
+            }
+            GuidedStep(
+                step = 4,
+                title = stringResource(R.string.lab_guided_step_start),
+            ) {
+                Text(stringResource(R.string.lab_guided_step_start_body))
+            }
+            state.configErrorRes?.let { Text(stringResource(it)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = true,
+                    onClick = {},
+                    enabled = false,
+                    label = { Text(stringResource(R.string.lab_mode_guided)) },
+                )
+                FilterChip(
+                    selected = false,
+                    onClick = onOpenAdvancedMode,
+                    label = { Text(stringResource(R.string.lab_mode_advanced)) },
+                )
+            }
+            TextButton(
+                onClick = { if (state.advancedExpanded) onCollapseAdvanced() else onExpandAdvanced() },
+                modifier = Modifier.semantics { contentDescription = advancedOptionsCd },
+            ) {
+                Text(if (state.advancedExpanded) advancedHide else advancedShow)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuidedStep(
+    step: Int,
+    title: String,
+    content: @Composable () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(R.string.lab_guided_step_label, step, title), fontWeight = FontWeight.SemiBold)
+        content()
+    }
+}
+
+@Composable
+private fun GuidedSecurityPicker(
+    prototype: LocalNetworkPrototype,
+    onPrototypeChange: (LocalNetworkPrototype) -> Unit,
+) {
+    var showSecondary by remember { mutableStateOf(prototype.securityFamily in LAB_SECONDARY_PSK_FAMILIES) }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
+        LAB_PRIMARY_PSK_FAMILIES.forEach { family ->
+            FilterChip(
+                selected = prototype.securityFamily == family,
+                onClick = { onPrototypeChange(prototype.copy(securityFamily = family)) },
+                label = { Text(stringResource(familyLabelRes(family))) },
+            )
+        }
+    }
+    TextButton(onClick = { showSecondary = !showSecondary }) {
+        Text(
+            if (showSecondary) {
+                stringResource(R.string.lab_guided_hide_legacy_security)
+            } else {
+                stringResource(R.string.lab_guided_show_legacy_security)
+            },
+        )
+    }
+    if (showSecondary) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+        ) {
+            LAB_SECONDARY_PSK_FAMILIES.forEach { family ->
+                FilterChip(
+                    selected = prototype.securityFamily == family,
+                    onClick = { onPrototypeChange(prototype.copy(securityFamily = family)) },
+                    label = { Text(stringResource(familyLabelRes(family))) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrototypePasswordField(
+    password: String,
+    passwordVisible: Boolean,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+) {
+    OutlinedTextField(
+        value = password,
+        onValueChange = onPasswordChange,
+        label = { Text(stringResource(R.string.lab_prototype_password)) },
+        singleLine = true,
+        visualTransformation =
+            if (passwordVisible) {
+                androidx.compose.ui.text.input.VisualTransformation.None
+            } else {
+                androidx.compose.ui.text.input.PasswordVisualTransformation()
+            },
+        trailingIcon = {
+            IconButton(onClick = onTogglePasswordVisibility) {
+                Icon(
+                    imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription =
+                        stringResource(
+                            if (passwordVisible) {
+                                R.string.lab_prototype_hide_password
+                            } else {
+                                R.string.lab_prototype_show_password
+                            },
+                        ),
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
@@ -259,33 +485,11 @@ private fun PrototypeForm(
             )
         }
     }
-    OutlinedTextField(
-        value = password,
-        onValueChange = onPasswordChange,
-        label = { Text(stringResource(R.string.lab_prototype_password)) },
-        singleLine = true,
-        visualTransformation =
-            if (passwordVisible) {
-                androidx.compose.ui.text.input.VisualTransformation.None
-            } else {
-                androidx.compose.ui.text.input.PasswordVisualTransformation()
-            },
-        trailingIcon = {
-            IconButton(onClick = onTogglePasswordVisibility) {
-                Icon(
-                    imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                    contentDescription =
-                        stringResource(
-                            if (passwordVisible) {
-                                R.string.lab_prototype_hide_password
-                            } else {
-                                R.string.lab_prototype_show_password
-                            },
-                        ),
-                )
-            }
-        },
-        modifier = Modifier.fillMaxWidth(),
+    PrototypePasswordField(
+        password = password,
+        passwordVisible = passwordVisible,
+        onPasswordChange = onPasswordChange,
+        onTogglePasswordVisibility = onTogglePasswordVisibility,
     )
     configErrorRes?.let { Text(stringResource(it)) }
 }
@@ -655,10 +859,18 @@ private fun ResultCard(
     found: String?,
     errorMessage: String?,
     metrics: SearchMetrics?,
+    showNoviceSummary: Boolean = false,
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(outcomeLabel(outcome), fontWeight = FontWeight.Bold)
+            if (showNoviceSummary) {
+                Text(
+                    stringResource(R.string.lab_novice_observed_resistance, outcomeLabel(outcome)),
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(stringResource(R.string.lab_novice_local_only_reminder))
+            }
             if (outcome == SearchOutcome.Found && found != null) {
                 Text(stringResource(R.string.lab_found_secret, found))
             }
