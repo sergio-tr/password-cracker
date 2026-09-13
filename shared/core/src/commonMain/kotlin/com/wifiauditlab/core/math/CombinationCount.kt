@@ -14,9 +14,33 @@ class CombinationCount private constructor(internal val value: BigInteger) : Com
 
     operator fun plus(other: CombinationCount): CombinationCount = CombinationCount(value + other.value)
 
+    operator fun plus(increment: Long): CombinationCount {
+        require(increment >= 0) { "increment must be non-negative, was $increment" }
+        return CombinationCount(value + BigInteger.fromLong(increment))
+    }
+
+    operator fun minus(other: CombinationCount): CombinationCount {
+        require(value >= other.value) { "subtraction would yield a negative combination count" }
+        return CombinationCount(value - other.value)
+    }
+
     operator fun times(other: CombinationCount): CombinationCount = CombinationCount(value * other.value)
 
     operator fun times(factor: Long): CombinationCount = CombinationCount(value * BigInteger.fromLong(factor))
+
+    operator fun div(divisor: Int): CombinationCount {
+        require(divisor > 0) { "divisor must be positive, was $divisor" }
+        return CombinationCount(value / BigInteger.fromInt(divisor))
+    }
+
+    operator fun rem(divisor: Int): CombinationCount {
+        require(divisor > 0) { "divisor must be positive, was $divisor" }
+        return CombinationCount(value % BigInteger.fromInt(divisor))
+    }
+
+    fun coerceAtMost(other: CombinationCount): CombinationCount = if (this <= other) this else other
+
+    fun coerceAtLeast(other: CombinationCount): CombinationCount = if (this >= other) this else other
 
     /** Raises this count to [exponent] (exponent >= 0). */
     fun pow(exponent: Int): CombinationCount {
