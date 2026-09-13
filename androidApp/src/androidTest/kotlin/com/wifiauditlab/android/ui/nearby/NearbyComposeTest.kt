@@ -168,9 +168,9 @@ class NearbyComposeTest {
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
         waitForText("Alias")
-        composeTestRule.onNodeWithText("Alias").performTextClearance()
+        composeTestRule.onNodeWithText("Alias").performScrollTo().performTextClearance()
         composeTestRule.onNodeWithText("Alias").performTextInput("Lab-Casa")
-        composeTestRule.onNodeWithText("Guardar en el Vault").performClick()
+        composeTestRule.onNodeWithText("Guardar en el Vault").performScrollTo().performClick()
         composeTestRule.waitUntil(5_000) { repo.networks.value.isNotEmpty() }
         assertEquals("Lab-Casa", repo.networks.value.single().alias)
         waitForText("Guardada en el Vault.")
