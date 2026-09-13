@@ -153,15 +153,37 @@ class ParallelLabSearchEngine(
 }
 
 /**
- * Chooses the single-worker baseline or the pool. [workers] is set by the UI
- * before [run] and is clamped by [WorkerPoolConfig].
+ * Chooses the single-worker baseline or a parallel pool.
+ *
+ * [workers] is set by the UI before [run] and is clamped by [WorkerPoolConfig].
+ * [workerOverride] forces a count when non-null. [parallelVersion] selects V1
+ * (static partition) or V2 (indexed + dynamic scheduler). V2 is the default for
+ * multi-worker runs; V1 remains available for comparison.
  */
 class WorkerAwareLabSearchEngine(
     private val timeSource: TimeSource = TimeSource.Monotonic,
     private val availableProcessors: Int = 2,
+    private val calibratedAttemptsPerSecond: Double? = null,
+    parallelVersion: LabParallelEngineVersion = LabParallelEngineVersion.V2,
 ) : LabSearchEngine {
     @Volatile
     var workers: Int = 1
+
+    @Volatile
+    var parallelVersion: LabParallelEngineVersion = parallelVersion
+
+    @Volatile
+    var workerOverride: Int? = null
+
+    /** Applies [WorkerPoolConfig.recommendedWorkerCount] into [workers]. */
+    fun applyRecommendedWorkers() {
+        workers =
+            WorkerPoolConfig.recommendedWorkerCount(
+                availableProcessors = availableProcessors,
+                calibratedAttemptsPerSecond = calibratedAttemptsPerSecond,
+                override = workerOverride,
+            )
+    }
 
     override fun run(
         challenge: LabChallenge,
@@ -169,11 +191,17 @@ class WorkerAwareLabSearchEngine(
         limits: SearchLimits,
         cancellation: CancellationSignal,
     ): Flow<LabSearchEvent> {
-        val pool = WorkerPoolConfig.forDevice(workers, availableProcessors)
+        val requested = workerOverride ?: workers
+        val pool = WorkerPoolConfig.forDevice(requested, availableProcessors)
         return if (pool.workerCount <= 1) {
             DefaultLabSearchEngine(timeSource).run(challenge, plan, limits, cancellation)
         } else {
-            ParallelLabSearchEngine(pool, timeSource).run(challenge, plan, limits, cancellation)
+            when (parallelVersion) {
+                LabParallelEngineVersion.V1 ->
+                    ParallelLabSearchEngine(pool, timeSource).run(challenge, plan, limits, cancellation)
+                LabParallelEngineVersion.V2 ->
+                    IndexedParallelLabSearchEngine(pool, timeSource).run(challenge, plan, limits, cancellation)
+            }
         }
     }
 }
