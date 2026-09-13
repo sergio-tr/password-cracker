@@ -52,6 +52,7 @@ class DefaultLabBenchmarkService(
                 is LabSearchEvent.Completed -> terminal.metrics
                 is LabSearchEvent.LimitReached -> terminal.metrics
                 is LabSearchEvent.Cancelled -> terminal.metrics
+                is LabSearchEvent.Paused -> terminal.metrics
                 is LabSearchEvent.Failed -> terminal.metrics
                 else -> null
             }
@@ -61,6 +62,7 @@ class DefaultLabBenchmarkService(
                 is LabSearchEvent.Completed -> "NotFound"
                 is LabSearchEvent.LimitReached -> "LimitReached"
                 is LabSearchEvent.Cancelled -> "Cancelled"
+                is LabSearchEvent.Paused -> "Paused"
                 is LabSearchEvent.Failed -> "Failed"
                 else -> "Unknown"
             }

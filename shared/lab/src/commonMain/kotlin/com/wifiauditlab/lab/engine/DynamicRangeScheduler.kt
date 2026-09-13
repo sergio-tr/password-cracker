@@ -28,10 +28,13 @@ data class CombinationIndexRange(
 class DynamicRangeScheduler(
     private val totalSize: CombinationCount,
     chunkSize: CombinationCount,
+    initialNextStart: CombinationCount = CombinationCount.ZERO,
 ) {
     init {
         require(totalSize >= CombinationCount.ZERO) { "totalSize must be non-negative" }
         require(chunkSize > CombinationCount.ZERO) { "chunkSize must be positive" }
+        require(initialNextStart >= CombinationCount.ZERO) { "initialNextStart must be non-negative" }
+        require(initialNextStart <= totalSize) { "initialNextStart must be <= totalSize" }
     }
 
     private val effectiveChunk: CombinationCount =
@@ -42,14 +45,17 @@ class DynamicRangeScheduler(
         }
 
     private val mutex = Mutex()
-    private var nextStart: CombinationCount = CombinationCount.ZERO
-    private var issued: CombinationCount = CombinationCount.ZERO
+    private var nextStart: CombinationCount = initialNextStart
+    private var issued: CombinationCount = initialNextStart
 
     @Volatile
     private var cancelled: Boolean = false
 
     /** Exact number of candidate indices claimed so far (sum of issued range sizes). */
     suspend fun issuedCount(): CombinationCount = mutex.withLock { issued }
+
+    /** Next unclaimed index — used as the resume cursor after a cooperative pause. */
+    suspend fun nextStart(): CombinationCount = mutex.withLock { nextStart }
 
     fun isCancelled(): Boolean = cancelled
 

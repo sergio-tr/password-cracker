@@ -27,7 +27,8 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Vault UI | Listado + detalle + CRUD + secretos (Reveal/Hide/Copy/Replace/Remove). |
 | Dominio lab + motor baseline | Lazy, límites, cancelación, métricas, `SearchLifecycle`. |
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
-| UX de ejecución del lab | Preview, STOP, límites, resultado + métricas. |
+| UX de ejecución del lab | Preview, PAUSE/RESUME/STOP, límites, resultado + métricas. |
+| Sesiones lab resumibles | **Implemented** (FASE 25): `Paused` ≠ `Cancelled`; checkpoint seed/plan/cursor; prefs lab-only. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
@@ -57,7 +58,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | --- | --- |
 | Revelar secreto con biometría | Arquitectura lista (`RevealSavedNetworkSecret`). |
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
-| Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |
 | Biometría Vault + hardening | FASE 26–27. |
 | Observabilidad local + evidence RC + release eng. | FASE 28–30. |
 | UX final pass | FASE 31 (sin features grandes). |

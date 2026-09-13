@@ -1,6 +1,8 @@
 package com.wifiauditlab.lab.engine
 
+import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.LabChallenge
+import com.wifiauditlab.lab.domain.LabSearchCursor
 import com.wifiauditlab.lab.domain.LabSearchEvent
 import com.wifiauditlab.lab.domain.LabSearchPlan
 import com.wifiauditlab.lab.domain.LimitReason
@@ -9,6 +11,7 @@ import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.DefaultSearchMetricsCollector
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
+import com.wifiauditlab.lab.domain.engine.LabSearchRunOptions
 import com.wifiauditlab.lab.domain.engine.asVerifier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -35,10 +38,16 @@ class ParallelLabSearchEngine(
         plan: LabSearchPlan,
         limits: SearchLimits,
         cancellation: CancellationSignal,
+        options: LabSearchRunOptions,
     ): Flow<LabSearchEvent> =
         flow {
-            if (plan.buckets.any { it.searchSpaceSize.toLongOrNull() == null }) {
-                emitAll(DefaultLabSearchEngine(timeSource).run(challenge, plan, limits, cancellation))
+            // V1 mid-bucket pause/resume is not exact; delegate to the sequential baseline.
+            if (options.resumeFrom != null ||
+                plan.buckets.any { it.searchSpaceSize.toLongOrNull() == null }
+            ) {
+                emitAll(
+                    DefaultLabSearchEngine(timeSource).run(challenge, plan, limits, cancellation, options),
+                )
                 return@flow
             }
             emit(LabSearchEvent.Preparing)
@@ -55,11 +64,25 @@ class ParallelLabSearchEngine(
             var processed = 0L
             var found: String? = null
             var limitReason: LimitReason? = null
+            var paused = false
+            var pauseCursor: LabSearchCursor? = null
 
             try {
                 coroutineScope {
-                    bucketLoop@ for (bucket in plan.buckets) {
+                    for (bucket in plan.buckets) {
                         if (cancellation.isCancelled || stop.value) break
+                        if (options.pause.isPauseRequested) {
+                            paused = true
+                            pauseCursor =
+                                LabSearchCursor(
+                                    sessionId = sessionId,
+                                    currentBucketIndex = bucket.index,
+                                    nextCandidateIndexInBucket = CombinationCount.ZERO,
+                                    attemptCount = CombinationCount.of(processed),
+                                    elapsedActive = start.elapsedNow(),
+                                )
+                            break
+                        }
                         val bucketSize = bucket.searchSpaceSize.toLongOrNull() ?: break
                         val ranges = partitionIndexSpace(bucketSize, pool.workerCount)
                         val results =
@@ -93,6 +116,18 @@ class ParallelLabSearchEngine(
                         }
                         if (limitReason != null) break
                         if (cancellation.isCancelled) break
+                        if (options.pause.isPauseRequested) {
+                            paused = true
+                            pauseCursor =
+                                LabSearchCursor(
+                                    sessionId = sessionId,
+                                    currentBucketIndex = bucket.index + 1,
+                                    nextCandidateIndexInBucket = CombinationCount.ZERO,
+                                    attemptCount = CombinationCount.of(processed),
+                                    elapsedActive = start.elapsedNow(),
+                                )
+                            break
+                        }
                         if (limits.maxDuration != null && start.elapsedNow() >= limits.maxDuration) {
                             limitReason = LimitReason.Duration
                             break
@@ -104,6 +139,7 @@ class ParallelLabSearchEngine(
                 when {
                     found != null -> emit(LabSearchEvent.CandidateFound(found!!, metrics))
                     cancellation.isCancelled -> emit(LabSearchEvent.Cancelled(metrics))
+                    paused -> emit(LabSearchEvent.Paused(metrics, pauseCursor!!))
                     limitReason != null -> emit(LabSearchEvent.LimitReached(limitReason!!, metrics))
                     else -> emit(LabSearchEvent.Completed(metrics))
                 }
@@ -190,17 +226,19 @@ class WorkerAwareLabSearchEngine(
         plan: LabSearchPlan,
         limits: SearchLimits,
         cancellation: CancellationSignal,
+        options: LabSearchRunOptions,
     ): Flow<LabSearchEvent> {
         val requested = workerOverride ?: workers
         val pool = WorkerPoolConfig.forDevice(requested, availableProcessors)
         return if (pool.workerCount <= 1) {
-            DefaultLabSearchEngine(timeSource).run(challenge, plan, limits, cancellation)
+            DefaultLabSearchEngine(timeSource).run(challenge, plan, limits, cancellation, options)
         } else {
             when (parallelVersion) {
                 LabParallelEngineVersion.V1 ->
-                    ParallelLabSearchEngine(pool, timeSource).run(challenge, plan, limits, cancellation)
+                    ParallelLabSearchEngine(pool, timeSource).run(challenge, plan, limits, cancellation, options)
                 LabParallelEngineVersion.V2 ->
-                    IndexedParallelLabSearchEngine(pool, timeSource).run(challenge, plan, limits, cancellation)
+                    IndexedParallelLabSearchEngine(pool, timeSource)
+                        .run(challenge, plan, limits, cancellation, options)
             }
         }
     }

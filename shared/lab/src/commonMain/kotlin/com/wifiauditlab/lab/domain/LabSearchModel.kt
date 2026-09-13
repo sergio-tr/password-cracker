@@ -8,6 +8,8 @@ enum class SearchState {
     Idle,
     Preparing,
     Running,
+    Pausing,
+    Paused,
     Cancelling,
     Cancelled,
     Completed,
@@ -21,15 +23,26 @@ object SearchLifecycle {
         when (from) {
             SearchState.Idle -> setOf(SearchState.Preparing)
             SearchState.Preparing ->
-                setOf(SearchState.Running, SearchState.Cancelling, SearchState.Cancelled, SearchState.Failed)
+                setOf(
+                    SearchState.Running,
+                    SearchState.Pausing,
+                    SearchState.Cancelling,
+                    SearchState.Cancelled,
+                    SearchState.Failed,
+                )
             SearchState.Running ->
                 setOf(
+                    SearchState.Pausing,
                     SearchState.Cancelling,
                     SearchState.Completed,
                     SearchState.LimitReached,
                     SearchState.Failed,
                     SearchState.Cancelled,
                 )
+            SearchState.Pausing ->
+                setOf(SearchState.Paused, SearchState.Cancelling, SearchState.Cancelled, SearchState.Failed)
+            SearchState.Paused ->
+                setOf(SearchState.Preparing, SearchState.Cancelling, SearchState.Cancelled, SearchState.Idle)
             SearchState.Cancelling -> setOf(SearchState.Cancelled, SearchState.Failed)
             SearchState.Cancelled,
             SearchState.Completed,
@@ -116,6 +129,15 @@ sealed interface LabSearchEvent {
 
     /** Terminal: the user cancelled the search. */
     data class Cancelled(val metrics: SearchMetrics) : LabSearchEvent
+
+    /**
+     * Flow-terminal but session-resumable: cooperative pause. Distinct from
+     * [Cancelled] — the checkpoint remains valid until resume or explicit stop.
+     */
+    data class Paused(
+        val metrics: SearchMetrics,
+        val cursor: LabSearchCursor,
+    ) : LabSearchEvent
 
     /** Terminal: the whole space was exhausted without finding the secret. */
     data class Completed(val metrics: SearchMetrics) : LabSearchEvent

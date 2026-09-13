@@ -58,6 +58,7 @@ class LabViewModelTest {
             plan: LabSearchPlan,
             limits: SearchLimits,
             cancellation: CancellationSignal,
+            options: com.wifiauditlab.lab.domain.engine.LabSearchRunOptions,
         ): Flow<LabSearchEvent> = flow { events.forEach { emit(it) } }
     }
 
@@ -70,6 +71,7 @@ class LabViewModelTest {
             plan: LabSearchPlan,
             limits: SearchLimits,
             cancellation: CancellationSignal,
+            options: com.wifiauditlab.lab.domain.engine.LabSearchRunOptions,
         ): Flow<LabSearchEvent> =
             flow {
                 emit(LabSearchEvent.Preparing)
@@ -163,5 +165,55 @@ class LabViewModelTest {
             advanceUntilIdle()
             assertEquals(SearchOutcome.Failed, vm.state.value.outcome)
             assertEquals("boom", vm.state.value.errorMessage)
+        }
+
+    @Test
+    fun pause_event_marks_paused_not_cancelled() =
+        runTest(dispatcher) {
+            val plan =
+                DefaultSearchPlanOptimizer().optimize(
+                    LabChallenge.withKnownSecret(Alphabet.DIGITS, "01", seed = 1L),
+                    LengthPrioritizedStrategy.ID,
+                )
+            val cursor =
+                com.wifiauditlab.lab.domain.LabSearchCursor(
+                    sessionId = SearchSessionId("s"),
+                    currentBucketIndex = 0,
+                    nextCandidateIndexInBucket = CombinationCount.of(4),
+                    attemptCount = CombinationCount.of(4),
+                    elapsedActive = 1.seconds,
+                )
+            val repo = com.wifiauditlab.lab.domain.InMemoryLabSessionRepository()
+            val vm =
+                LabViewModel(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.Started(SearchSessionId("s"), plan, CombinationCount.of(10)),
+                            LabSearchEvent.Paused(metrics.copy(attempts = CombinationCount.of(4)), cursor),
+                        ),
+                    ),
+                    DefaultSearchPlanOptimizer(),
+                    object : SearchFeasibilityAnalyzer {
+                        override fun analyze(
+                            plan: LabSearchPlan,
+                            limits: SearchLimits,
+                            estimator: SearchPerformanceEstimator,
+                        ) = SearchFeasibility(FeasibilityRating.Reasonable, 1.seconds, "ok")
+                    },
+                    FixedThroughputEstimator(),
+                    dispatcher,
+                    sessionRepository = repo,
+                )
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(SearchState.Paused, vm.state.value.searchState)
+            assertNull(vm.state.value.outcome)
+            assertTrue(vm.state.value.hasResumableSession)
+            assertNotNull(repo.load())
+            vm.stop()
+            advanceUntilIdle()
+            assertEquals(SearchOutcome.Cancelled, vm.state.value.outcome)
+            assertNull(repo.load())
         }
 }

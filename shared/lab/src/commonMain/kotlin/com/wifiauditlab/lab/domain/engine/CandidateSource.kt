@@ -37,3 +37,31 @@ class CancellationController : CancellationSignal {
         cancelled.value = true
     }
 }
+
+/**
+ * Cooperative pause signal. Distinct from [CancellationSignal]: pause ends the
+ * flow with [com.wifiauditlab.lab.domain.LabSearchEvent.Paused] and a resumable
+ * cursor; cancel ends with [com.wifiauditlab.lab.domain.LabSearchEvent.Cancelled].
+ */
+interface PauseSignal {
+    val isPauseRequested: Boolean
+}
+
+/** Default: never pause. */
+object NeverPause : PauseSignal {
+    override val isPauseRequested: Boolean = false
+}
+
+/** Externally controllable [PauseSignal] for Lab UI Pause / Resume. */
+class PauseController : PauseSignal {
+    private val paused = kotlinx.coroutines.flow.MutableStateFlow(false)
+    override val isPauseRequested: Boolean get() = paused.value
+
+    fun pause() {
+        paused.value = true
+    }
+
+    fun reset() {
+        paused.value = false
+    }
+}

@@ -2,6 +2,7 @@ package com.wifiauditlab.lab.domain.engine
 
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.LabChallenge
+import com.wifiauditlab.lab.domain.LabSearchCursor
 import com.wifiauditlab.lab.domain.LabSearchEvent
 import com.wifiauditlab.lab.domain.LabSearchPlan
 import com.wifiauditlab.lab.domain.SearchLimits
@@ -35,6 +36,15 @@ interface SearchPlanOptimizer {
     ): LabSearchPlan
 }
 
+/**
+ * Optional pause / resume controls for a lab run. Defaults preserve legacy
+ * cancel-only call sites.
+ */
+data class LabSearchRunOptions(
+    val pause: PauseSignal = NeverPause,
+    val resumeFrom: LabSearchCursor? = null,
+)
+
 /** Runs a plan, emitting a cold flow of [LabSearchEvent]s. Cooperatively cancelable. */
 interface LabSearchEngine {
     fun run(
@@ -42,6 +52,7 @@ interface LabSearchEngine {
         plan: LabSearchPlan,
         limits: SearchLimits,
         cancellation: CancellationSignal,
+        options: LabSearchRunOptions = LabSearchRunOptions(),
     ): Flow<LabSearchEvent>
 }
 

@@ -17,16 +17,32 @@ class SearchStateTransitionTest {
     }
 
     @Test
-    fun running_can_reach_each_terminal_except_idle() {
-        val terminals =
+    fun running_can_pause_or_reach_terminals() {
+        val targets =
             setOf(
+                SearchState.Pausing,
                 SearchState.Cancelling,
                 SearchState.Completed,
                 SearchState.LimitReached,
                 SearchState.Failed,
                 SearchState.Cancelled,
             )
-        assertEquals(terminals, SearchLifecycle.allowedTargets(SearchState.Running))
+        assertEquals(targets, SearchLifecycle.allowedTargets(SearchState.Running))
+    }
+
+    @Test
+    fun pause_path_running_pausing_paused_preparing() {
+        assertTrue(SearchLifecycle.canTransition(SearchState.Running, SearchState.Pausing))
+        assertTrue(SearchLifecycle.canTransition(SearchState.Pausing, SearchState.Paused))
+        assertTrue(SearchLifecycle.canTransition(SearchState.Paused, SearchState.Preparing))
+        assertFalse(SearchLifecycle.canTransition(SearchState.Paused, SearchState.Running))
+    }
+
+    @Test
+    fun paused_is_not_cancelled() {
+        assertFalse(SearchLifecycle.canTransition(SearchState.Paused, SearchState.Completed))
+        assertTrue(SearchLifecycle.canTransition(SearchState.Paused, SearchState.Cancelled))
+        assertTrue(SearchLifecycle.canTransition(SearchState.Paused, SearchState.Idle))
     }
 
     @Test

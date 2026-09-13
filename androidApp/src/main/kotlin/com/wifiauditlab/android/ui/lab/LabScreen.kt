@@ -40,21 +40,52 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
     val running =
         state.searchState == SearchState.Running ||
             state.searchState == SearchState.Preparing ||
-            state.searchState == SearchState.Cancelling
+            state.searchState == SearchState.Cancelling ||
+            state.searchState == SearchState.Pausing
+    val paused = state.searchState == SearchState.Paused
+    val configLocked = running || paused
 
     Scaffold(topBar = { TopAppBar(title = { Text("Laboratorio sintético") }) }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ConfigCard(state = state, enabled = !running, onChange = viewModel::updateConfig)
+            ConfigCard(state = state, enabled = !configLocked, onChange = viewModel::updateConfig)
             EstimatesCard(state)
 
             if (running) {
-                Button(
-                    onClick = viewModel::stop,
-                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Detener búsqueda" },
-                ) { Text("STOP") }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    OutlinedButton(
+                        onClick = viewModel::pause,
+                        enabled = state.searchState == SearchState.Running || state.searchState == SearchState.Preparing,
+                        modifier =
+                            Modifier.weight(1f).semantics { contentDescription = "Pausar búsqueda" },
+                    ) { Text("PAUSE") }
+                    Button(
+                        onClick = viewModel::stop,
+                        modifier =
+                            Modifier.weight(1f).semantics { contentDescription = "Detener búsqueda" },
+                    ) { Text("STOP") }
+                }
+            } else if (paused) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Button(
+                        onClick = viewModel::resume,
+                        modifier =
+                            Modifier.weight(1f).semantics { contentDescription = "Reanudar búsqueda" },
+                    ) { Text("RESUME") }
+                    OutlinedButton(
+                        onClick = viewModel::stop,
+                        modifier =
+                            Modifier.weight(1f).semantics { contentDescription = "Detener búsqueda" },
+                    ) { Text("STOP") }
+                }
             } else {
                 Button(
                     onClick = viewModel::start,

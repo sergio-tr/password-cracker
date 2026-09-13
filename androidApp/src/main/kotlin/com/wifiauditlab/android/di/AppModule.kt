@@ -7,6 +7,7 @@ import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.platform.KeystoreSecretVault
 import com.wifiauditlab.android.platform.SharedPreferencesBenchmarkRepository
 import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
+import com.wifiauditlab.android.platform.SharedPreferencesLabSessionRepository
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.lab.LabViewModel
 import com.wifiauditlab.android.ui.nearby.NearbyViewModel
@@ -50,6 +51,7 @@ import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanner
 import com.wifiauditlab.lab.domain.BenchmarkRepository
 import com.wifiauditlab.lab.domain.CalibrationRepository
+import com.wifiauditlab.lab.domain.LabSessionRepository
 import com.wifiauditlab.lab.domain.engine.CalibrationEnvironmentProvider
 import com.wifiauditlab.lab.domain.engine.LabBenchmarkService
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
@@ -112,6 +114,7 @@ val appModule =
             )
         }
         single<BenchmarkRepository> { SharedPreferencesBenchmarkRepository(androidContext()) }
+        single<LabSessionRepository> { SharedPreferencesLabSessionRepository(androidContext()) }
         single<LabBenchmarkService> {
             DefaultLabBenchmarkService(
                 repository = get(),
@@ -147,7 +150,7 @@ val appModule =
         viewModel {
             VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
         }
-        viewModel { LabViewModel(get(), get(), get(), get(), calibration = get()) }
+        viewModel { LabViewModel(get(), get(), get(), get(), calibration = get(), sessionRepository = get()) }
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
         viewModel { SettingsCalibrationViewModel(get(), get()) }

@@ -52,6 +52,7 @@ class LabComposeTest {
             plan: LabSearchPlan,
             limits: SearchLimits,
             cancellation: CancellationSignal,
+            options: com.wifiauditlab.lab.domain.engine.LabSearchRunOptions,
         ): Flow<LabSearchEvent> = flow { events.forEach { emit(it) } }
     }
 
@@ -63,6 +64,7 @@ class LabComposeTest {
             plan: LabSearchPlan,
             limits: SearchLimits,
             cancellation: CancellationSignal,
+            options: com.wifiauditlab.lab.domain.engine.LabSearchRunOptions,
         ): Flow<LabSearchEvent> =
             flow {
                 emit(LabSearchEvent.Preparing)

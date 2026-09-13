@@ -37,7 +37,10 @@ interface LabSearchEngine {
 ## Eventos
 
 `Preparing`, `Started`, `Progress`, `CandidateFound`, `LimitReached`,
-`Cancelled`, `Completed`, `Failed`.
+`Paused`, `Cancelled`, `Completed`, `Failed`.
+
+`Paused` cierra el flow pero deja un cursor reanudable; no reutiliza `Cancelled`.
+Ver ADR 0008.
 
 ## Aislamiento
 

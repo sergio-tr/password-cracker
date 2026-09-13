@@ -1,6 +1,7 @@
 package com.wifiauditlab.lab.engine
 
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
+import com.wifiauditlab.lab.domain.engine.PauseSignal
 import kotlin.time.AbstractLongTimeSource
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
@@ -24,6 +25,13 @@ class AutoAdvancingTimeSource(private val stepMillis: Long) : AbstractLongTimeSo
 class CancelAfterPolls(private val afterPolls: Int) : CancellationSignal {
     private var polls = 0
     override val isCancelled: Boolean
+        get() = ++polls > afterPolls
+}
+
+/** Pause signal that reports pause after being polled [afterPolls] times. */
+class PauseAfterPolls(private val afterPolls: Int) : PauseSignal {
+    private var polls = 0
+    override val isPauseRequested: Boolean
         get() = ++polls > afterPolls
 }
 

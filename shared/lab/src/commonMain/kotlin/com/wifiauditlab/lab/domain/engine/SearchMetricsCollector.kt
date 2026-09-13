@@ -23,10 +23,13 @@ interface SearchMetricsCollector {
 class DefaultSearchMetricsCollector(
     private val totalBuckets: Int,
     private val searchSpace: CombinationCount,
+    initialAttempts: Long = 0,
+    initialElapsed: Duration = Duration.ZERO,
+    initialBucketIndex: Int = 0,
 ) : SearchMetricsCollector {
-    private var attempts: Long = 0
-    private var elapsed: Duration = Duration.ZERO
-    private var bucketIndex: Int = 0
+    private var attempts: Long = initialAttempts
+    private var elapsed: Duration = initialElapsed
+    private var bucketIndex: Int = initialBucketIndex
 
     override fun record(
         totalAttempts: Long,
