@@ -1,26 +1,23 @@
 package com.wifiauditlab.android.ui.onboarding
 
+import androidx.annotation.StringRes
+import com.wifiauditlab.android.R
+
 enum class OnboardingPage(
-    val title: String,
-    val body: String,
+    @StringRes val titleRes: Int,
+    @StringRes val bodyRes: Int,
 ) {
     Nearby(
-        title = "Analiza tu entorno Wi‑Fi",
-        body =
-            "Descubre redes visibles, entiende su seguridad y reconoce las que " +
-                "ya hayas guardado. Solo se leen metadatos que Android expone.",
+        titleRes = R.string.onboarding_nearby_title,
+        bodyRes = R.string.onboarding_nearby_body,
     ),
     Vault(
-        title = "Guarda tus redes de forma segura",
-        body =
-            "Asigna un alias y una ubicación, y guarda credenciales en el Vault " +
-                "cifrado. Nunca se almacenan en texto plano.",
+        titleRes = R.string.onboarding_vault_title,
+        bodyRes = R.string.onboarding_vault_body,
     ),
     Lab(
-        title = "Experimenta en un laboratorio seguro",
-        body =
-            "El laboratorio es sintético: no prueba contraseñas contra redes reales. " +
-                "Toda búsqueda tiene límites y un botón STOP siempre visible.",
+        titleRes = R.string.onboarding_lab_title,
+        bodyRes = R.string.onboarding_lab_body,
     ),
 }
 

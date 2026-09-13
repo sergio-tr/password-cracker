@@ -1,5 +1,7 @@
 package com.wifiauditlab.android.ui.settings
 
+import com.wifiauditlab.android.R
+import com.wifiauditlab.android.ui.audit.UiStrings
 import com.wifiauditlab.lab.domain.CalibrationEnvironment
 import com.wifiauditlab.lab.domain.CalibrationRecord
 import com.wifiauditlab.lab.domain.InMemoryCalibrationRepository
@@ -40,6 +42,24 @@ class SettingsCalibrationViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val spanishUiStrings =
+        UiStrings { id, args ->
+            when (id) {
+                R.string.settings_cal_none -> "Sin calibración"
+                R.string.settings_cal_compatible -> "Compatible"
+                R.string.settings_cal_incompatible -> "Incompatible"
+                R.string.settings_cal_stale -> "Obsoleta"
+                R.string.settings_cal_fingerprint_template -> "engine ${args[0]} · ABI ${args[1]} · app ${args[2]}"
+                R.string.settings_cal_fingerprint_record -> "${args[0]} · ${args[1]} · ${args[2]} workers"
+                R.string.settings_cal_sample_ms -> "${args[0]} ms"
+                R.string.settings_cal_throughput_m -> String.format("%.2f M intentos/s", args[0] as Double)
+                R.string.settings_cal_throughput_k -> String.format("%.1f k intentos/s", args[0] as Double)
+                R.string.settings_cal_throughput_raw -> String.format("%.0f intentos/s", args[0] as Double)
+                R.string.settings_cal_recalibrate_failed -> "No se pudo recalibrar: ${args[0]}"
+                else -> error("Missing Spanish test string for resource id=$id")
+            }
+        }
+
     private fun service(repository: InMemoryCalibrationRepository = InMemoryCalibrationRepository()): SearchCalibrationService =
         DefaultSearchCalibrationService(
             repository = repository,
@@ -51,7 +71,7 @@ class SettingsCalibrationViewModelTest {
     @Test
     fun refresh_without_record_shows_empty_status() =
         runTest(dispatcher) {
-            val vm = SettingsCalibrationViewModel(service(), { env })
+            val vm = SettingsCalibrationViewModel(service(), { env }, uiStrings = spanishUiStrings)
             advanceUntilIdle()
             assertEquals("Sin calibración", vm.state.value.statusLabel)
             assertEquals(false, vm.state.value.hasRecord)
@@ -67,6 +87,7 @@ class SettingsCalibrationViewModelTest {
                     environmentProvider = { env },
                     defaultStrategyId = "length-prioritized",
                     defaultWorkerCount = 1,
+                    uiStrings = spanishUiStrings,
                 )
             advanceUntilIdle()
             vm.recalibrate()
@@ -99,6 +120,7 @@ class SettingsCalibrationViewModelTest {
                 SettingsCalibrationViewModel(
                     calibration = service(repository),
                     environmentProvider = { env },
+                    uiStrings = spanishUiStrings,
                 )
             advanceUntilIdle()
             assertEquals("Incompatible", vm.state.value.statusLabel)

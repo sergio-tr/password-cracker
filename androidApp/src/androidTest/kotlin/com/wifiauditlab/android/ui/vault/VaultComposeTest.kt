@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.FakeSavedNetworkRepository
 import com.wifiauditlab.android.support.FakeSecretVault
 import com.wifiauditlab.android.support.vaultViewModel
@@ -31,6 +32,8 @@ import org.junit.runner.RunWith
 class VaultComposeTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+    private val activity get() = composeTestRule.activity
 
     private val syntheticSecret = "ui-test-secret-aa"
 
@@ -80,7 +83,7 @@ class VaultComposeTest {
     fun empty_showsEmptyState() {
         setVault()
         composeTestRule
-            .onNodeWithText("Aún no has guardado ninguna red. Usa el botón + para añadir una.")
+            .onNodeWithText(activity.getString(R.string.vault_empty))
             .assertIsDisplayed()
     }
 
@@ -107,7 +110,9 @@ class VaultComposeTest {
 
         setVault(repo, vault)
         waitForText("Casa")
-        composeTestRule.onNodeWithText("Buscar por alias, SSID o ubicación").performTextInput("casa")
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_search_hint))
+            .performTextInput("casa")
         composeTestRule.waitForIdle()
         waitForText("Casa")
         composeTestRule.onNodeWithText("Casa").assertIsDisplayed()
@@ -125,7 +130,7 @@ class VaultComposeTest {
 
         setVault(repo, vault)
         waitForText("ConSec")
-        composeTestRule.onNodeWithText("Con contraseña").performClick()
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_filter_with_secret)).performClick()
         composeTestRule.waitForIdle()
         waitForText("ConSec")
         composeTestRule.onNodeWithText("ConSec").assertIsDisplayed()
@@ -142,8 +147,11 @@ class VaultComposeTest {
         seed(repo, vault, "Alpha", "A", withSecret = false)
 
         val vm = setVault(repo, vault)
-        waitForText("Alias A-Z")
-        composeTestRule.onNodeWithText("Vistas recientemente").performScrollTo().performClick()
+        waitForText(activity.getString(R.string.vault_sort_alias))
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_sort_last_seen))
+            .performScrollTo()
+            .performClick()
         composeTestRule.waitUntil(5_000) {
             vm.state.value.sort == SavedNetworkListSort.LastSeenDesc
         }
@@ -155,12 +163,16 @@ class VaultComposeTest {
     fun createViaFab_addsNetwork() {
         val repo = FakeSavedNetworkRepository()
         setVault(repo)
-        composeTestRule.onNodeWithContentDescription("Añadir red").performClick()
-        waitForText("Nueva red guardada")
-        composeTestRule.onNodeWithText("Alias").performTextInput("Nueva")
-        composeTestRule.onNodeWithText("SSID").performTextInput("LAB_SSID")
-        composeTestRule.onNodeWithText("Contraseña (opcional)").performTextInput(syntheticSecret)
-        composeTestRule.onNodeWithText("Guardar").performClick()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.vault_cd_add))
+            .performClick()
+        waitForText(activity.getString(R.string.vault_new_network))
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_label_alias)).performTextInput("Nueva")
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_label_ssid)).performTextInput("LAB_SSID")
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_password_optional))
+            .performTextInput(syntheticSecret)
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_save)).performClick()
         composeTestRule.waitUntil(5_000) { repo.networks.value.any { it.alias == "Nueva" } }
         waitForText("Nueva")
         composeTestRule.onNodeWithText("Nueva").assertIsDisplayed()
@@ -175,53 +187,70 @@ class VaultComposeTest {
         setVault(repo, vault)
         waitForText("Detalle")
         composeTestRule.onNodeWithText("Detalle").performClick()
-        waitForText("Contraseña")
+        val passwordSection = activity.getString(R.string.vault_password_section)
+        waitForText(passwordSection)
 
-        composeTestRule.onNodeWithContentDescription("Contraseña oculta").assertIsDisplayed()
+        val passwordHidden = activity.getString(R.string.vault_password_hidden)
+        composeTestRule.onNodeWithContentDescription(passwordHidden).assertIsDisplayed()
         composeTestRule.onNodeWithText("••••••••••••").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Mostrar").performScrollTo().performClick()
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_show)).performScrollTo().performClick()
+        val passwordVisible = activity.getString(R.string.vault_password_visible)
         composeTestRule.waitUntil(5_000) {
             composeTestRule
-                .onAllNodesWithContentDescription("Contraseña visible")
+                .onAllNodesWithContentDescription(passwordVisible)
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-        composeTestRule.onNodeWithContentDescription("Contraseña visible").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(passwordVisible).assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Ocultar").performScrollTo().performClick()
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_hide)).performScrollTo().performClick()
         composeTestRule.waitUntil(5_000) {
             composeTestRule
-                .onAllNodesWithContentDescription("Contraseña oculta")
+                .onAllNodesWithContentDescription(passwordHidden)
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
 
-        composeTestRule.onNodeWithText("Editar alias").performClick()
-        waitForText("Editar alias")
-        composeTestRule.onNodeWithText("Alias").performTextClearance()
-        composeTestRule.onNodeWithText("Alias").performTextInput("Detalle-Edit")
-        composeTestRule.onNodeWithText("Guardar").performClick()
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_edit_alias)).performClick()
+        val editAlias = activity.getString(R.string.vault_edit_alias)
+        waitForText(editAlias)
+        val aliasLabel = activity.getString(R.string.vault_label_alias)
+        composeTestRule.onNodeWithText(aliasLabel).performTextClearance()
+        composeTestRule.onNodeWithText(aliasLabel).performTextInput("Detalle-Edit")
+        composeTestRule.onNodeWithText(activity.getString(R.string.vault_save)).performClick()
         composeTestRule.waitUntil(5_000) {
             repo.networks.value.any { it.alias == "Detalle-Edit" }
         }
 
-        composeTestRule.onNodeWithText("Eliminar red y contraseña").performScrollTo().performClick()
-        waitForText("Eliminar red")
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_delete_network))
+            .performScrollTo()
+            .performClick()
+        val deleteTitle = activity.getString(R.string.vault_delete_title)
+        waitForText(deleteTitle)
+        val cancel = activity.getString(R.string.vault_cancel)
         composeTestRule.waitUntil(5_000) {
-            composeTestRule.onAllNodesWithText("Cancelar", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText(cancel, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithText("Cancelar", useUnmergedTree = true).performClick()
+        composeTestRule.onNodeWithText(cancel, useUnmergedTree = true).performClick()
         composeTestRule.waitForIdle()
         assertTrue(repo.networks.value.isNotEmpty())
 
-        composeTestRule.onNodeWithText("Eliminar red y contraseña").performScrollTo().performClick()
-        waitForText("Eliminar red")
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_delete_network))
+            .performScrollTo()
+            .performClick()
+        waitForText(deleteTitle)
+        val deleteConfirm = activity.getString(R.string.vault_delete_confirm)
         composeTestRule.waitUntil(5_000) {
-            composeTestRule.onAllNodesWithText("Eliminar", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+            composeTestRule
+                .onAllNodesWithText(deleteConfirm, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
         }
-        composeTestRule.onNodeWithText("Eliminar", useUnmergedTree = true).performClick()
+        composeTestRule.onNodeWithText(deleteConfirm, useUnmergedTree = true).performClick()
         composeTestRule.waitUntil(5_000) { repo.networks.value.isEmpty() }
-        waitForText("Aún no has guardado ninguna red. Usa el botón + para añadir una.")
+        waitForText(activity.getString(R.string.vault_empty))
     }
 }

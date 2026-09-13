@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
@@ -25,26 +26,27 @@ class SecurityAnalysisComposeTest(
     private val family: SecurityFamily,
     private val expectedRating: SecurityRating,
     private val transition: Boolean,
-    private val expectedHeadline: String,
 ) {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun data(): Collection<Array<Any>> =
             listOf(
-                arrayOf(SecurityFamily.OPEN, SecurityRating.INSECURE, false, "Red abierta"),
-                arrayOf(SecurityFamily.WEP, SecurityRating.INSECURE, false, "Cifrado WEP obsoleto"),
-                arrayOf(SecurityFamily.WPA2_PERSONAL, SecurityRating.MODERATE, false, "WPA2-Personal"),
-                arrayOf(SecurityFamily.WPA3_PERSONAL, SecurityRating.HIGH, false, "WPA3-Personal"),
-                arrayOf(SecurityFamily.WPA2_WPA3_PERSONAL, SecurityRating.HIGH, true, "WPA2/WPA3-Personal (transición)"),
-                arrayOf(SecurityFamily.WPA2_ENTERPRISE, SecurityRating.HIGH, false, "WPA2-Enterprise"),
-                arrayOf(SecurityFamily.OWE, SecurityRating.MODERATE, false, "Open enhanced (OWE)"),
-                arrayOf(SecurityFamily.UNKNOWN, SecurityRating.LOW, false, "Configuración no reconocida"),
+                arrayOf(SecurityFamily.OPEN, SecurityRating.INSECURE, false),
+                arrayOf(SecurityFamily.WEP, SecurityRating.INSECURE, false),
+                arrayOf(SecurityFamily.WPA2_PERSONAL, SecurityRating.MODERATE, false),
+                arrayOf(SecurityFamily.WPA3_PERSONAL, SecurityRating.HIGH, false),
+                arrayOf(SecurityFamily.WPA2_WPA3_PERSONAL, SecurityRating.HIGH, true),
+                arrayOf(SecurityFamily.WPA2_ENTERPRISE, SecurityRating.HIGH, false),
+                arrayOf(SecurityFamily.OWE, SecurityRating.MODERATE, false),
+                arrayOf(SecurityFamily.UNKNOWN, SecurityRating.LOW, false),
             )
     }
 
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+    private val activity get() = composeTestRule.activity
 
     @Test
     fun assessment_showsRatingHeadlineRecommendationsAndTechnicalDetails() {
@@ -67,27 +69,39 @@ class SecurityAnalysisComposeTest(
             }
         }
 
-        val ratingText = ratingLabel(expectedRating)
+        val ratingText = activity.getString(ratingLabelRes(expectedRating))
         composeTestRule.waitUntil(5_000) {
             composeTestRule.onAllNodesWithText(ratingText).fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeTestRule.onNodeWithText("Resumen").performScrollTo().assertIsDisplayed()
+        val summary = activity.getString(R.string.security_summary)
+        val familyLine =
+            activity.getString(
+                R.string.security_family,
+                activity.getString(familyLabelRes(family)),
+            )
+        val transitionText = activity.getString(R.string.security_transition)
+        val recommendations = activity.getString(R.string.security_recommendations)
+        val showTechnical = activity.getString(R.string.security_technical_show)
+        val hideTechnical = activity.getString(R.string.security_technical_hide)
+        val expectedHeadline = vm.state.value.assessment!!.headline
+
+        composeTestRule.onNodeWithText(summary).performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText(ratingText).performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText(expectedHeadline).performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Familia: ${familyLabel(family)}").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(familyLine).performScrollTo().assertIsDisplayed()
 
         if (family == SecurityFamily.WPA2_WPA3_PERSONAL || transition) {
             composeTestRule
-                .onNodeWithText("Transición WPA2/WPA3: la protección real depende del cliente que se conecte.")
+                .onNodeWithText(transitionText)
                 .performScrollTo()
                 .assertIsDisplayed()
         }
 
-        composeTestRule.onNodeWithText("Recomendaciones").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Mostrar detalles técnicos").performScrollTo().performClick()
+        composeTestRule.onNodeWithText(recommendations).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(showTechnical).performScrollTo().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Ocultar detalles técnicos").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(hideTechnical).performScrollTo().assertIsDisplayed()
         assertTrue(vm.state.value.technicalExpanded)
         assertTrue(vm.state.value.recommendations.isNotEmpty())
     }

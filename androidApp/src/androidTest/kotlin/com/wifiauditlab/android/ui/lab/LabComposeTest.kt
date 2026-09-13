@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.observation
 import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
@@ -48,6 +49,8 @@ import kotlin.time.Duration.Companion.seconds
 class LabComposeTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+    private val activity get() = composeTestRule.activity
 
     private class ScriptedEngine(private val events: List<LabSearchEvent>) : LabSearchEngine {
         override fun run(
@@ -134,34 +137,56 @@ class LabComposeTest {
 
     private fun startSearch() {
         // Start lives in the fixed bottom action bar — must not require scroll.
-        composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed().performClick()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+            .assertIsDisplayed()
+            .performClick()
         composeTestRule.waitForIdle()
     }
 
     @Test
     fun configAndFeasibility_areVisible() {
         setLab(viewModel(ScriptedEngine(emptyList())))
-        composeTestRule.onNodeWithText("Laboratorio sintético").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Modo guiado del laboratorio").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Experimento guiado").assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_title)).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_guided_experiment)).assertIsDisplayed()
         // Technical knobs stay collapsed until the user opens advanced options.
-        composeTestRule.onNodeWithContentDescription("Opciones avanzadas").performClick()
-        composeTestRule.onNodeWithText("Reto").assertIsDisplayed()
-        waitForText("Antes de iniciar")
-        scrollToText("Antes de iniciar")
-        waitForText("Viabilidad: Razonable")
-        scrollToText("Viabilidad: Razonable")
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_advanced_options))
+            .performClick()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_challenge)).assertIsDisplayed()
+        val beforeStart = activity.getString(R.string.lab_before_start)
+        waitForText(beforeStart)
+        scrollToText(beforeStart)
+        val feasibilityReasonable =
+            activity.getString(
+                R.string.lab_feasibility,
+                activity.getString(R.string.lab_feasibility_reasonable),
+            )
+        waitForText(feasibilityReasonable)
+        scrollToText(feasibilityReasonable)
         scrollToText("ok")
-        composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Iniciar prueba").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_start_test)).assertIsDisplayed()
     }
 
     @Test
     fun guidedMode_hidesTechnicalConfigByDefault() {
         setLab(viewModel(ScriptedEngine(emptyList())))
-        composeTestRule.onNodeWithContentDescription("Modo guiado del laboratorio").assertIsDisplayed()
-        assertTrue(composeTestRule.onAllNodesWithText("Reto").fetchSemanticsNodes().isEmpty())
-        composeTestRule.onNodeWithText("Iniciar prueba").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
+            .assertIsDisplayed()
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.lab_challenge))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_start_test)).assertIsDisplayed()
     }
 
     @Test
@@ -169,15 +194,18 @@ class LabComposeTest {
         val vm = viewModel(ScriptedEngine(emptyList()))
         setLab(vm)
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithContentDescription("Opciones avanzadas").performClick()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_advanced_options))
+            .performClick()
 
         // Clear both limit fields so config becomes invalid.
         composeTestRule.onNodeWithText(vm.state.value.config.maxAttempts!!.toString()).performScrollTo().performTextClearance()
         composeTestRule.onNodeWithText(vm.state.value.config.maxDurationSeconds!!.toString()).performScrollTo().performTextClearance()
         composeTestRule.waitForIdle()
 
-        waitForText("Configura al menos un límite de intentos o de tiempo.")
-        scrollToText("Configura al menos un límite de intentos o de tiempo.")
+        val limitsRequired = activity.getString(R.string.lab_err_limits_required)
+        waitForText(limitsRequired)
+        scrollToText(limitsRequired)
     }
 
     @Test
@@ -195,9 +223,10 @@ class LabComposeTest {
         setLab(vm)
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
-        waitForText("ENCONTRADO")
-        scrollToText("ENCONTRADO")
-        scrollToText("Secreto encontrado: lab-01")
+        val outcomeFound = activity.getString(R.string.lab_outcome_found)
+        waitForText(outcomeFound)
+        scrollToText(outcomeFound)
+        scrollToText(activity.getString(R.string.lab_found_secret, "lab-01"))
     }
 
     @Test
@@ -210,9 +239,11 @@ class LabComposeTest {
                 vm.state.value.searchState == SearchState.Preparing
         }
         // Regression: DETENER must be in the fixed action bar — never require scroll.
-        composeTestRule.onNodeWithContentDescription("Detener búsqueda").assertIsDisplayed()
-        composeTestRule.onNodeWithText("DETENER").assertIsDisplayed()
-        waitForText("Buscando")
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_stop_search))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_stop)).assertIsDisplayed()
+        waitForText(activity.getString(R.string.lab_state_running))
     }
 
     @Test
@@ -224,7 +255,12 @@ class LabComposeTest {
             vm.state.value.searchState == SearchState.Running ||
                 vm.state.value.searchState == SearchState.Preparing
         }
-        composeTestRule.onNodeWithContentDescription("Detener búsqueda").assertIsDisplayed().performClick()
+        val stopping = activity.getString(R.string.lab_stopping)
+        val cancelled = activity.getString(R.string.lab_outcome_cancelled)
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_stop_search))
+            .assertIsDisplayed()
+            .performClick()
 
         composeTestRule.waitUntil(5_000) {
             vm.state.value.searchState == SearchState.Cancelling ||
@@ -233,19 +269,21 @@ class LabComposeTest {
         }
         // Immediate UI feedback after tap (Cancelling and/or terminal Cancelled).
         composeTestRule.waitUntil(5_000) {
-            composeTestRule.onAllNodesWithText("Deteniendo", substring = true).fetchSemanticsNodes().isNotEmpty() ||
-                composeTestRule.onAllNodesWithText("CANCELADO").fetchSemanticsNodes().isNotEmpty() ||
+            composeTestRule.onAllNodesWithText(stopping, substring = true).fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodesWithText(cancelled).fetchSemanticsNodes().isNotEmpty() ||
                 vm.state.value.outcome == SearchOutcome.Cancelled
         }
         composeTestRule.waitUntil(5_000) {
             vm.state.value.outcome == SearchOutcome.Cancelled &&
                 vm.state.value.searchState == SearchState.Cancelled
         }
-        waitForText("CANCELADO")
+        waitForText(cancelled)
         // Result card is pinned above config after terminal outcomes.
-        composeTestRule.onNodeWithText("CANCELADO").assertIsDisplayed()
+        composeTestRule.onNodeWithText(cancelled).assertIsDisplayed()
         // Start returns to the fixed bar — cancel completed.
-        composeTestRule.onNodeWithContentDescription("Iniciar búsqueda").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+            .assertIsDisplayed()
     }
 
     @Test
@@ -263,8 +301,9 @@ class LabComposeTest {
         setLab(vm)
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.LimitReached }
-        waitForText("LÍMITE ALCANZADO")
-        scrollToText("LÍMITE ALCANZADO")
+        val outcomeLimit = activity.getString(R.string.lab_outcome_limit)
+        waitForText(outcomeLimit)
+        scrollToText(outcomeLimit)
     }
 
     @Test
@@ -283,11 +322,14 @@ class LabComposeTest {
             ),
         )
         setLab(viewModel(ScriptedEngine(emptyList()), networkContextStore = store))
-        waitForText("Simulación local")
-        composeTestRule.onNodeWithContentDescription("Contexto de red del laboratorio").assertIsDisplayed()
+        val simulationLocal = activity.getString(R.string.lab_simulation_local)
+        waitForText(simulationLocal)
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_network_context))
+            .assertIsDisplayed()
         composeTestRule.onNodeWithText("Casa").assertIsDisplayed()
         composeTestRule.onNodeWithText("MOVISTAR_XXXX").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Simulación local").assertIsDisplayed()
-        waitForText("no realiza intentos de conexión")
+        composeTestRule.onNodeWithText(simulationLocal).assertIsDisplayed()
+        waitForText(activity.getString(R.string.lab_simulation_local_body))
     }
 }

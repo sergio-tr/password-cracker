@@ -1,5 +1,7 @@
 package com.wifiauditlab.android.ui.permissions
 
+import androidx.annotation.StringRes
+
 /** How an item relates to app capability. */
 enum class PermissionKind {
     RequiredPermission,
@@ -26,10 +28,10 @@ enum class PermissionAction {
 
 data class PermissionItem(
     val id: String,
-    val name: String,
+    @StringRes val nameRes: Int,
     val kind: PermissionKind,
     val status: PermissionStatus,
-    val rationale: String,
+    @StringRes val rationaleRes: Int,
     val action: PermissionAction,
 )
 

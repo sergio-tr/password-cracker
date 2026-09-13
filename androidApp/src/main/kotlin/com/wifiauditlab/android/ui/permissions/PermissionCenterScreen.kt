@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -39,14 +40,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-/**
- * Production entry. System permission request / settings intents stay here so
- * Compose UI tests can drive [PermissionCenterContent] with fake callbacks.
- */
 @Composable
 fun PermissionCenterScreen(
     viewModel: PermissionCenterViewModel = koinViewModel(),
@@ -114,7 +112,7 @@ fun PermissionCenterContent(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Centro de permisos") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.permissions_title)) }) }) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -123,7 +121,7 @@ fun PermissionCenterContent(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Los permisos se solicitan cuando hacen falta, no todos al arrancar.")
+            Text(stringResource(R.string.permissions_intro))
             state.items.forEach { item ->
                 PermissionCard(
                     item = item,
@@ -133,7 +131,7 @@ fun PermissionCenterContent(
                 )
             }
             OutlinedButton(onClick = viewModel::refresh, modifier = Modifier.fillMaxWidth()) {
-                Text("Actualizar estados")
+                Text(stringResource(R.string.permissions_refresh))
             }
         }
     }
@@ -146,39 +144,50 @@ private fun PermissionCard(
     onOpenAppSettings: () -> Unit,
     onOpenLocationSettings: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth().semantics { contentDescription = "Permiso ${item.name}" }) {
+    val name = stringResource(item.nameRes)
+    val itemContentDescription = stringResource(R.string.permissions_cd_item, name)
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = itemContentDescription },
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(item.name, fontWeight = FontWeight.SemiBold)
-            Text("Tipo: ${kindLabel(item.kind)}")
-            Text("Estado: ${statusLabel(item.status)}")
-            Text(item.rationale)
+            Text(name, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.permissions_kind, kindLabel(item.kind)))
+            Text(stringResource(R.string.permissions_status, statusLabel(item.status)))
+            Text(stringResource(item.rationaleRes))
             when (item.action) {
-                PermissionAction.Request -> Button(onClick = onRequest) { Text("Conceder") }
-                PermissionAction.OpenAppSettings -> Button(onClick = onOpenAppSettings) { Text("Abrir ajustes") }
+                PermissionAction.Request -> Button(onClick = onRequest) { Text(stringResource(R.string.permissions_grant)) }
+                PermissionAction.OpenAppSettings ->
+                    Button(onClick = onOpenAppSettings) { Text(stringResource(R.string.permissions_open_settings)) }
                 PermissionAction.OpenLocationSettings ->
-                    Button(onClick = onOpenLocationSettings) { Text("Abrir ajustes de ubicación") }
+                    Button(onClick = onOpenLocationSettings) {
+                        Text(stringResource(R.string.permissions_open_location_settings))
+                    }
                 PermissionAction.None -> Unit
             }
         }
     }
 }
 
+@Composable
 private fun kindLabel(kind: PermissionKind): String =
     when (kind) {
-        PermissionKind.RequiredPermission -> "Permiso requerido"
-        PermissionKind.SystemService -> "Servicio del sistema"
-        PermissionKind.OptionalCapability -> "Capacidad opcional"
+        PermissionKind.RequiredPermission -> stringResource(R.string.permissions_kind_required)
+        PermissionKind.SystemService -> stringResource(R.string.permissions_kind_system)
+        PermissionKind.OptionalCapability -> stringResource(R.string.permissions_kind_optional)
     }
 
+@Composable
 private fun statusLabel(status: PermissionStatus): String =
     when (status) {
-        PermissionStatus.Granted -> "Granted"
-        PermissionStatus.Missing -> "Missing"
-        PermissionStatus.PermanentlyDenied -> "Permanently denied"
-        PermissionStatus.Enabled -> "Enabled"
-        PermissionStatus.Disabled -> "Disabled"
-        PermissionStatus.Available -> "Available"
-        PermissionStatus.Unavailable -> "Unavailable"
+        PermissionStatus.Granted -> stringResource(R.string.permissions_status_granted)
+        PermissionStatus.Missing -> stringResource(R.string.permissions_status_missing)
+        PermissionStatus.PermanentlyDenied -> stringResource(R.string.permissions_status_permanently_denied)
+        PermissionStatus.Enabled -> stringResource(R.string.permissions_status_enabled)
+        PermissionStatus.Disabled -> stringResource(R.string.permissions_status_disabled)
+        PermissionStatus.Available -> stringResource(R.string.permissions_status_available)
+        PermissionStatus.Unavailable -> stringResource(R.string.permissions_status_unavailable)
     }
 
 private tailrec fun Context.findActivity(): Activity? =

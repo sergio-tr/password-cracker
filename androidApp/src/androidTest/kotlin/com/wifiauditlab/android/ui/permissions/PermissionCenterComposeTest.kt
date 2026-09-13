@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -16,6 +17,8 @@ import org.junit.runner.RunWith
 class PermissionCenterComposeTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+    private val activity get() = composeTestRule.activity
 
     private fun inventory(
         wifiStatus: PermissionStatus,
@@ -29,29 +32,29 @@ class PermissionCenterComposeTest {
                         wifiStatus == PermissionStatus.Granted ->
                             PermissionItem(
                                 id = "wifi_discovery",
-                                name = "Wi‑Fi discovery",
+                                nameRes = R.string.permissions_wifi_discovery,
                                 kind = PermissionKind.RequiredPermission,
                                 status = PermissionStatus.Granted,
-                                rationale = "scan",
+                                rationaleRes = R.string.permissions_wifi_rationale_legacy,
                                 action = PermissionAction.None,
                             )
                         "NEARBY_WIFI_DEVICES" in permanentlyDenied ||
                             "ACCESS_FINE_LOCATION" in permanentlyDenied ->
                             PermissionItem(
                                 id = "wifi_discovery",
-                                name = "Wi‑Fi discovery",
+                                nameRes = R.string.permissions_wifi_discovery,
                                 kind = PermissionKind.RequiredPermission,
                                 status = PermissionStatus.PermanentlyDenied,
-                                rationale = "scan",
+                                rationaleRes = R.string.permissions_wifi_rationale_legacy,
                                 action = PermissionAction.OpenAppSettings,
                             )
                         else ->
                             PermissionItem(
                                 id = "wifi_discovery",
-                                name = "Wi‑Fi discovery",
+                                nameRes = R.string.permissions_wifi_discovery,
                                 kind = PermissionKind.RequiredPermission,
                                 status = wifiStatus,
-                                rationale = "scan",
+                                rationaleRes = R.string.permissions_wifi_rationale_legacy,
                                 action =
                                     if (wifiStatus == PermissionStatus.Missing) {
                                         PermissionAction.Request
@@ -63,10 +66,10 @@ class PermissionCenterComposeTest {
                 val location =
                     PermissionItem(
                         id = "location_services",
-                        name = "Location services",
+                        nameRes = R.string.permissions_location_services,
                         kind = PermissionKind.SystemService,
                         status = locationStatus,
-                        rationale = "location",
+                        rationaleRes = R.string.permissions_location_rationale,
                         action =
                             if (locationStatus == PermissionStatus.Disabled) {
                                 PermissionAction.OpenLocationSettings
@@ -97,12 +100,17 @@ class PermissionCenterComposeTest {
         composeTestRule.waitForIdle()
     }
 
+    private fun statusLabel(statusRes: Int): String =
+        activity.getString(R.string.permissions_status, activity.getString(statusRes))
+
     @Test
     fun granted_showsGrantedStatusWithoutPrimaryAction() {
         val vm = PermissionCenterViewModel { inventory(PermissionStatus.Granted) }
         setContent(vm)
-        composeTestRule.onNodeWithText("Estado: Granted").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Centro de permisos").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(statusLabel(R.string.permissions_status_granted))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.permissions_title)).assertIsDisplayed()
     }
 
     @Test
@@ -110,8 +118,10 @@ class PermissionCenterComposeTest {
         var requested = false
         val vm = PermissionCenterViewModel { denied -> inventory(PermissionStatus.Missing, permanentlyDenied = denied) }
         setContent(vm, onRequest = { requested = true })
-        composeTestRule.onNodeWithText("Estado: Missing").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Conceder").performClick()
+        composeTestRule
+            .onNodeWithText(statusLabel(R.string.permissions_status_missing))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.permissions_grant)).performClick()
         assertTrue(requested)
     }
 
@@ -124,8 +134,10 @@ class PermissionCenterComposeTest {
             }
         vm.markPermanentlyDenied("NEARBY_WIFI_DEVICES")
         setContent(vm, onApp = { openedApp = true })
-        composeTestRule.onNodeWithText("Estado: Permanently denied").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Abrir ajustes").performClick()
+        composeTestRule
+            .onNodeWithText(statusLabel(R.string.permissions_status_permanently_denied))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.permissions_open_settings)).performClick()
         assertTrue(openedApp)
     }
 
@@ -137,8 +149,12 @@ class PermissionCenterComposeTest {
                 inventory(PermissionStatus.Granted, locationStatus = PermissionStatus.Disabled)
             }
         setContent(vm, onLocation = { openedLocation = true })
-        composeTestRule.onNodeWithText("Estado: Disabled").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Abrir ajustes de ubicación").performClick()
+        composeTestRule
+            .onNodeWithText(statusLabel(R.string.permissions_status_disabled))
+            .assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.permissions_open_location_settings))
+            .performClick()
         assertTrue(openedLocation)
     }
 }

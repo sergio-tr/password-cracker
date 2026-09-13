@@ -1,5 +1,7 @@
 package com.wifiauditlab.android.ui.security
 
+import androidx.annotation.StringRes
+import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.security.SecurityRating
 import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
@@ -29,11 +31,12 @@ class SecurityAnalysisTargetStore {
 }
 
 data class AuthenticationSummary(
-    val familyLabel: String,
-    val modeLabel: String,
-    val encryptionLabel: String,
-    val pmfLabel: String?,
-    val transitionLabel: String?,
+    @StringRes val familyLabelRes: Int,
+    @StringRes val modeLabelRes: Int,
+    @StringRes val encryptionLabelRes: Int? = null,
+    val encryptionDynamic: String? = null,
+    @StringRes val pmfLabelRes: Int? = null,
+    @StringRes val transitionLabelRes: Int? = null,
 )
 
 data class SecurityAnalysisUiState(
@@ -43,69 +46,78 @@ data class SecurityAnalysisUiState(
     val missingTarget: Boolean = false,
     val assessment: SecurityAssessment? = null,
     val authentication: AuthenticationSummary? = null,
-    val recommendations: List<String> = emptyList(),
+    val recommendations: List<Int> = emptyList(),
     val technicalExpanded: Boolean = false,
 )
 
-fun ratingLabel(rating: SecurityRating): String =
+@StringRes
+fun ratingLabelRes(rating: SecurityRating): Int =
     when (rating) {
-        SecurityRating.HIGH -> "Seguridad alta"
-        SecurityRating.MODERATE -> "Seguridad moderada"
-        SecurityRating.LOW -> "Seguridad baja"
-        SecurityRating.INSECURE -> "Insegura"
+        SecurityRating.HIGH -> R.string.security_rating_high
+        SecurityRating.MODERATE -> R.string.security_rating_moderate
+        SecurityRating.LOW -> R.string.security_rating_low
+        SecurityRating.INSECURE -> R.string.security_rating_insecure
     }
 
-fun familyLabel(family: SecurityFamily): String =
+@StringRes
+fun familyLabelRes(family: SecurityFamily): Int =
     when (family) {
-        SecurityFamily.OPEN -> "Abierta (Open)"
-        SecurityFamily.WEP -> "WEP"
-        SecurityFamily.WPA_PERSONAL -> "WPA-Personal"
-        SecurityFamily.WPA2_PERSONAL -> "WPA2-Personal"
-        SecurityFamily.WPA3_PERSONAL -> "WPA3-Personal"
-        SecurityFamily.WPA2_WPA3_PERSONAL -> "WPA2/WPA3-Personal (transición)"
-        SecurityFamily.WPA2_ENTERPRISE -> "WPA2-Enterprise"
-        SecurityFamily.WPA3_ENTERPRISE -> "WPA3-Enterprise"
-        SecurityFamily.OWE -> "OWE (Enhanced Open)"
-        SecurityFamily.PASSPOINT -> "Passpoint"
-        SecurityFamily.DPP -> "DPP (Easy Connect)"
-        SecurityFamily.UNKNOWN -> "Desconocida"
+        SecurityFamily.OPEN -> R.string.security_family_open
+        SecurityFamily.WEP -> R.string.security_family_wep
+        SecurityFamily.WPA_PERSONAL -> R.string.security_family_wpa
+        SecurityFamily.WPA2_PERSONAL -> R.string.security_family_wpa2
+        SecurityFamily.WPA3_PERSONAL -> R.string.security_family_wpa3
+        SecurityFamily.WPA2_WPA3_PERSONAL -> R.string.security_family_wpa2_wpa3
+        SecurityFamily.WPA2_ENTERPRISE -> R.string.security_family_wpa2_enterprise
+        SecurityFamily.WPA3_ENTERPRISE -> R.string.security_family_wpa3_enterprise
+        SecurityFamily.OWE -> R.string.security_family_owe
+        SecurityFamily.PASSPOINT -> R.string.security_family_passpoint
+        SecurityFamily.DPP -> R.string.security_family_dpp
+        SecurityFamily.UNKNOWN -> R.string.security_family_unknown
     }
 
 fun buildAuthenticationSummary(profile: WifiSecurityProfile): AuthenticationSummary {
-    val mode =
+    val modeRes =
         when (profile.family) {
             SecurityFamily.WPA2_ENTERPRISE, SecurityFamily.WPA3_ENTERPRISE, SecurityFamily.PASSPOINT ->
-                "Modo enterprise (802.1X)"
-            SecurityFamily.OPEN, SecurityFamily.OWE -> "Sin contraseña compartida"
-            SecurityFamily.UNKNOWN -> "Modo no determinado"
-            else -> "Modo personal (PSK)"
+                R.string.security_mode_enterprise
+            SecurityFamily.OPEN, SecurityFamily.OWE -> R.string.security_mode_open
+            SecurityFamily.UNKNOWN -> R.string.security_mode_unknown
+            else -> R.string.security_mode_personal
         }
-    val encryption =
+    val encryptionDynamic =
         when {
             profile.keyManagements.isNotEmpty() -> profile.keyManagements.sorted().joinToString(", ")
-            profile.family == SecurityFamily.OPEN -> "Sin cifrado de enlace"
-            profile.family == SecurityFamily.WEP -> "WEP (obsoleto)"
-            else -> profile.rawCapabilities ?: "No informado por el sistema"
+            profile.rawCapabilities != null -> profile.rawCapabilities
+            else -> null
         }
-    val pmf =
+    val encryptionRes =
+        when {
+            encryptionDynamic != null -> null
+            profile.family == SecurityFamily.OPEN -> R.string.security_enc_open
+            profile.family == SecurityFamily.WEP -> R.string.security_enc_wep
+            else -> R.string.security_enc_unknown
+        }
+    val pmfRes =
         when (profile.managementFrameProtection) {
-            ManagementFrameProtection.REQUIRED -> "PMF/MFP obligatorio"
-            ManagementFrameProtection.CAPABLE -> "PMF/MFP opcional (capable)"
-            ManagementFrameProtection.DISABLED -> "PMF/MFP desactivado"
+            ManagementFrameProtection.REQUIRED -> R.string.security_pmf_required
+            ManagementFrameProtection.CAPABLE -> R.string.security_pmf_capable
+            ManagementFrameProtection.DISABLED -> R.string.security_pmf_disabled
             ManagementFrameProtection.UNKNOWN -> null
         }
-    val transition =
+    val transitionRes =
         when {
             profile.isTransitionMode || profile.family == SecurityFamily.WPA2_WPA3_PERSONAL ->
-                "Transición WPA2/WPA3: la protección real depende del cliente que se conecte."
+                R.string.security_transition
             else -> null
         }
     return AuthenticationSummary(
-        familyLabel = familyLabel(profile.family),
-        modeLabel = mode,
-        encryptionLabel = encryption,
-        pmfLabel = pmf,
-        transitionLabel = transition,
+        familyLabelRes = familyLabelRes(profile.family),
+        modeLabelRes = modeRes,
+        encryptionLabelRes = encryptionRes,
+        encryptionDynamic = encryptionDynamic,
+        pmfLabelRes = pmfRes,
+        transitionLabelRes = transitionRes,
     )
 }
 
@@ -113,51 +125,51 @@ fun buildAuthenticationSummary(profile: WifiSecurityProfile): AuthenticationSumm
  * Defensive configuration tips only — never attack steps, password generation,
  * candidates, or lab linkage.
  */
-fun defensiveRecommendations(
+fun defensiveRecommendationRes(
     profile: WifiSecurityProfile,
     assessment: SecurityAssessment,
-): List<String> {
-    val tips = linkedSetOf<String>()
+): List<Int> {
+    val tips = linkedSetOf<Int>()
     when (profile.family) {
         SecurityFamily.OPEN -> {
-            tips += "No introduzcas contraseñas ni datos bancarios en una red abierta."
-            tips += "Si controlas el router, activa WPA3 (o al menos WPA2) con una frase larga."
+            tips += R.string.security_rec_open_no_passwords
+            tips += R.string.security_rec_open_upgrade
         }
         SecurityFamily.WEP, SecurityFamily.WPA_PERSONAL -> {
-            tips += "Actualiza el router a WPA2 o WPA3; este mecanismo ya no se considera seguro."
-            tips += "Cambia la contraseña de administración del router tras actualizar el cifrado."
+            tips += R.string.security_rec_legacy_upgrade
+            tips += R.string.security_rec_legacy_admin
         }
         SecurityFamily.WPA2_PERSONAL -> {
-            tips += "Usa una frase de acceso larga y única; evita palabras del diccionario."
-            tips += "Si el router lo permite, activa WPA3 o el modo de transición WPA2/WPA3."
+            tips += R.string.security_rec_wpa2_passphrase
+            tips += R.string.security_rec_wpa2_wpa3
             if (profile.managementFrameProtection == ManagementFrameProtection.DISABLED) {
-                tips += "Activa la protección de tramas de gestión (PMF) en la configuración Wi‑Fi."
+                tips += R.string.security_rec_wpa2_pmf
             }
         }
         SecurityFamily.WPA2_WPA3_PERSONAL -> {
-            tips += "Prefiere clientes compatibles con WPA3 para aprovechar la protección moderna."
-            tips += "Cuando todos los dispositivos lo permitan, desactiva el modo solo WPA2."
+            tips += R.string.security_rec_transition_wpa3
+            tips += R.string.security_rec_transition_disable_wpa2
         }
         SecurityFamily.WPA3_PERSONAL -> {
-            tips += "Mantén el firmware del router al día."
-            tips += "Conserva una frase de acceso larga aunque WPA3 sea más resistente."
+            tips += R.string.security_rec_wpa3_firmware
+            tips += R.string.security_rec_wpa3_passphrase
         }
         SecurityFamily.WPA2_ENTERPRISE, SecurityFamily.WPA3_ENTERPRISE, SecurityFamily.PASSPOINT -> {
-            tips += "Confía solo en perfiles corporativos desplegados por tu organización."
-            tips += "No ignores avisos de certificado al conectarte."
+            tips += R.string.security_rec_enterprise_trust
+            tips += R.string.security_rec_enterprise_cert
         }
         SecurityFamily.OWE -> {
-            tips += "El tráfico va cifrado, pero cualquiera puede unirse: sigue evitando datos sensibles."
+            tips += R.string.security_rec_owe_sensitive
         }
         SecurityFamily.DPP -> {
-            tips += "Usa el flujo Easy Connect oficial del fabricante para añadir dispositivos."
+            tips += R.string.security_rec_dpp
         }
         SecurityFamily.UNKNOWN -> {
-            tips += "Si es tu red, revisa el panel del router para confirmar el tipo de seguridad."
+            tips += R.string.security_rec_unknown_check
         }
     }
     if (assessment.rating == SecurityRating.INSECURE || assessment.rating == SecurityRating.LOW) {
-        tips += "Prioriza otra red de confianza mientras no puedas mejorar la configuración."
+        tips += R.string.security_rec_low_priority
     }
     return tips.toList()
 }

@@ -7,6 +7,7 @@ import android.location.LocationManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 
@@ -41,25 +42,23 @@ class AndroidPermissionInventory(
         return listOf(
             PermissionItem(
                 id = "wifi_discovery",
-                name = "Wi‑Fi discovery",
+                nameRes = R.string.permissions_wifi_discovery,
                 kind = PermissionKind.RequiredPermission,
                 status = scanStatus,
-                rationale =
+                rationaleRes =
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        "Necesario para descubrir redes cercanas sin usar la ubicación."
+                        R.string.permissions_wifi_rationale_tiramisu
                     } else {
-                        "En esta versión de Android el descubrimiento Wi‑Fi requiere ubicación."
+                        R.string.permissions_wifi_rationale_legacy
                     },
                 action = scanAction,
             ),
             PermissionItem(
                 id = "location_services",
-                name = "Location services",
+                nameRes = R.string.permissions_location_services,
                 kind = PermissionKind.SystemService,
                 status = if (locationEnabled) PermissionStatus.Enabled else PermissionStatus.Disabled,
-                rationale =
-                    "Algunos dispositivos exigen los servicios de ubicación activos para " +
-                        "devolver resultados de escaneo Wi‑Fi.",
+                rationaleRes = R.string.permissions_location_rationale,
                 action =
                     if (locationEnabled) {
                         PermissionAction.None
@@ -69,7 +68,7 @@ class AndroidPermissionInventory(
             ),
             PermissionItem(
                 id = "secure_vault",
-                name = "Secure secret storage",
+                nameRes = R.string.permissions_secure_vault,
                 kind = PermissionKind.OptionalCapability,
                 status =
                     if (capabilities.secureSecretStorage) {
@@ -77,12 +76,12 @@ class AndroidPermissionInventory(
                     } else {
                         PermissionStatus.Unavailable
                     },
-                rationale = "El Vault cifra credenciales con el almacén seguro de la plataforma.",
+                rationaleRes = R.string.permissions_secure_vault_rationale,
                 action = PermissionAction.None,
             ),
             PermissionItem(
                 id = "geolocation",
-                name = "Geolocation (optional)",
+                nameRes = R.string.permissions_geolocation,
                 kind = PermissionKind.OptionalCapability,
                 status =
                     if (capabilities.geolocation) {
@@ -90,7 +89,7 @@ class AndroidPermissionInventory(
                     } else {
                         PermissionStatus.Unavailable
                     },
-                rationale = "Solo se usa si pides guardar coordenadas reales; no es obligatorio.",
+                rationaleRes = R.string.permissions_geolocation_rationale,
                 action = PermissionAction.None,
             ),
         )

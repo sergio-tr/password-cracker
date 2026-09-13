@@ -1,5 +1,6 @@
 package com.wifiauditlab.android.ui.lab
 
+import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -41,6 +42,6 @@ class GuidedLabDefaultsTest {
         assertFalse(SecurityFamily.OWE.supportsSharedPasswordDemo())
         assertFalse(SecurityFamily.WPA2_ENTERPRISE.supportsSharedPasswordDemo())
         assertFalse(SecurityFamily.DPP.supportsSharedPasswordDemo())
-        assertTrue(SecurityFamily.OPEN.guidedLabExplanation().contains("no utiliza una contraseña"))
+        assertEquals(R.string.lab_guided_open_owe, SecurityFamily.OPEN.guidedLabExplanationRes())
     }
 }

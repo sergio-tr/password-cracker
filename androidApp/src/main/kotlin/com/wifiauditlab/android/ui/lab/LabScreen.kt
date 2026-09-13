@@ -33,11 +33,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wifiauditlab.android.R
+import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
@@ -57,15 +60,17 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             state.searchState == SearchState.Preparing ||
             state.searchState == SearchState.Cancelling
     val cancelling = state.searchState == SearchState.Cancelling
+    val startTestLabel = stringResource(R.string.lab_start_test)
+    val startSearchLabel = stringResource(R.string.lab_start_search)
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Laboratorio sintético") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.lab_title)) }) },
         bottomBar = {
             LabActionBar(
                 running = running,
                 cancelling = cancelling,
-                canStart = state.configError == null,
-                startLabel = if (state.mode == LabInteractionMode.Guided) "Iniciar prueba" else "Iniciar búsqueda",
+                canStart = state.configErrorRes == null,
+                startLabel = if (state.mode == LabInteractionMode.Guided) startTestLabel else startSearchLabel,
                 onStart = viewModel::start,
                 onStop = viewModel::stop,
             )
@@ -81,7 +86,6 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
         ) {
             Spacer(Modifier.height(4.dp))
             state.networkContext?.let { NetworkContextBanner(it) }
-            // Outcome first so Cancelled/Found remain visible without scrolling past config.
             state.outcome?.let { ResultCard(it, state.foundCandidate, state.errorMessage, state.metrics) }
             if (running) {
                 ExecutionStatusCard(state = state)
@@ -106,33 +110,35 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
 
 @Composable
 private fun NetworkContextBanner(context: LabNetworkContext) {
+    val networkContextCd = stringResource(R.string.lab_cd_network_context)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Contexto de red del laboratorio" },
+                .semantics { contentDescription = networkContextCd },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Laboratorio", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.lab_heading), fontWeight = FontWeight.Bold)
             Text(context.displayName, fontWeight = FontWeight.SemiBold)
             if (context.ssidLabel != context.displayName) {
                 Text(context.ssidLabel)
             }
-            Text(context.familyDisplayLabel())
-            val meta = context.metaLine()
+            Text(stringResource(familyLabelRes(context.securityFamily)))
+            val meta =
+                listOfNotNull(
+                    context.wifiStandard?.let { standardLabel(it) },
+                    context.band?.let { stringResource(bandDisplayLabelRes(it)) },
+                ).joinToString(" · ").ifEmpty { "—" }
             if (meta != "—") {
                 Text(meta)
             }
             context.assessmentSummary?.let { Text(it) }
             Spacer(Modifier.height(4.dp))
-            Text(context.guidedTitle(), fontWeight = FontWeight.SemiBold)
-            Text(context.securityFamily.guidedLabExplanation())
+            Text(stringResource(context.guidedTitleRes()), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(context.securityFamily.guidedLabExplanationRes()))
             Spacer(Modifier.height(4.dp))
-            Text("Simulación local", fontWeight = FontWeight.SemiBold)
-            Text(
-                "El experimento utiliza la configuración de esta red como contexto, " +
-                    "pero no realiza intentos de conexión contra ella.",
-            )
+            Text(stringResource(R.string.lab_simulation_local), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.lab_simulation_local_body))
         }
     }
 }
@@ -146,57 +152,54 @@ private fun GuidedModeCard(
     onOpenAdvancedMode: () -> Unit,
     onOpenGuidedMode: () -> Unit,
 ) {
+    val guidedModeCd = stringResource(R.string.lab_cd_guided_mode)
+    val advancedOptionsCd = stringResource(R.string.lab_cd_advanced_options)
+    val advancedShow = stringResource(R.string.lab_advanced_show)
+    val advancedHide = stringResource(R.string.lab_advanced_hide)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Modo guiado del laboratorio" },
+                .semantics { contentDescription = guidedModeCd },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(state.networkContext.guidedTitle(), fontWeight = FontWeight.Bold)
+            Text(stringResource(state.networkContext.guidedTitleRes()), fontWeight = FontWeight.Bold)
             if (state.networkContext == null) {
-                Text(
-                    "La aplicación elige automáticamente estrategia, workers y límites " +
-                        "razonables para una demostración sintética.",
-                )
+                Text(stringResource(R.string.lab_guided_auto_explanation))
             } else {
-                Text(state.networkContext.securityFamily.guidedLabExplanation())
+                Text(stringResource(state.networkContext.securityFamily.guidedLabExplanationRes()))
             }
             state.feasibility?.estimatedDurationRange?.let {
-                Text("Estimación: ${it.toApproximateString()}")
+                Text(stringResource(R.string.lab_estimation, it.toApproximateString()))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = state.mode == LabInteractionMode.Guided,
                     onClick = onOpenGuidedMode,
-                    label = { Text("Modo guiado") },
+                    label = { Text(stringResource(R.string.lab_mode_guided)) },
                 )
                 FilterChip(
                     selected = state.mode == LabInteractionMode.Advanced,
                     onClick = onOpenAdvancedMode,
-                    label = { Text("Avanzado") },
+                    label = { Text(stringResource(R.string.lab_mode_advanced)) },
                 )
             }
             if (state.mode == LabInteractionMode.Guided) {
                 TextButton(
                     onClick = { if (state.advancedExpanded) onCollapseAdvanced() else onExpandAdvanced() },
-                    modifier = Modifier.semantics { contentDescription = "Opciones avanzadas" },
+                    modifier = Modifier.semantics { contentDescription = advancedOptionsCd },
                 ) {
-                    Text(if (state.advancedExpanded) "Ocultar opciones avanzadas" else "Opciones avanzadas")
+                    Text(if (state.advancedExpanded) advancedHide else advancedShow)
                 }
             } else {
                 OutlinedButton(onClick = onResetGuided, modifier = Modifier.fillMaxWidth()) {
-                    Text("Restablecer configuración automática")
+                    Text(stringResource(R.string.lab_reset_auto))
                 }
             }
         }
     }
 }
 
-/**
- * Fixed action zone — always visible without scrolling.
- * STOP stays reachable for every cancelable state.
- */
 @Composable
 private fun LabActionBar(
     running: Boolean,
@@ -206,6 +209,8 @@ private fun LabActionBar(
     onStart: () -> Unit,
     onStop: () -> Unit,
 ) {
+    val stopSearchCd = stringResource(R.string.lab_cd_stop_search)
+    val startSearchCd = stringResource(R.string.lab_cd_start_search)
     Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             if (running) {
@@ -215,7 +220,7 @@ private fun LabActionBar(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .semantics { contentDescription = "Detener búsqueda" },
+                            .semantics { contentDescription = stopSearchCd },
                 ) {
                     Icon(
                         Icons.Filled.Stop,
@@ -223,7 +228,7 @@ private fun LabActionBar(
                         modifier = Modifier.size(22.dp),
                     )
                     Spacer(Modifier.size(8.dp))
-                    Text(if (cancelling) "Deteniendo…" else "DETENER")
+                    Text(if (cancelling) stringResource(R.string.lab_stopping) else stringResource(R.string.lab_stop))
                 }
             } else {
                 Button(
@@ -232,7 +237,7 @@ private fun LabActionBar(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .semantics { contentDescription = "Iniciar búsqueda" },
+                            .semantics { contentDescription = startSearchCd },
                 ) {
                     Icon(Icons.Filled.PlayArrow, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
@@ -247,20 +252,35 @@ private fun LabActionBar(
 private fun ExecutionStatusCard(state: LabUiState) {
     val metrics = state.metrics
     val progress = metrics?.processedPercentage?.toFloat()?.coerceIn(0f, 1f)
+    val executionStatusCd = stringResource(R.string.lab_cd_execution_status)
+    val progressBarCd = stringResource(R.string.lab_cd_progress_bar)
+    val progressIndeterminateCd = stringResource(R.string.lab_cd_progress_indeterminate)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Estado de la búsqueda" },
+                .semantics { contentDescription = executionStatusCd },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(executionHeadline(state.searchState), fontWeight = FontWeight.Bold)
             if (metrics != null) {
-                MetricRow("Intentos", metrics.attempts.toExactString())
-                MetricRow("Tiempo", formatElapsed(metrics.elapsed.inWholeSeconds))
-                MetricRow("Velocidad", "${(metrics.attemptsPerSecond / 1000).roundToInt()} k/s")
+                MetricRow(stringResource(R.string.lab_metric_attempts), metrics.attempts.toExactString())
+                MetricRow(stringResource(R.string.lab_metric_time), formatElapsed(metrics.elapsed.inWholeSeconds))
+                MetricRow(
+                    stringResource(R.string.lab_metric_speed),
+                    stringResource(
+                        R.string.lab_metric_speed_value,
+                        (metrics.attemptsPerSecond / 1000).roundToInt(),
+                    ),
+                )
                 metrics.processedPercentage?.let {
-                    MetricRow("Progreso", "${(it * 1000).roundToInt() / 10.0} %")
+                    MetricRow(
+                        stringResource(R.string.lab_metric_progress),
+                        stringResource(
+                            R.string.lab_metric_progress_value,
+                            (it * 1000).roundToInt() / 10.0,
+                        ),
+                    )
                 }
                 if (progress != null) {
                     LinearProgressIndicator(
@@ -268,18 +288,18 @@ private fun ExecutionStatusCard(state: LabUiState) {
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .semantics { contentDescription = "Barra de progreso de la búsqueda" },
+                                .semantics { contentDescription = progressBarCd },
                     )
                 } else {
                     LinearProgressIndicator(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .semantics { contentDescription = "Barra de progreso indeterminada" },
+                                .semantics { contentDescription = progressIndeterminateCd },
                     )
                 }
             } else {
-                Text("Preparando la búsqueda…")
+                Text(stringResource(R.string.lab_preparing_search))
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
@@ -301,11 +321,12 @@ private fun MetricRow(
     }
 }
 
+@Composable
 private fun executionHeadline(state: SearchState): String =
     when (state) {
-        SearchState.Preparing -> "Preparando…"
-        SearchState.Running -> "Buscando…"
-        SearchState.Cancelling -> "Deteniendo…"
+        SearchState.Preparing -> stringResource(R.string.lab_state_preparing)
+        SearchState.Running -> stringResource(R.string.lab_state_running)
+        SearchState.Cancelling -> stringResource(R.string.lab_state_cancelling)
         else -> state.name
     }
 
@@ -318,8 +339,8 @@ private fun ConfigCard(
     val config = state.config
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Reto", fontWeight = FontWeight.SemiBold)
-            Text(config.alphabet.label)
+            Text(stringResource(R.string.lab_challenge), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(config.alphabet.labelRes))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -328,11 +349,11 @@ private fun ConfigCard(
                     FilterChip(
                         selected = config.alphabet == choice,
                         onClick = { if (enabled) onChange(config.copy(alphabet = choice)) },
-                        label = { Text(choice.label) },
+                        label = { Text(stringResource(choice.labelRes)) },
                     )
                 }
             }
-            Text("Estrategia: ${config.strategy.label}")
+            Text(stringResource(R.string.lab_strategy, stringResource(config.strategy.labelRes)))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -341,12 +362,12 @@ private fun ConfigCard(
                     FilterChip(
                         selected = config.strategy == choice,
                         onClick = { if (enabled) onChange(config.copy(strategy = choice)) },
-                        label = { Text(choice.label) },
+                        label = { Text(stringResource(choice.labelRes)) },
                     )
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Longitud del secreto: ${config.secretLength}")
+                Text(stringResource(R.string.lab_secret_length, config.secretLength))
                 OutlinedButton(
                     onClick = { if (enabled && config.secretLength > 1) onChange(config.copy(secretLength = config.secretLength - 1)) },
                     modifier = Modifier.padding(start = 8.dp),
@@ -360,12 +381,12 @@ private fun ConfigCard(
                 onValueChange = { value ->
                     if (enabled) onChange(config.copy(maxAttempts = value.trim().toLongOrNull()))
                 },
-                label = { Text("Límite de intentos") },
+                label = { Text(stringResource(R.string.lab_attempt_limit)) },
                 enabled = enabled,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text("Workers: ${config.workers} (1 es la referencia)")
+            Text(stringResource(R.string.lab_workers, config.workers))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -383,12 +404,12 @@ private fun ConfigCard(
                 onValueChange = { value ->
                     if (enabled) onChange(config.copy(maxDurationSeconds = value.trim().toLongOrNull()))
                 },
-                label = { Text("Límite de tiempo (s)") },
+                label = { Text(stringResource(R.string.lab_time_limit)) },
                 enabled = enabled,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            state.configError?.let { Text(it) }
+            state.configErrorRes?.let { Text(stringResource(it)) }
         }
     }
 }
@@ -397,15 +418,33 @@ private fun ConfigCard(
 private fun EstimatesCard(state: LabUiState) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Antes de iniciar", fontWeight = FontWeight.SemiBold)
-            Text("Reto: ${state.config.alphabet.label} · longitud ${state.config.secretLength}")
-            Text("Estrategia: ${state.config.strategy.label}")
-            Text("Combinaciones estimadas: ${state.estimatedCombinations.toAbbreviatedString()}")
-            Text("Límite de tiempo: ${state.config.maxDurationSeconds?.let { "$it s" } ?: "—"}")
-            Text("Límite de intentos: ${state.config.maxAttempts ?: "—"}")
+            Text(stringResource(R.string.lab_before_start), fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(
+                    R.string.lab_before_challenge,
+                    stringResource(state.config.alphabet.labelRes),
+                    state.config.secretLength,
+                ),
+            )
+            Text(stringResource(R.string.lab_strategy, stringResource(state.config.strategy.labelRes)))
+            Text(stringResource(R.string.lab_estimated_combinations, state.estimatedCombinations.toAbbreviatedString()))
+            Text(
+                stringResource(
+                    R.string.lab_time_limit_value,
+                    state.config.maxDurationSeconds?.let { "$it s" } ?: "—",
+                ),
+            )
+            Text(
+                stringResource(
+                    R.string.lab_attempt_limit_value,
+                    state.config.maxAttempts?.toString() ?: "—",
+                ),
+            )
             state.feasibility?.let { feasibility ->
-                Text("Viabilidad: ${feasibilityLabel(feasibility.rating)}")
-                feasibility.estimatedDurationRange?.let { Text("Estimación: ${it.toApproximateString()}") }
+                Text(stringResource(R.string.lab_feasibility, feasibilityLabel(feasibility.rating)))
+                feasibility.estimatedDurationRange?.let {
+                    Text(stringResource(R.string.lab_estimation, it.toApproximateString()))
+                }
                 Text(feasibility.reason)
             }
         }
@@ -423,32 +462,34 @@ private fun ResultCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(outcomeLabel(outcome), fontWeight = FontWeight.Bold)
             if (outcome == SearchOutcome.Found && found != null) {
-                Text("Secreto encontrado: $found")
+                Text(stringResource(R.string.lab_found_secret, found))
             }
             errorMessage?.let { Text(it) }
             metrics?.let {
-                Text("Intentos finales: ${it.attempts.toExactString()}")
-                Text("Tiempo final: ${formatElapsed(it.elapsed.inWholeSeconds)}")
+                Text(stringResource(R.string.lab_final_attempts, it.attempts.toExactString()))
+                Text(stringResource(R.string.lab_final_time, formatElapsed(it.elapsed.inWholeSeconds)))
             }
         }
     }
 }
 
+@Composable
 private fun feasibilityLabel(rating: FeasibilityRating): String =
     when (rating) {
-        FeasibilityRating.Reasonable -> "Razonable"
-        FeasibilityRating.Expensive -> "Costosa"
-        FeasibilityRating.Impractical -> "Impracticable"
-        FeasibilityRating.Invalid -> "No válida"
+        FeasibilityRating.Reasonable -> stringResource(R.string.lab_feasibility_reasonable)
+        FeasibilityRating.Expensive -> stringResource(R.string.lab_feasibility_expensive)
+        FeasibilityRating.Impractical -> stringResource(R.string.lab_feasibility_impractical)
+        FeasibilityRating.Invalid -> stringResource(R.string.lab_feasibility_invalid)
     }
 
+@Composable
 private fun outcomeLabel(outcome: SearchOutcome): String =
     when (outcome) {
-        SearchOutcome.Found -> "ENCONTRADO"
-        SearchOutcome.NotFound -> "NO ENCONTRADO"
-        SearchOutcome.LimitReached -> "LÍMITE ALCANZADO"
-        SearchOutcome.Cancelled -> "CANCELADO"
-        SearchOutcome.Failed -> "ERROR"
+        SearchOutcome.Found -> stringResource(R.string.lab_outcome_found)
+        SearchOutcome.NotFound -> stringResource(R.string.lab_outcome_not_found)
+        SearchOutcome.LimitReached -> stringResource(R.string.lab_outcome_limit)
+        SearchOutcome.Cancelled -> stringResource(R.string.lab_outcome_cancelled)
+        SearchOutcome.Failed -> stringResource(R.string.lab_outcome_failed)
     }
 
 private fun formatElapsed(totalSeconds: Long): String {

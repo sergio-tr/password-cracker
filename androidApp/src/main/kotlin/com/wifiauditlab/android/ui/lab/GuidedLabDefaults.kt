@@ -1,5 +1,7 @@
 package com.wifiauditlab.android.ui.lab
 
+import androidx.annotation.StringRes
+import com.wifiauditlab.android.R
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.lab.engine.WorkerPoolConfig
 
@@ -48,32 +50,23 @@ fun SecurityFamily.supportsSharedPasswordDemo(): Boolean =
         else -> false
     }
 
-fun SecurityFamily.guidedLabExplanation(): String =
+@StringRes
+fun SecurityFamily.guidedLabExplanationRes(): Int =
     when {
-        supportsSharedPasswordDemo() ->
-            "Demostración de contraseña: el laboratorio busca un secreto sintético local " +
-                "usando esta red solo como contexto didáctico."
-        this == SecurityFamily.OPEN || this == SecurityFamily.OWE ->
-            "Esta red no utiliza una contraseña Wi-Fi compartida del mismo modo, " +
-                "por lo que este experimento no es representativo de su autenticación."
+        supportsSharedPasswordDemo() -> R.string.lab_guided_shared_password
+        this == SecurityFamily.OPEN || this == SecurityFamily.OWE -> R.string.lab_guided_open_owe
         this == SecurityFamily.WPA2_ENTERPRISE ||
             this == SecurityFamily.WPA3_ENTERPRISE ||
-            this == SecurityFamily.PASSPOINT ->
-            "Esta red usa autenticación enterprise/Passpoint, no una contraseña Wi-Fi compartida. " +
-                "Puedes abrir un laboratorio genérico, pero no equivale a su autenticación."
-        this == SecurityFamily.DPP ->
-            "DPP (Easy Connect) no se modela como una contraseña compartida. " +
-                "El laboratorio genérico sigue siendo una simulación local."
-        this == SecurityFamily.WEP ->
-            "WEP está obsoleto; la demo de laboratorio es sintética y no autentica contra la red."
-        else ->
-            "No está claro si esta red usa una contraseña compartida. " +
-                "El laboratorio permanece como simulación local."
+            this == SecurityFamily.PASSPOINT -> R.string.lab_guided_enterprise
+        this == SecurityFamily.DPP -> R.string.lab_guided_dpp
+        this == SecurityFamily.WEP -> R.string.lab_guided_wep
+        else -> R.string.lab_guided_unknown
     }
 
-fun LabNetworkContext?.guidedTitle(): String =
+@StringRes
+fun LabNetworkContext?.guidedTitleRes(): Int =
     when {
-        this == null -> "Experimento guiado"
-        securityFamily.supportsSharedPasswordDemo() -> "Demostración de contraseña"
-        else -> "Laboratorio genérico"
+        this == null -> R.string.lab_guided_experiment
+        securityFamily.supportsSharedPasswordDemo() -> R.string.lab_password_demo
+        else -> R.string.lab_generic
     }

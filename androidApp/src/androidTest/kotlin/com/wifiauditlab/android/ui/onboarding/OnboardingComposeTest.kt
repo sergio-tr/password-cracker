@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.assessment.port.OnboardingPreferences
 import org.junit.Assert.assertFalse
@@ -20,6 +21,8 @@ import org.junit.runner.RunWith
 class OnboardingComposeTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+    private val activity get() = composeTestRule.activity
 
     private class FakePrefs(
         initial: Boolean = false,
@@ -46,14 +49,24 @@ class OnboardingComposeTest {
         }
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText(OnboardingPage.Nearby.title).assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Continuar onboarding").performClick()
+        composeTestRule
+            .onNodeWithText(activity.getString(OnboardingPage.Nearby.titleRes))
+            .assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.onboarding_cd_continue))
+            .performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText(OnboardingPage.Vault.title).assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Continuar onboarding").performClick()
+        composeTestRule
+            .onNodeWithText(activity.getString(OnboardingPage.Vault.titleRes))
+            .assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.onboarding_cd_continue))
+            .performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText(OnboardingPage.Lab.title).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Empezar").performClick()
+        composeTestRule
+            .onNodeWithText(activity.getString(OnboardingPage.Lab.titleRes))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.onboarding_start)).performClick()
         composeTestRule.waitUntil(5_000) { finished && prefs.completed }
         assertTrue(finished)
         assertTrue(prefs.completed)
@@ -70,7 +83,9 @@ class OnboardingComposeTest {
             }
         }
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithContentDescription("Omitir onboarding").performClick()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.onboarding_cd_skip))
+            .performClick()
         composeTestRule.waitUntil(5_000) { finished && prefs.completed }
         assertTrue(finished)
         assertTrue(prefs.completed)
@@ -89,7 +104,10 @@ class OnboardingComposeTest {
         composeTestRule.waitUntil(5_000) { finished }
         assertTrue(finished)
         assertTrue(
-            composeTestRule.onAllNodesWithText("Bienvenida").fetchSemanticsNodes().isEmpty(),
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.onboarding_title))
+                .fetchSemanticsNodes()
+                .isEmpty(),
         )
         assertTrue(vm.state.value.completed)
     }
@@ -105,11 +123,12 @@ class OnboardingComposeTest {
             }
         }
         composeTestRule.waitForIdle()
+        val nearbyTitle = activity.getString(OnboardingPage.Nearby.titleRes)
         composeTestRule.waitUntil(5_000) {
-            composeTestRule.onAllNodesWithText(OnboardingPage.Nearby.title).fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText(nearbyTitle).fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithText(OnboardingPage.Nearby.title).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bienvenida").assertIsDisplayed()
+        composeTestRule.onNodeWithText(nearbyTitle).assertIsDisplayed()
+        composeTestRule.onNodeWithText(activity.getString(R.string.onboarding_title)).assertIsDisplayed()
         assertFalse(vm.state.value.completed)
         assertTrue(prefs.completed)
         assertFalse(finished)

@@ -111,7 +111,7 @@ class LabViewModelTest {
             advanceUntilIdle()
             assertEquals(LabInteractionMode.Guided, vm.state.value.mode)
             assertEquals(StrategyChoice.LENGTH, vm.state.value.config.strategy)
-            assertNull(vm.state.value.configError)
+            assertNull(vm.state.value.configErrorRes)
         }
 
     @Test
@@ -121,7 +121,7 @@ class LabViewModelTest {
             advanceUntilIdle()
             assertTrue(vm.state.value.estimatedCombinations > CombinationCount.ZERO)
             assertEquals(FeasibilityRating.Reasonable, vm.state.value.feasibility?.rating)
-            assertNull(vm.state.value.configError)
+            assertNull(vm.state.value.configErrorRes)
         }
 
     @Test
@@ -130,7 +130,7 @@ class LabViewModelTest {
             val vm = viewModel(ScriptedEngine(emptyList()))
             vm.updateConfig(vm.state.value.config.copy(maxAttempts = null, maxDurationSeconds = null))
             advanceUntilIdle()
-            assertNotNull(vm.state.value.configError)
+            assertNotNull(vm.state.value.configErrorRes)
             vm.start()
             advanceUntilIdle()
             assertEquals(SearchState.Idle, vm.state.value.searchState)

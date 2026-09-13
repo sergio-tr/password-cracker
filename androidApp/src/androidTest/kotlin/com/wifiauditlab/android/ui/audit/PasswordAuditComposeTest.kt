@@ -147,6 +147,11 @@ class PasswordAuditComposeTest {
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
             availableProcessors = 4,
             ioDispatcher = Dispatchers.Main.immediate,
+            uiStrings =
+                UiStrings { id, args ->
+                    val context = composeTestRule.activity
+                    if (args.isEmpty()) context.getString(id) else context.getString(id, *args)
+                },
         )
     }
 

@@ -78,7 +78,7 @@ fun NearbyScreen(
             ActivityResultContracts.RequestMultiplePermissions(),
         ) { viewModel.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Redes cercanas") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nearby_title)) }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             Button(
                 onClick = {
@@ -89,32 +89,32 @@ fun NearbyScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Actualizar") }
+            ) { Text(stringResource(R.string.nearby_refresh)) }
 
             when (val scan = state.scanState) {
                 WifiScanState.PermissionRequired ->
                     StatusWithAction(
-                        "Necesitamos permiso para descubrir redes. Pulsa Actualizar para concederlo.",
-                        actionLabel = "Conceder permiso",
+                        stringResource(R.string.nearby_permission_required),
+                        actionLabel = stringResource(R.string.nearby_grant_permission),
                         onAction = { launcher.launch(permissions) },
                     )
                 WifiScanState.LocationServicesDisabled ->
                     StatusWithAction(
-                        "Activa la ubicación del dispositivo para poder escanear redes Wi-Fi.",
-                        actionLabel = "Abrir ajustes de ubicación",
+                        stringResource(R.string.nearby_location_disabled),
+                        actionLabel = stringResource(R.string.nearby_open_location_settings),
                         onAction = { context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)) },
                     )
                 WifiScanState.Unavailable ->
                     StatusWithAction(
-                        "El Wi-Fi no está disponible. Actívalo para buscar redes.",
-                        actionLabel = "Abrir ajustes de Wi-Fi",
+                        stringResource(R.string.nearby_wifi_unavailable),
+                        actionLabel = stringResource(R.string.nearby_open_wifi_settings),
                         onAction = { context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS)) },
                     )
-                is WifiScanState.Error -> StatusText("Error al escanear: ${scan.message}")
-                WifiScanState.Loading -> StatusText("Escaneando…")
-                WifiScanState.Idle -> StatusText("Pulsa Actualizar para buscar redes cercanas.")
+                is WifiScanState.Error -> StatusText(stringResource(R.string.nearby_scan_error, scan.message))
+                WifiScanState.Loading -> StatusText(stringResource(R.string.nearby_scanning))
+                WifiScanState.Idle -> StatusText(stringResource(R.string.nearby_idle_hint))
                 is WifiScanState.Throttled -> {
-                    StatusText("Escaneo limitado temporalmente. Se muestran los últimos resultados.")
+                    StatusText(stringResource(R.string.nearby_throttled))
                     NetworkList(state.items, onSelect = viewModel::select)
                 }
                 is WifiScanState.Results -> NetworkList(state.items, onSelect = viewModel::select)
@@ -153,7 +153,7 @@ private fun NetworkList(
     onSelect: (NearbyItem) -> Unit,
 ) {
     if (items.isEmpty()) {
-        StatusText("No se han encontrado redes todavía.")
+        StatusText(stringResource(R.string.nearby_empty))
         return
     }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
@@ -167,6 +167,7 @@ private fun NetworkCard(
     item: NearbyItem,
     onSelect: (NearbyItem) -> Unit,
 ) {
+    val connectedCd = stringResource(R.string.nearby_cd_connected)
     Card(onClick = { onSelect(item) }, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -185,8 +186,8 @@ private fun NetworkCard(
                                     modifier = Modifier.size(16.dp),
                                 )
                             },
-                            label = { Text("Conectado") },
-                            modifier = Modifier.semantics { contentDescription = "Red conectada actualmente" },
+                            label = { Text(stringResource(R.string.nearby_connected)) },
+                            modifier = Modifier.semantics { contentDescription = connectedCd },
                         )
                     }
                     AssistChip(
@@ -194,9 +195,9 @@ private fun NetworkCard(
                         label = {
                             Text(
                                 when {
-                                    item.ambiguous -> "Ambigua"
-                                    item.isKnown -> "Guardada"
-                                    else -> "Desconocida"
+                                    item.ambiguous -> stringResource(R.string.nearby_ambiguous)
+                                    item.isKnown -> stringResource(R.string.nearby_saved)
+                                    else -> stringResource(R.string.nearby_unknown)
                                 },
                             )
                         },
@@ -204,15 +205,9 @@ private fun NetworkCard(
                 }
             }
             if (item.alias != null) Text(item.observation.ssid.toString())
-            Text(
-                buildString {
-                    append(item.observation.securityProfile.family.name)
-                    append(" · ")
-                    append(bandLabel(item.observation.channel.band))
-                    append(" · ")
-                    append(qualityLabel(item.observation.signal.quality))
-                },
-            )
+            val band = bandLabel(item.observation.channel.band)
+            val quality = qualityLabel(item.observation.signal.quality)
+            Text("${item.observation.securityProfile.family.name} · $band · $quality")
         }
     }
 }
@@ -235,6 +230,7 @@ private fun NetworkDetailSheet(
     }
     var showAdvanced by remember(detail.item) { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val openLabCd = stringResource(R.string.nearby_cd_open_lab)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -246,21 +242,22 @@ private fun NetworkDetailSheet(
         ) {
             Text(detail.item.alias ?: observation.ssid.toString(), fontWeight = FontWeight.Bold)
             if (detail.item.alias != null) Text(observation.ssid.toString())
-            Text("Seguridad: ${observation.securityProfile.family.name}")
-            Text("Señal: ${qualityLabel(observation.signal.quality)}")
+            Text(stringResource(R.string.nearby_security, observation.securityProfile.family.name))
+            Text(stringResource(R.string.nearby_signal, qualityLabel(observation.signal.quality)))
             Text(
                 if (detail.item.isCurrentlyConnected) {
-                    "Estado: Conectado actualmente"
+                    stringResource(R.string.nearby_status_connected)
                 } else {
-                    "Estado: No conectado"
+                    stringResource(R.string.nearby_status_not_connected)
                 },
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 when {
-                    detail.saved || (detail.item.isKnown && !detail.item.ambiguous) -> "Guardada en el Vault"
-                    detail.item.ambiguous -> "Coincidencia ambigua"
-                    else -> "No guardada"
+                    detail.saved || (detail.item.isKnown && !detail.item.ambiguous) ->
+                        stringResource(R.string.nearby_vault_saved)
+                    detail.item.ambiguous -> stringResource(R.string.nearby_ambiguous_match)
+                    else -> stringResource(R.string.nearby_not_saved)
                 },
                 fontWeight = FontWeight.SemiBold,
             )
@@ -279,7 +276,7 @@ private fun NetworkDetailSheet(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "Probar en laboratorio" },
+                        .semantics { contentDescription = openLabCd },
             ) {
                 Icon(
                     Icons.Filled.Science,
@@ -287,25 +284,35 @@ private fun NetworkDetailSheet(
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.size(8.dp))
-                Text("Probar en laboratorio")
+                Text(stringResource(R.string.nearby_open_lab))
             }
             OutlinedButton(
                 onClick = onOpenSecurityAnalysis,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Analizar seguridad") }
+            ) { Text(stringResource(R.string.nearby_analyze_security)) }
 
             TextButton(onClick = { showAdvanced = !showAdvanced }) {
-                Text(if (showAdvanced) "Ocultar datos avanzados" else "Mostrar datos avanzados")
+                Text(
+                    if (showAdvanced) {
+                        stringResource(R.string.nearby_hide_advanced)
+                    } else {
+                        stringResource(R.string.nearby_show_advanced)
+                    },
+                )
             }
             if (showAdvanced) {
                 Text(
-                    "${bandLabel(observation.channel.band)} · canal ${observation.channel.number} · " +
-                        "${observation.signal.rssiDbm} dBm",
+                    stringResource(
+                        R.string.nearby_channel_info,
+                        bandLabel(observation.channel.band),
+                        observation.channel.number,
+                        observation.signal.rssiDbm,
+                    ),
                 )
-                Text("BSSID: ${observation.bssid}")
+                Text(stringResource(R.string.nearby_bssid, observation.bssid))
                 val assessment = detail.assessment
                 if (assessment == null) {
-                    Text("Analizando seguridad…")
+                    Text(stringResource(R.string.nearby_analyzing))
                 } else {
                     AssessmentBlock(assessment)
                 }
@@ -313,12 +320,12 @@ private fun NetworkDetailSheet(
 
             Spacer(Modifier.height(16.dp))
             if (detail.saved) {
-                Text("Guardada en el Vault.", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.nearby_vault_saved_confirm), fontWeight = FontWeight.SemiBold)
             } else {
                 OutlinedTextField(
                     value = alias,
                     onValueChange = { alias = it },
-                    label = { Text("Alias") },
+                    label = { Text(stringResource(R.string.nearby_label_alias)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
@@ -326,14 +333,14 @@ private fun NetworkDetailSheet(
                     Button(onClick = { onSave(alias) }, modifier = Modifier.weight(1f)) {
                         Text(
                             if (detail.item.isKnown && !detail.item.ambiguous) {
-                                "Actualizar en el Vault"
+                                stringResource(R.string.nearby_update_vault)
                             } else {
-                                "Guardar en el Vault"
+                                stringResource(R.string.nearby_save_vault)
                             },
                         )
                     }
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                        Text("Cerrar")
+                        Text(stringResource(R.string.nearby_close))
                     }
                 }
             }
@@ -351,7 +358,7 @@ private fun PasswordAuditSection(
     val auditCta = stringResource(R.string.audit_cta_nearby)
     val openWifiSettings = stringResource(R.string.audit_open_wifi_settings)
     when (eligibility) {
-        null -> Text("Comprobando elegibilidad de auditoría…")
+        null -> Text(stringResource(R.string.nearby_checking_eligibility))
         is PasswordAuditEligibility.EligibleConnectedNetwork -> {
             Text(stringResource(R.string.audit_connected_now), fontWeight = FontWeight.SemiBold)
             Text(stringResource(R.string.audit_available), style = MaterialTheme.typography.bodySmall)
@@ -382,18 +389,15 @@ private fun PasswordAuditSection(
             Text(eligibility.reason)
         }
         PasswordAuditEligibility.MissingPermissions -> {
-            Text("Se necesitan permisos para comprobar la red conectada.")
+            Text(stringResource(R.string.nearby_missing_permissions))
             OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
-                Text("Conceder permiso")
+                Text(stringResource(R.string.nearby_grant_permission))
             }
         }
         PasswordAuditEligibility.InsufficientInformation -> {
-            Text(
-                "No se pudo leer el SSID/BSSID de la conexión actual. " +
-                    "Revisa los permisos de ubicación o redes cercanas.",
-            )
+            Text(stringResource(R.string.nearby_insufficient_info))
             OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
-                Text("Revisar permisos")
+                Text(stringResource(R.string.nearby_review_permissions))
             }
         }
     }
@@ -401,12 +405,19 @@ private fun PasswordAuditSection(
 
 @Composable
 private fun AssessmentBlock(assessment: SecurityAssessment) {
-    Text("${ratingLabel(assessment.rating)} · ${assessment.headline}", fontWeight = FontWeight.SemiBold)
+    Text(
+        stringResource(
+            R.string.nearby_rating_headline,
+            ratingLabel(assessment.rating),
+            assessment.headline,
+        ),
+        fontWeight = FontWeight.SemiBold,
+    )
     Text(assessment.plainExplanation)
     if (assessment.findings.isNotEmpty()) {
         Spacer(Modifier.height(8.dp))
         assessment.findings.forEach { finding ->
-            Text("• ${finding.title}: ${finding.explanation}")
+            Text(stringResource(R.string.nearby_finding, finding.title, finding.explanation))
         }
     }
 }
@@ -434,28 +445,31 @@ private fun StatusWithAction(
     }
 }
 
+@Composable
 private fun ratingLabel(rating: SecurityRating): String =
     when (rating) {
-        SecurityRating.HIGH -> "Seguridad alta"
-        SecurityRating.MODERATE -> "Seguridad moderada"
-        SecurityRating.LOW -> "Seguridad baja"
-        SecurityRating.INSECURE -> "Insegura"
+        SecurityRating.HIGH -> stringResource(R.string.nearby_rating_high)
+        SecurityRating.MODERATE -> stringResource(R.string.nearby_rating_moderate)
+        SecurityRating.LOW -> stringResource(R.string.nearby_rating_low)
+        SecurityRating.INSECURE -> stringResource(R.string.nearby_rating_insecure)
     }
 
+@Composable
 private fun bandLabel(band: WifiBand): String =
     when (band) {
-        WifiBand.GHZ_2_4 -> "2,4 GHz"
-        WifiBand.GHZ_5 -> "5 GHz"
-        WifiBand.GHZ_6 -> "6 GHz"
-        WifiBand.UNKNOWN -> "Banda desconocida"
+        WifiBand.GHZ_2_4 -> stringResource(R.string.nearby_band_2_4)
+        WifiBand.GHZ_5 -> stringResource(R.string.nearby_band_5)
+        WifiBand.GHZ_6 -> stringResource(R.string.nearby_band_6)
+        WifiBand.UNKNOWN -> stringResource(R.string.nearby_band_unknown)
     }
 
+@Composable
 private fun qualityLabel(quality: SignalQuality): String =
     when (quality) {
-        SignalQuality.EXCELLENT -> "Excelente"
-        SignalQuality.GOOD -> "Buena"
-        SignalQuality.FAIR -> "Aceptable"
-        SignalQuality.WEAK -> "Débil"
+        SignalQuality.EXCELLENT -> stringResource(R.string.nearby_signal_excellent)
+        SignalQuality.GOOD -> stringResource(R.string.nearby_signal_good)
+        SignalQuality.FAIR -> stringResource(R.string.nearby_signal_fair)
+        SignalQuality.WEAK -> stringResource(R.string.nearby_signal_weak)
     }
 
 private fun scanPermissions(): Array<String> =

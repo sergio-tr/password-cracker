@@ -1,6 +1,8 @@
 package com.wifiauditlab.android.ui.lab
 
+import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.nearby.NearbyItem
+import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.wifi.Bssid
 import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
@@ -55,8 +57,8 @@ class LabNetworkContextTest {
         assertEquals(WifiStandard.WIFI_5, context.wifiStandard)
         assertEquals(WifiBand.GHZ_2_4, context.band)
         assertEquals("Resumen de prueba", context.assessmentSummary)
-        assertTrue(context.familyDisplayLabel().contains("WPA2/WPA3"))
-        assertTrue(context.metaLine().contains("Wi-Fi 5"))
+        assertEquals(R.string.security_family_wpa2_wpa3, familyLabelRes(context.securityFamily))
+        assertTrue(context.metaLine { "band-$it" }.contains("Wi-Fi 5"))
     }
 
     @Test
