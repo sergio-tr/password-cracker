@@ -187,6 +187,7 @@ val appModule =
                 planner = get(),
                 getSavedNetwork = get(),
                 revealSecret = get(),
+                engine = get(),
                 calibration = get(),
                 strengthAnalyzer = get(),
             )

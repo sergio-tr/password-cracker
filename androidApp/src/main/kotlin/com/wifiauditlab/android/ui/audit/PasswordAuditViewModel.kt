@@ -9,15 +9,26 @@ import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.supportsSharedPasswordAudit
 import com.wifiauditlab.assessment.domain.audit.unsupportedAuditReason
 import com.wifiauditlab.core.math.CombinationCount
+import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
+import com.wifiauditlab.lab.domain.LabChallenge
+import com.wifiauditlab.lab.domain.LabSearchEvent
+import com.wifiauditlab.lab.domain.SearchOutcome
+import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudget
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
 import com.wifiauditlab.lab.domain.audit.PasswordAuditContext
+import com.wifiauditlab.lab.domain.audit.PasswordAuditEngineChoice
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
+import com.wifiauditlab.lab.domain.engine.CancellationController
+import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
+import com.wifiauditlab.lab.engine.WorkerAwareLabSearchEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,15 +37,16 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Quick Audit UI: password entry + automatic plan preview.
- * Does not run the search engine (execution = follow-up PR).
- * Never feeds the password or strength analysis into the planner.
+ * Quick Audit: password entry, automatic plan, and **local** search execution.
+ * Never authenticates candidates against a router/AP.
+ * Strength analysis never feeds the planner.
  */
 class PasswordAuditViewModel(
     private val targetStore: PasswordAuditTargetStore,
     private val planner: AutomaticPasswordAuditPlanner,
     private val getSavedNetwork: GetSavedNetwork,
     private val revealSecret: RevealSavedNetworkSecret,
+    private val engine: LabSearchEngine,
     private val calibration: SearchCalibrationService? = null,
     private val strengthAnalyzer: SecretStrengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
     private val availableProcessors: Int = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
@@ -45,6 +57,8 @@ class PasswordAuditViewModel(
 
     private var calibratedThroughput: Double? = null
     private var request: PasswordAuditRequest? = null
+    private var searchJob: Job? = null
+    private var cancellation: CancellationController? = null
 
     init {
         bootstrap()
@@ -78,12 +92,12 @@ class PasswordAuditViewModel(
     }
 
     fun onPasswordChanged(value: String) {
+        if (_state.value.isActive) return
         _state.update {
             it.copy(
                 passwordInput = value,
                 passwordFromVault = false,
                 passwordError = null,
-                startAcknowledged = false,
                 infoMessage = null,
                 strength = if (value.isNotEmpty()) strengthAnalyzer.analyze(value) else null,
             )
@@ -96,6 +110,7 @@ class PasswordAuditViewModel(
     }
 
     fun clearPassword() {
+        if (_state.value.isActive) return
         _state.update {
             it.copy(
                 passwordInput = "",
@@ -103,7 +118,6 @@ class PasswordAuditViewModel(
                 passwordVisible = false,
                 passwordError = null,
                 strength = null,
-                startAcknowledged = false,
                 infoMessage = null,
             )
         }
@@ -111,6 +125,7 @@ class PasswordAuditViewModel(
     }
 
     fun useVaultPassword() {
+        if (_state.value.isActive) return
         val id = _state.value.savedNetworkId ?: return
         viewModelScope.launch(ioDispatcher) {
             val plaintext = revealSecret(id)
@@ -126,7 +141,6 @@ class PasswordAuditViewModel(
                     passwordFromVault = true,
                     passwordError = null,
                     strength = strengthAnalyzer.analyze(plaintext),
-                    startAcknowledged = false,
                     infoMessage = null,
                 )
             }
@@ -135,11 +149,11 @@ class PasswordAuditViewModel(
     }
 
     fun selectPreset(preset: PasswordAuditBudgetPreset) {
+        if (_state.value.isActive) return
         _state.update {
             it.copy(
                 preset = preset,
                 advancedExpanded = preset == PasswordAuditBudgetPreset.Custom || it.advancedExpanded,
-                startAcknowledged = false,
                 infoMessage = null,
             )
         }
@@ -151,22 +165,26 @@ class PasswordAuditViewModel(
     }
 
     fun onCustomDurationChanged(value: String) {
+        if (_state.value.isActive) return
         _state.update { it.copy(customDurationSeconds = value.filter { ch -> ch.isDigit() }) }
     }
 
     fun onCustomAttemptsChanged(value: String) {
+        if (_state.value.isActive) return
         _state.update { it.copy(customMaxAttempts = value.filter { ch -> ch.isDigit() }) }
     }
 
     fun applyCustomBudget() {
+        if (_state.value.isActive) return
         _state.update { it.copy(preset = PasswordAuditBudgetPreset.Custom) }
         rebuildPlan()
     }
 
     /**
-     * Validates password + plan readiness. Does not start the engine (PR5).
+     * Starts a **local** search via [EncapsulatedPasswordVerifier]. Never talks to the AP.
      */
     fun onStartAuditClicked() {
+        if (_state.value.isActive) return
         val password = _state.value.passwordInput
         if (password.isEmpty()) {
             _state.update {
@@ -174,21 +192,106 @@ class PasswordAuditViewModel(
             }
             return
         }
-        if (_state.value.plan == null) {
+        val plan = _state.value.plan
+        if (plan == null) {
             _state.update {
                 it.copy(startBlockedReason = "No hay un plan automático válido para esta red.")
             }
             return
         }
+
+        val strength = strengthAnalyzer.analyze(password)
+        val verifier = EncapsulatedPasswordVerifier.encapsulate(password)
+        val challenge =
+            LabChallenge.withEncapsulatedVerifier(
+                policy = plan.blindChallengePolicy,
+                verifier = verifier,
+                seed = plan.searchPlan.seed,
+            )
+        applyEngineSelection(plan)
+
+        val controller = CancellationController()
+        cancellation = controller
+
         _state.update {
             it.copy(
+                passwordInput = "",
+                passwordVisible = false,
+                passwordFromVault = false,
                 passwordError = null,
-                startAcknowledged = true,
-                infoMessage =
-                    "Plan listo. La ejecución local con DETENER llega en la siguiente actualización.",
+                strength = strength,
+                infoMessage = null,
+                searchState = SearchState.Preparing,
+                metrics = null,
+                outcome = null,
+                discoveredWithinBudget = false,
+                errorMessage = null,
             )
         }
+
+        searchJob =
+            viewModelScope.launch(ioDispatcher) {
+                engine.run(challenge, plan.searchPlan, plan.searchLimits, controller).collect { event ->
+                    _state.update { current -> current.reduce(event) }
+                }
+            }
     }
+
+    fun stop() {
+        if (!_state.value.isActive) return
+        _state.update { it.copy(searchState = SearchState.Cancelling) }
+        cancellation?.cancel()
+    }
+
+    private fun applyEngineSelection(plan: PasswordAuditPlan) {
+        val aware = engine as? WorkerAwareLabSearchEngine ?: return
+        aware.workers = plan.workerCount
+        when (val choice = plan.engine) {
+            is PasswordAuditEngineChoice.Parallel -> aware.parallelVersion = choice.version
+            PasswordAuditEngineChoice.BaselineSequential -> Unit
+        }
+    }
+
+    private fun PasswordAuditUiState.reduce(event: LabSearchEvent): PasswordAuditUiState =
+        when (event) {
+            LabSearchEvent.Preparing -> copy(searchState = SearchState.Preparing)
+            is LabSearchEvent.Started -> copy(searchState = SearchState.Running)
+            is LabSearchEvent.Progress -> copy(searchState = SearchState.Running, metrics = event.metrics)
+            is LabSearchEvent.CandidateFound ->
+                copy(
+                    searchState = SearchState.Completed,
+                    metrics = event.metrics,
+                    outcome = SearchOutcome.Found,
+                    discoveredWithinBudget = true,
+                )
+            is LabSearchEvent.LimitReached ->
+                copy(
+                    searchState = SearchState.LimitReached,
+                    metrics = event.metrics,
+                    outcome = SearchOutcome.LimitReached,
+                    discoveredWithinBudget = false,
+                )
+            is LabSearchEvent.Cancelled ->
+                copy(
+                    searchState = SearchState.Cancelled,
+                    metrics = event.metrics,
+                    outcome = SearchOutcome.Cancelled,
+                )
+            is LabSearchEvent.Completed ->
+                copy(
+                    searchState = SearchState.Completed,
+                    metrics = event.metrics,
+                    outcome = SearchOutcome.NotFound,
+                    discoveredWithinBudget = false,
+                )
+            is LabSearchEvent.Failed ->
+                copy(
+                    searchState = SearchState.Failed,
+                    metrics = event.metrics ?: metrics,
+                    outcome = SearchOutcome.Failed,
+                    errorMessage = event.message,
+                )
+        }
 
     private fun rebuildPlan() {
         val req = request ?: return
@@ -280,6 +383,7 @@ class PasswordAuditViewModel(
         _state.update { current ->
             val reason =
                 when {
+                    current.isActive -> null
                     current.passwordInput.isEmpty() -> "Falta la contraseña conocida."
                     current.plan == null -> current.planNotApplicableReason ?: "Sin plan automático."
                     else -> null
@@ -289,6 +393,8 @@ class PasswordAuditViewModel(
     }
 
     override fun onCleared() {
+        cancellation?.cancel()
+        searchJob?.cancel()
         clearPassword()
         super.onCleared()
     }

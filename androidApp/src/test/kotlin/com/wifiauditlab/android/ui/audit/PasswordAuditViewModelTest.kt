@@ -18,14 +18,18 @@ import com.wifiauditlab.assessment.domain.wifi.Ssid
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
+import com.wifiauditlab.lab.domain.SearchOutcome
+import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
+import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -92,19 +96,47 @@ class PasswordAuditViewModelTest {
             val vm = viewModel(request = eligibleRequest())
             vm.onStartAuditClicked()
             assertEquals("Introduce o recupera la contraseña conocida.", vm.state.value.passwordError)
-            assertFalse(vm.state.value.startAcknowledged)
+            assertEquals(SearchState.Idle, vm.state.value.searchState)
         }
 
     @Test
-    fun startAcknowledgesWhenPasswordAndPlanReady() =
+    fun startFindsShortDigitPasswordLocally() =
         runTest {
             val vm = viewModel(request = eligibleRequest())
-            vm.onPasswordChanged("hunter2")
+            vm.onCustomDurationChanged("30")
+            vm.onCustomAttemptsChanged("20000")
+            vm.applyCustomBudget()
+            advanceUntilIdle()
+            vm.onPasswordChanged("42")
             assertNull(vm.state.value.startBlockedReason)
             vm.onStartAuditClicked()
-            assertTrue(vm.state.value.startAcknowledged)
-            assertNotNull(vm.state.value.infoMessage)
+            advanceUntilIdle()
+            assertEquals(SearchOutcome.Found, vm.state.value.outcome)
+            assertTrue(vm.state.value.discoveredWithinBudget)
+            assertEquals("", vm.state.value.passwordInput)
             assertNotNull(vm.state.value.strength)
+            assertNotNull(vm.state.value.metrics)
+        }
+
+    @Test
+    fun stopCancelsActiveAudit() =
+        runTest {
+            val vm = viewModel(request = eligibleRequest())
+            // Huge space relative to tiny progress — cancel before finish.
+            vm.selectPreset(PasswordAuditBudgetPreset.Deep)
+            advanceUntilIdle()
+            vm.onPasswordChanged("zzzzzzzz")
+            vm.onStartAuditClicked()
+            assertTrue(vm.state.value.isActive || vm.state.value.outcome != null)
+            if (vm.state.value.isActive) {
+                vm.stop()
+                advanceUntilIdle()
+                assertTrue(
+                    vm.state.value.outcome == SearchOutcome.Cancelled ||
+                        vm.state.value.searchState == SearchState.Cancelled ||
+                        !vm.state.value.isActive,
+                )
+            }
         }
 
     @Test
@@ -165,6 +197,7 @@ class PasswordAuditViewModelTest {
             planner = DefaultAutomaticPasswordAuditPlanner(),
             getSavedNetwork = GetSavedNetwork(repo),
             revealSecret = RevealSavedNetworkSecret(repo, vault),
+            engine = DefaultLabSearchEngine(),
             calibration = null,
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
             availableProcessors = 4,
