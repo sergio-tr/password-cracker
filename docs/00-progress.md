@@ -35,7 +35,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planner automático de auditoría | **Implemented** (PR3): `AutomaticPasswordAuditPlanner` multi-stage, ciego al target; presets Quick/Standard/Deep. |
 | Quick Audit UI | **Implemented** (PR4): pantalla Auditar contraseña; origen Vault/manual (Vault diferido); duración 30s/1min/5min; modo Automático; save-to-Vault OFF. |
 | Ejecución auditoría + STOP | **Implemented** (PR5): Search Engine local + DETENER en bottomBar; cancelación cooperativa; métricas (etapa/presupuesto); lifecycle cancela en `onCleared`. |
-| Informe resultado + strength | **Implemented** (PR6): `PasswordAuditResultComposer` + UI Medido/Estimado/Modelado. |
+| Informe resultado + strength | **Implemented** (PR6): `WifiPasswordAuditResult` separa config Wi‑Fi vs resistencia; recomendaciones; Medido/Estimado/Modelado; guía «Cómo mejorarla». |
 | Auditoría known-password (localización + docs) | **Implemented** (PR7): strings ES/EN, walkthrough; ViewModel tests cubren missing-target. |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |

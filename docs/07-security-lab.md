@@ -104,6 +104,10 @@ Cercanas → red conectada elegible → Auditar contraseña
 Presupuestos UI: 30 s / 1 min / 5 min / Personalizado (default **1 min**).
 El modo Avanzado está colapsado; incluye «Restablecer configuración automática».
 
+Tras la ejecución, el informe separa **configuración Wi‑Fi** y **resistencia de
+contraseña**, etiqueta Medido/Estimado/Modelado y ofrece recomendaciones + guía
+«Cómo mejorarla» (sin login al router).
+
 ## Quick Audit — ejecución y STOP
 
 Al iniciar, la UI muestra métricas agregadas (intentos, tiempo, velocidad, etapa,

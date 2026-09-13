@@ -1,5 +1,6 @@
 package com.wifiauditlab.android.ui.audit
 
+import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
@@ -8,6 +9,8 @@ import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
+import com.wifiauditlab.assessment.domain.audit.PasswordSearchOutcomeKind
+import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
@@ -220,6 +223,7 @@ class PasswordAuditViewModelTest {
             assertNotNull(vm.state.value.metrics)
             assertNotNull(vm.state.value.resultReport)
             assertTrue(vm.state.value.resultReport!!.headline.isNotBlank())
+            assertTrue(vm.state.value.resultReport!!.searchOutcome is PasswordSearchOutcomeKind.Found)
         }
 
     @Test
@@ -373,6 +377,7 @@ class PasswordAuditViewModelTest {
             updateSecret = UpdateSavedNetworkSecret(repo, vault),
             createSavedNetwork = CreateSavedNetwork(repo, vault),
             eligibilityChecker = checker,
+            assessNetworkSecurity = AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
             engine = DefaultLabSearchEngine(),
             calibration = null,
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),

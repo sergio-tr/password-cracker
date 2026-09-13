@@ -71,5 +71,17 @@
     <string name="audit_not_connected_title">You are not connected to this network.</string>
     <string name="audit_not_connected_body">Connect first to run a local audit.</string>
     <string name="audit_open_wifi_settings">Open Wi‑Fi settings</string>
+    <string name="audit_observed_resistance">Observed resistance</string>
+    <string name="audit_split_config">Wi-Fi configuration</string>
+    <string name="audit_split_password">Password</string>
+    <string name="audit_recommendations">Recommendations</string>
+    <string name="audit_how_to_improve">How to improve it</string>
+    <string name="audit_improve_step1">Open your router settings.</string>
+    <string name="audit_improve_step2">Change the Wi-Fi password.</string>
+    <string name="audit_improve_step3">Reconnect this device.</string>
+    <string name="audit_improve_step4">Run the audit again.</string>
+    <string name="audit_limit_survived">The password withstood the selected search budget.</string>
+    <string name="audit_exhausted_model">Not found within the tested model (does not mean it does not exist).</string>
+    <string name="audit_cancelled_incomplete">No complete conclusion was issued because the test was cancelled.</string>
     <string name="audit_connected_now">Connected</string>
 </resources>

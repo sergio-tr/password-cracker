@@ -2,6 +2,7 @@ package com.wifiauditlab.android.ui.audit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
@@ -13,6 +14,7 @@ import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultComposer
 import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.supportsSharedPasswordAudit
 import com.wifiauditlab.assessment.domain.audit.unsupportedAuditReason
+import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.core.math.CombinationCount
@@ -58,6 +60,7 @@ class PasswordAuditViewModel(
     private val updateSecret: UpdateSavedNetworkSecret,
     private val createSavedNetwork: CreateSavedNetwork,
     private val eligibilityChecker: PasswordAuditEligibilityChecker? = null,
+    private val assessNetworkSecurity: AssessNetworkSecurity? = null,
     private val engine: LabSearchEngine,
     private val calibration: SearchCalibrationService? = null,
     private val strengthAnalyzer: SecretStrengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
@@ -71,6 +74,7 @@ class PasswordAuditViewModel(
     private var request: PasswordAuditRequest? = null
     private var searchJob: Job? = null
     private var cancellation: CancellationController? = null
+    private var networkAssessmentCache: SecurityAssessment? = null
 
     init {
         bootstrap()
@@ -112,6 +116,11 @@ class PasswordAuditViewModel(
                 )
             }
             calibratedThroughput = calibration?.lastRecord()?.measuredAttemptsPerSecond
+            networkAssessmentCache =
+                assessNetworkSecurity?.let { assess ->
+                    runCatching { assess(current.network.securityProfile) }.getOrNull()
+                }
+            _state.update { it.copy(networkAssessment = networkAssessmentCache) }
             rebuildPlan()
         }
     }
@@ -371,6 +380,14 @@ class PasswordAuditViewModel(
         _state.update { it.copy(showErrorDetails = !it.showErrorDetails) }
     }
 
+    fun toggleImproveGuide() {
+        _state.update { it.copy(improveGuideExpanded = !it.improveGuideExpanded) }
+    }
+
+    fun toggleResultDetails() {
+        _state.update { it.copy(resultDetailsExpanded = !it.resultDetailsExpanded) }
+    }
+
     /** Never echo candidate/password material into UI diagnostics. */
     private fun sanitizeError(raw: String): String {
         val trimmed = raw.trim().take(240)
@@ -461,7 +478,7 @@ class PasswordAuditViewModel(
                     metrics = event.metrics,
                     outcome = SearchOutcome.NotFound,
                     discoveredWithinBudget = false,
-                ).withResultReport(cancelled = false, failed = false)
+                ).withResultReport(cancelled = false, failed = false, exhausted = true)
             is LabSearchEvent.Failed ->
                 copy(
                     searchState = SearchState.Failed,
@@ -476,6 +493,7 @@ class PasswordAuditViewModel(
     private fun PasswordAuditUiState.withResultReport(
         cancelled: Boolean,
         failed: Boolean,
+        exhausted: Boolean = false,
     ): PasswordAuditUiState =
         copy(
             resultReport =
@@ -487,7 +505,14 @@ class PasswordAuditViewModel(
                     measuredAttempts = metrics?.attempts,
                     measuredDuration = metrics?.elapsed,
                     budgetedAttemptCapacity = plan?.budgetedAttemptCapacity,
+                    attemptsPerSecond = metrics?.attemptsPerSecond,
+                    exhausted = exhausted,
+                    networkAssessment = networkAssessment ?: networkAssessmentCache,
+                    familyDisplayLabel = familyLabel,
+                    failureMessage = errorDetails,
                 ),
+            improveGuideExpanded = false,
+            resultDetailsExpanded = false,
         )
 
     private fun rebuildPlan() {

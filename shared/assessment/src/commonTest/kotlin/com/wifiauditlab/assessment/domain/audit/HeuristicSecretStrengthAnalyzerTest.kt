@@ -16,11 +16,20 @@ class HeuristicSecretStrengthAnalyzerTest {
     }
 
     @Test
-    fun longDiversePassword_isHigh() {
+    fun longDiversePassword_isAtLeastHigh() {
         val result = analyzer.analyze("Correct-Horse-Battery-1")
-        assertEquals(PasswordResistanceRating.HIGH, result.rating)
+        assertTrue(
+            result.rating == PasswordResistanceRating.HIGH ||
+                result.rating == PasswordResistanceRating.VERY_HIGH,
+        )
         assertTrue(result.charsetDiversity >= 3)
         assertFalseMeasured(result)
+    }
+
+    @Test
+    fun repeatedPassword_isVeryLow() {
+        val result = analyzer.analyze("aaaaaaaa")
+        assertEquals(PasswordResistanceRating.VERY_LOW, result.rating)
     }
 
     @Test

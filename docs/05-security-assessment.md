@@ -33,3 +33,21 @@ un mecanismo nuevo = añadir una estrategia nueva.
 `plainExplanation`) del técnico (`technicalSummary`, `findings`) para permitir
 *progressive disclosure* en la UI (primero "Seguridad: Alta / WPA3-Personal",
 luego "¿Qué significa?" y "Detalles técnicos").
+
+## Known-password audit report
+
+La auditoría de contraseña conocida produce un `WifiPasswordAuditResult` que
+**separa** siempre:
+
+1. **Configuración Wi‑Fi** (`SecurityAssessment`) — p. ej. WPA3 + PMF → Alta.
+2. **Resistencia de contraseña** (búsqueda local + `SecretStrengthAnalyzer`) —
+   p. ej. encontrada rápido → Baja.
+
+Una buena configuración no mejora una contraseña débil, ni al revés.
+
+Clasificación de resistencia (`VERY_LOW`…`VERY_HIGH` / `UNKNOWN`): combina
+resultado de búsqueda, intentos, presupuesto y estructura. Criterios documentados
+en `PasswordAuditResultComposer`. Nunca afirma seguridad absoluta.
+
+Comparar auditorías anteriores (historial sin secretos) = **follow-up**; no
+bloquea este resultado.
