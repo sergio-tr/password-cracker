@@ -54,7 +54,15 @@ La prueba manual del usuario (textos «Atrás» / acciones textuales confusas) s
 * búsqueda local vía `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`;
 * banner «Búsqueda solo local» siempre visible en modo prototipo.
 
-Pendiente FIX-04 (flujo guiado novice) y FIX-05 (regresión manual + docs `Implemented`).
+**Partial (FIX-04):** flujo guiado novice del prototipo local:
+
+* modo guiado arranca en `LocalPrototype` (chip «Secreto aleatorio» opcional);
+* tarjeta con pasos SSID → seguridad WPA2/WPA3 → contraseña → Iniciar prueba;
+* alfabeto y longitud autoajustados al escribir la contraseña;
+* workers/estrategia/alfabeto solo bajo Opciones avanzadas;
+* resumen novice (resistencia observada + aviso local-only) tras Found/Límite/Cancelado.
+
+Pendiente FIX-05 (regresión manual + docs `Implemented`).
 
 El modo **Random hidden** sigue usando `withHiddenSecret`. La auditoría known-password contra red conectada permanece en **Password Audit**.
 

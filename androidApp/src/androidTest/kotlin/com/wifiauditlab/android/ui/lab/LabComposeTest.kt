@@ -147,7 +147,10 @@ class LabComposeTest {
 
     @Test
     fun configAndFeasibility_areVisible() {
-        setLab(viewModel(ScriptedEngine(emptyList())))
+        val vm = viewModel(ScriptedEngine(emptyList()))
+        setLab(vm)
+        vm.setSecretMode(LabSecretMode.RandomHidden)
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_title)).assertIsDisplayed()
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
@@ -187,7 +190,11 @@ class LabComposeTest {
     fun guidedMode_hidesTechnicalConfigByDefault() {
         setLab(viewModel(ScriptedEngine(emptyList())))
         composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_mode))
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_guided_prototype))
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
             .performScrollTo()
             .assertIsDisplayed()
         assertTrue(
@@ -197,6 +204,31 @@ class LabComposeTest {
                 .isEmpty(),
         )
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_start_test)).assertIsDisplayed()
+    }
+
+    @Test
+    fun guided_fillSsidPasswordAndStart() {
+        val vm = viewModel(HangingEngine(metrics))
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextClearance()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("HomeLab")
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_password))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        composeTestRule.waitForIdle()
+
+        startSearch()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.searchState == SearchState.Running ||
+                vm.state.value.searchState == SearchState.Preparing
+        }
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_stop_search))
+            .assertIsDisplayed()
     }
 
     @Test
@@ -320,10 +352,6 @@ class LabComposeTest {
     fun prototypeMode_showsLocalOnlyBannerAndStartsSearch() {
         val vm = viewModel(HangingEngine(metrics))
         setLab(vm)
-        composeTestRule
-            .onNodeWithText(activity.getString(R.string.lab_mode_prototype))
-            .performScrollTo()
-            .performClick()
         composeTestRule.waitForIdle()
         val localOnly = activity.getString(R.string.lab_prototype_local_only)
         waitForText(localOnly)

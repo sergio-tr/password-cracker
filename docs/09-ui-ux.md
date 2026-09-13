@@ -12,7 +12,7 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (config + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red), **Auditar contraseña** (Quick Audit). |
+| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (modo guiado prototipo local + Avanzado + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red), **Auditar contraseña** (Quick Audit). |
 | Deferred | Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
 
 ## Principios aplicados
@@ -26,6 +26,10 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
   acciones fija (`Scaffold.bottomBar`, fuera del scroll) mientras el laboratorio
   **o** la auditoría rápida ejecutan; al pulsar pasa a `Deteniendo…` (deshabilitado)
   y termina en `CANCELADO`. Icono `Icons.Filled.Stop`.
+- **Lab guiado (FIX-04, Partial)**: arranca en prototipo local con pasos en
+  lenguaje llano (SSID, WPA2/WPA3, contraseña, Iniciar prueba); alfabeto autoajustado;
+  chip «Secreto aleatorio» opcional; resumen novice + aviso local-only al terminar.
+  Pendiente FIX-05 manual.
 - **Quick Audit**: navegación con `ArrowBack` (`Icons.AutoMirrored.Filled.ArrowBack`,
   contentDescription localizado); modo Automático por defecto; duración 30 s / 1 min /
   5 min; Vault con reveal diferido; `saveToVault` OFF; icono `PlayArrow` en INICIAR.
