@@ -43,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -149,6 +150,14 @@ class LabComposeTest {
         composeTestRule.waitForIdle()
     }
 
+    private fun createAndTest() {
+        scrollToText(activity.getString(R.string.lab_create_and_test))
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_create_and_test))
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
     /** Guided defaults to LocalPrototype; engine-scripted tests need RandomHidden. */
     private fun useRandomHidden(vm: LabViewModel) {
         vm.setSecretMode(LabSecretMode.RandomHidden)
@@ -212,7 +221,70 @@ class LabComposeTest {
                 .fetchSemanticsNodes()
                 .isEmpty(),
         )
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_start_test)).assertIsDisplayed()
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun guidedPrototype_createAndTestThenStart_reachesFound() {
+        val vm =
+            viewModel(
+                ScriptedEngine(
+                    listOf(
+                        LabSearchEvent.Preparing,
+                        LabSearchEvent.Started(SearchSessionId("s"), samplePlan, CombinationCount.of(10)),
+                        LabSearchEvent.CandidateFound("1234", metrics.copy(attempts = CombinationCount.of(2))),
+                    ),
+                ),
+            )
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("GuidedLab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        createAndTest()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
+        waitForText(activity.getString(R.string.lab_result_network_config_heading))
+        waitForText(activity.getString(R.string.lab_result_password_resistance_heading))
+        waitForText(activity.getString(R.string.lab_post_repeat))
+    }
+
+    @Test
+    fun guidedPrototype_afterResult_editPasswordKeepsSecurity() {
+        val vm =
+            viewModel(
+                ScriptedEngine(
+                    listOf(
+                        LabSearchEvent.Preparing,
+                        LabSearchEvent.Started(SearchSessionId("s"), samplePlan, CombinationCount.of(10)),
+                        LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                    ),
+                ),
+            )
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("EditLab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        createAndTest()
+        startSearch()
+        composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.LimitReached }
+        scrollToText(activity.getString(R.string.lab_post_edit_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_post_edit_password)).performClick()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.guidedPhase == GuidedPrototypePhase.Configure &&
+                vm.state.value.prototype.securityFamily == SecurityFamily.WPA2_PERSONAL
+        }
+        assertEquals("1234", vm.state.value.targetPassword)
     }
 
     @Test
@@ -384,9 +456,7 @@ class LabComposeTest {
         composeTestRule.waitUntil(5_000) { vm.state.value.prototypeAssessment != null }
         waitForText(activity.getString(R.string.lab_prototype_assessment_heading))
         scrollToText(activity.getString(R.string.lab_prototype_password))
-        composeTestRule
-            .onNodeWithText(activity.getString(R.string.lab_start_test))
-            .assertIsDisplayed()
+        scrollToText(activity.getString(R.string.lab_create_and_test))
     }
 
     @Test
@@ -409,6 +479,7 @@ class LabComposeTest {
         scrollToText(activity.getString(R.string.lab_prototype_password))
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
         composeTestRule.waitForIdle()
+        createAndTest()
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
         waitForText(activity.getString(R.string.lab_outcome_found))
@@ -438,6 +509,7 @@ class LabComposeTest {
         scrollToText(activity.getString(R.string.lab_prototype_password))
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("5678")
         composeTestRule.waitForIdle()
+        createAndTest()
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
     }
@@ -466,6 +538,7 @@ class LabComposeTest {
         scrollToText(activity.getString(R.string.lab_prototype_password))
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("abcd")
         composeTestRule.waitForIdle()
+        createAndTest()
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
     }
@@ -481,6 +554,7 @@ class LabComposeTest {
         scrollToText(activity.getString(R.string.lab_prototype_password))
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
         composeTestRule.waitForIdle()
+        createAndTest()
         startSearch()
         composeTestRule.waitUntil(5_000) {
             vm.state.value.searchState == SearchState.Running ||
@@ -512,6 +586,7 @@ class LabComposeTest {
         scrollToText(activity.getString(R.string.lab_prototype_password))
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
         composeTestRule.waitForIdle()
+        createAndTest()
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.LimitReached }
         waitForText(activity.getString(R.string.lab_outcome_limit))

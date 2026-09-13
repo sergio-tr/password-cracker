@@ -3,6 +3,7 @@ package com.wifiauditlab.android.ui.lab
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.security.SecurityRating
+import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -296,6 +297,97 @@ class LabViewModelTest {
         }
 
     @Test
+    fun createAndTest_movesToReady_andBlocksStartBeforeThat() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.preparePrototype(password = "1234")
+            advanceUntilIdle()
+            assertEquals(GuidedPrototypePhase.Configure, vm.state.value.guidedPhase)
+            assertFalse(vm.state.value.canStartSearch)
+            vm.createAndTest()
+            advanceUntilIdle()
+            assertEquals(GuidedPrototypePhase.Ready, vm.state.value.guidedPhase)
+            assertTrue(vm.state.value.canStartSearch)
+            assertEquals(AlphabetChoice.DIGITS, vm.state.value.config.alphabet)
+        }
+
+    @Test
+    fun repeatGuidedRun_restoresPasswordAndReadyPhase() =
+        runTest(dispatcher) {
+            val vm =
+                viewModel(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.Started(SearchSessionId("s"), samplePlan(), CombinationCount.of(10)),
+                            LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                        ),
+                    ),
+                )
+            advanceUntilIdle()
+            vm.preparePrototype(password = "1234")
+            advanceUntilIdle()
+            vm.createAndTest()
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(GuidedPrototypePhase.PostResult, vm.state.value.guidedPhase)
+            assertEquals("", vm.state.value.targetPassword)
+            vm.repeatGuidedRun()
+            advanceUntilIdle()
+            assertEquals(GuidedPrototypePhase.Ready, vm.state.value.guidedPhase)
+            assertEquals("1234", vm.state.value.targetPassword)
+            assertEquals(PrototypeSecurityPreset.WPA2_PERSONAL.toProfile(), vm.state.value.prototype.securityProfile)
+        }
+
+    @Test
+    fun editGuidedPassword_keepsSecurityPreset() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.preparePrototype(preset = PrototypeSecurityPreset.WPA3_PERSONAL, password = "5678")
+            advanceUntilIdle()
+            vm.createAndTest()
+            vm.start()
+            advanceUntilIdle()
+            vm.editGuidedPassword()
+            assertEquals(GuidedPrototypePhase.Configure, vm.state.value.guidedPhase)
+            assertEquals(GuidedFocusTarget.Password, vm.state.value.guidedFocusTarget)
+            assertEquals("5678", vm.state.value.targetPassword)
+            assertEquals(SecurityFamily.WPA3_PERSONAL, vm.state.value.prototype.securityFamily)
+        }
+
+    @Test
+    fun changeGuidedSecurity_keepsPasswordWhenApplicable() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.preparePrototype(password = "1234")
+            advanceUntilIdle()
+            vm.createAndTest()
+            vm.start()
+            advanceUntilIdle()
+            vm.changeGuidedSecurity()
+            assertEquals(GuidedPrototypePhase.Configure, vm.state.value.guidedPhase)
+            assertEquals(GuidedFocusTarget.Security, vm.state.value.guidedFocusTarget)
+            assertEquals("1234", vm.state.value.targetPassword)
+        }
+
+    @Test
+    fun guidedAlphabetFitter_updatesConfigWithoutChangingBlindPlanSpace() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.preparePrototype(password = "abc")
+            advanceUntilIdle()
+            val blindSpace = vm.state.value.estimatedCombinations
+            vm.onTargetPasswordChanged("abc!@")
+            advanceUntilIdle()
+            assertNotNull(vm.state.value.config.customAlphabet)
+            assertEquals(blindSpace, vm.state.value.estimatedCombinations)
+        }
+
+    @Test
     fun prototypeWpa2_foundViaEncapsulatedVerifier() =
         runTest(dispatcher) {
             val engine = CapturingEngine()
@@ -303,6 +395,7 @@ class LabViewModelTest {
             advanceUntilIdle()
             vm.preparePrototype(password = "1234")
             advanceUntilIdle()
+            vm.createAndTest()
             vm.start()
             advanceUntilIdle()
             val challenge = engine.lastChallenge
@@ -322,6 +415,7 @@ class LabViewModelTest {
                 password = "5678",
             )
             advanceUntilIdle()
+            vm.createAndTest()
             vm.start()
             advanceUntilIdle()
             assertTrue(engine.lastChallenge!!.toString().contains("verifier=encapsulated"))
@@ -338,6 +432,7 @@ class LabViewModelTest {
                 password = "abcd",
             )
             advanceUntilIdle()
+            vm.createAndTest()
             vm.start()
             advanceUntilIdle()
             assertTrue(engine.lastChallenge!!.toString().contains("verifier=encapsulated"))
@@ -359,11 +454,14 @@ class LabViewModelTest {
             advanceUntilIdle()
             vm.preparePrototype(password = "1234")
             advanceUntilIdle()
+            vm.createAndTest()
             vm.start()
             advanceUntilIdle()
             assertEquals(SearchOutcome.Found, vm.state.value.outcome)
             assertEquals("1234", vm.state.value.foundCandidate)
             assertEquals("", vm.state.value.targetPassword)
+            assertEquals(GuidedPrototypePhase.PostResult, vm.state.value.guidedPhase)
+            assertNotNull(vm.state.value.resultNetworkAssessment)
         }
 
     @Test
@@ -382,6 +480,7 @@ class LabViewModelTest {
             advanceUntilIdle()
             vm.preparePrototype(password = "1234")
             advanceUntilIdle()
+            vm.createAndTest()
             vm.start()
             advanceUntilIdle()
             assertEquals(SearchOutcome.LimitReached, vm.state.value.outcome)
@@ -408,6 +507,7 @@ class LabViewModelTest {
             advanceUntilIdle()
             vm.preparePrototype(password = "longpassword")
             advanceUntilIdle()
+            vm.createAndTest()
             vm.start()
             advanceUntilIdle()
             assertFalse(engine.lastChallenge!!.toString().contains("longpassword"))

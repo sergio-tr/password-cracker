@@ -105,18 +105,29 @@ data class LabUiState(
     val foundCandidate: String? = null,
     @StringRes val configErrorRes: Int? = null,
     val errorMessage: String? = null,
+    val guidedPhase: GuidedPrototypePhase = GuidedPrototypePhase.Configure,
+    val guidedFocusTarget: GuidedFocusTarget? = null,
+    /** Network assessment snapshot taken when the last guided run started. */
+    val resultNetworkAssessment: SecurityAssessment? = null,
 ) {
     val effectiveSecretLength: Int
         get() = config.secretLength
+
+    val isGuidedPrototypeFlow: Boolean
+        get() = mode == LabInteractionMode.Guided && secretMode == LabSecretMode.LocalPrototype
 
     /** PSK prototype audit is only startable when shared-password demo applies. */
     val canStartSearch: Boolean
         get() =
             configErrorRes == null &&
+                guidedStartAllowed &&
                 !(
                     secretMode == LabSecretMode.LocalPrototype &&
                         !prototype.securityFamily.supportsSharedPasswordDemo()
                 )
+
+    private val guidedStartAllowed: Boolean
+        get() = !isGuidedPrototypeFlow || guidedPhase == GuidedPrototypePhase.Ready
 }
 
 /**
@@ -143,6 +154,7 @@ class LabViewModel(
     private var assessmentJob: Job? = null
     private var calibratedThroughput: Double? = null
     private var cachedPrototypePlan: PasswordAuditPlan? = null
+    private var lastGuidedPassword: String = ""
 
     init {
         refreshNetworkContext()
@@ -199,6 +211,9 @@ class LabViewModel(
                 secretMode = mode,
                 passwordVisible = false,
                 configErrorRes = null,
+                guidedPhase = if (mode == LabSecretMode.LocalPrototype) GuidedPrototypePhase.Configure else it.guidedPhase,
+                guidedFocusTarget = null,
+                resultNetworkAssessment = null,
             )
         }
         if (mode == LabSecretMode.LocalPrototype) {
@@ -210,7 +225,18 @@ class LabViewModel(
     }
 
     fun updatePrototype(prototype: LocalNetworkPrototype) {
-        _state.update { it.copy(prototype = prototype) }
+        _state.update {
+            it.copy(
+                prototype = prototype,
+                guidedPhase =
+                    if (it.isGuidedPrototypeFlow && it.guidedPhase != GuidedPrototypePhase.PostResult) {
+                        GuidedPrototypePhase.Configure
+                    } else {
+                        it.guidedPhase
+                    },
+                guidedFocusTarget = null,
+            )
+        }
         refreshPrototypeAssessment()
         recomputePreview()
     }
@@ -220,14 +246,114 @@ class LabViewModel(
             var syncedConfig = current.config
             if (current.secretMode == LabSecretMode.RandomHidden && value.isNotEmpty()) {
                 syncedConfig = syncedConfig.copy(secretLength = value.length)
+            } else if (current.isGuidedPrototypeFlow) {
+                syncedConfig = applyGuidedAlphabetFit(syncedConfig, value)
             }
             current.copy(
                 targetPassword = value,
                 config = syncedConfig,
                 configErrorRes = null,
+                guidedPhase =
+                    if (current.isGuidedPrototypeFlow && current.guidedPhase == GuidedPrototypePhase.Ready) {
+                        GuidedPrototypePhase.Configure
+                    } else {
+                        current.guidedPhase
+                    },
             )
         }
         recomputePreview()
+    }
+
+    fun consumeGuidedFocusTarget() {
+        _state.update { it.copy(guidedFocusTarget = null) }
+    }
+
+    fun createAndTest() {
+        val snapshot = _state.value
+        if (!snapshot.isGuidedPrototypeFlow) return
+        val validationError = validateForStart(snapshot.config, snapshot)
+        if (validationError != null) {
+            _state.update { it.copy(configErrorRes = validationError) }
+            return
+        }
+        applyGuidedDefaults(calibratedAttemptsPerSecond = calibratedThroughput)
+        val fittedConfig = applyGuidedAlphabetFit(_state.value.config, snapshot.targetPassword)
+        _state.update {
+            it.copy(
+                config = fittedConfig,
+                configErrorRes = null,
+                guidedPhase = GuidedPrototypePhase.Ready,
+                guidedFocusTarget = GuidedFocusTarget.Start,
+                outcome = null,
+                metrics = null,
+                foundCandidate = null,
+                errorMessage = null,
+                resultNetworkAssessment = null,
+            )
+        }
+        recomputePreview()
+    }
+
+    fun repeatGuidedRun() {
+        val snapshot = _state.value
+        if (!snapshot.isGuidedPrototypeFlow) return
+        applyGuidedDefaults(calibratedAttemptsPerSecond = calibratedThroughput)
+        val password = lastGuidedPassword.ifEmpty { snapshot.targetPassword }
+        val fittedConfig = applyGuidedAlphabetFit(_state.value.config, password)
+        _state.update {
+            it.copy(
+                config = fittedConfig,
+                targetPassword = password,
+                configErrorRes = null,
+                guidedPhase = GuidedPrototypePhase.Ready,
+                guidedFocusTarget = GuidedFocusTarget.Start,
+                outcome = null,
+                metrics = null,
+                foundCandidate = null,
+                errorMessage = null,
+                resultNetworkAssessment = null,
+                passwordVisible = false,
+            )
+        }
+        recomputePreview()
+    }
+
+    fun editGuidedPassword() {
+        if (!_state.value.isGuidedPrototypeFlow) return
+        val password = lastGuidedPassword.ifEmpty { _state.value.targetPassword }
+        _state.update {
+            it.copy(
+                guidedPhase = GuidedPrototypePhase.Configure,
+                guidedFocusTarget = GuidedFocusTarget.Password,
+                outcome = null,
+                metrics = null,
+                foundCandidate = null,
+                errorMessage = null,
+                resultNetworkAssessment = null,
+                targetPassword = password,
+                passwordVisible = false,
+                configErrorRes = null,
+            )
+        }
+    }
+
+    fun changeGuidedSecurity() {
+        if (!_state.value.isGuidedPrototypeFlow) return
+        val password = lastGuidedPassword.ifEmpty { _state.value.targetPassword }
+        _state.update {
+            it.copy(
+                guidedPhase = GuidedPrototypePhase.Configure,
+                guidedFocusTarget = GuidedFocusTarget.Security,
+                outcome = null,
+                metrics = null,
+                foundCandidate = null,
+                errorMessage = null,
+                resultNetworkAssessment = null,
+                targetPassword = password,
+                passwordVisible = false,
+                configErrorRes = null,
+            )
+        }
     }
 
     fun togglePasswordVisibility() {
@@ -380,6 +506,12 @@ class LabViewModel(
 
     private fun startPrototypeSearch(snapshot: LabUiState) {
         val password = snapshot.targetPassword
+        lastGuidedPassword = password
+        if (snapshot.isGuidedPrototypeFlow) {
+            _state.update {
+                it.copy(resultNetworkAssessment = snapshot.prototypeAssessment)
+            }
+        }
         val verifier = EncapsulatedPasswordVerifier.encapsulate(password)
 
         val (challenge, plan, limits) =
@@ -456,27 +588,62 @@ class LabViewModel(
         }
     }
 
-    private fun LabUiState.reduce(event: LabSearchEvent): LabUiState =
-        when (event) {
+    private fun LabUiState.reduce(event: LabSearchEvent): LabUiState {
+        fun withGuidedTerminalOutcome(next: LabUiState): LabUiState =
+            if (next.isGuidedPrototypeFlow) {
+                next.copy(guidedPhase = GuidedPrototypePhase.PostResult)
+            } else {
+                next
+            }
+
+        return when (event) {
             LabSearchEvent.Preparing -> copy(searchState = SearchState.Preparing)
             is LabSearchEvent.Started -> copy(searchState = SearchState.Running)
             is LabSearchEvent.Progress -> copy(searchState = SearchState.Running, metrics = event.metrics)
             is LabSearchEvent.CandidateFound ->
-                copy(searchState = SearchState.Completed, metrics = event.metrics, outcome = SearchOutcome.Found, foundCandidate = event.candidate)
+                withGuidedTerminalOutcome(
+                    copy(
+                        searchState = SearchState.Completed,
+                        metrics = event.metrics,
+                        outcome = SearchOutcome.Found,
+                        foundCandidate = event.candidate,
+                    ),
+                )
             is LabSearchEvent.LimitReached ->
-                copy(searchState = SearchState.LimitReached, metrics = event.metrics, outcome = SearchOutcome.LimitReached)
+                withGuidedTerminalOutcome(
+                    copy(
+                        searchState = SearchState.LimitReached,
+                        metrics = event.metrics,
+                        outcome = SearchOutcome.LimitReached,
+                    ),
+                )
             is LabSearchEvent.Cancelled ->
-                copy(searchState = SearchState.Cancelled, metrics = event.metrics, outcome = SearchOutcome.Cancelled)
+                withGuidedTerminalOutcome(
+                    copy(
+                        searchState = SearchState.Cancelled,
+                        metrics = event.metrics,
+                        outcome = SearchOutcome.Cancelled,
+                    ),
+                )
             is LabSearchEvent.Completed ->
-                copy(searchState = SearchState.Completed, metrics = event.metrics, outcome = SearchOutcome.NotFound)
+                withGuidedTerminalOutcome(
+                    copy(
+                        searchState = SearchState.Completed,
+                        metrics = event.metrics,
+                        outcome = SearchOutcome.NotFound,
+                    ),
+                )
             is LabSearchEvent.Failed ->
-                copy(
-                    searchState = SearchState.Failed,
-                    metrics = event.metrics ?: metrics,
-                    outcome = SearchOutcome.Failed,
-                    errorMessage = event.message,
+                withGuidedTerminalOutcome(
+                    copy(
+                        searchState = SearchState.Failed,
+                        metrics = event.metrics ?: metrics,
+                        outcome = SearchOutcome.Failed,
+                        errorMessage = event.message,
+                    ),
                 )
         }
+    }
 
     private fun buildSyntheticPreviewChallenge(state: LabUiState): LabChallenge =
         LabChallenge.withHiddenSecret(
@@ -540,12 +707,7 @@ class LabViewModel(
 
     private fun validatePasswordAlphabet(state: LabUiState): Int? {
         val password = state.targetPassword
-        val alphabet =
-            if (usesPrototypePlanner(state)) {
-                DefaultAutomaticPasswordAuditPlanner.BLIND_CHALLENGE_POLICY.alphabet
-            } else {
-                state.config.resolvedAlphabet()
-            }
+        val alphabet = guidedValidationAlphabet(state)
         if (!password.all { alphabet.symbols.contains(it) }) {
             return if (state.mode == LabInteractionMode.Guided) {
                 R.string.lab_err_password_alphabet_guided
@@ -554,6 +716,27 @@ class LabViewModel(
             }
         }
         return null
+    }
+
+    private fun guidedValidationAlphabet(state: LabUiState): Alphabet =
+        if (usesPrototypePlanner(state)) {
+            GuidedAlphabetFitter.fit(state.targetPassword)?.let { fit ->
+                fit.customAlphabet ?: fit.choice.alphabet
+            } ?: DefaultAutomaticPasswordAuditPlanner.BLIND_CHALLENGE_POLICY.alphabet
+        } else {
+            state.config.resolvedAlphabet()
+        }
+
+    private fun applyGuidedAlphabetFit(
+        config: LabConfig,
+        password: String,
+    ): LabConfig {
+        val fit = GuidedAlphabetFitter.fit(password) ?: return config
+        return config.copy(
+            alphabet = fit.choice,
+            customAlphabet = fit.customAlphabet,
+            secretLength = password.length.coerceAtLeast(1),
+        )
     }
 
     private fun buildLimits(config: LabConfig): SearchLimits =
