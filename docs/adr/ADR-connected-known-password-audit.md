@@ -20,7 +20,9 @@ encontrarla. La red real solo aporta contexto; nunca se autentica contra el AP.
    El `policy` de planificación es **ciego** al secreto. `SecretStrengthAnalyzer`
    analiza el secreto en un pipeline separado y **no** alimenta al planner.
 3. **Automatic planner** (PR3): `AutomaticPasswordAuditPlanner` en `:shared:lab`.
-4. **Quick Audit UI** (PR4): presets + explicación; opciones avanzadas colapsadas.
+4. **Quick Audit UI** (PR4): presets 30 s / 1 min / 5 min (default 1 min);
+   origen Vault diferido / manual; save-to-Vault OFF; modo Automático;
+   `ArrowBack`; opciones avanzadas colapsadas + restablecer.
 5. **Execution + STOP** (PR5): motor local + cancelación cooperativa.
 6. **Results + strength** (PR6): `PasswordAuditResultComposer` con
    Measured / Estimated / Modelled.

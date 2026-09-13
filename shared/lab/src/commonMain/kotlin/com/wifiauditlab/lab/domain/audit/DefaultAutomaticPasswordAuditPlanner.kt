@@ -124,13 +124,13 @@ class DefaultAutomaticPasswordAuditPlanner(
 
         val explanation =
             AutomaticPlanExplanation(
-                headline = "Modo automático",
+                headline = "Configuración automática",
                 details =
                     listOf(
-                        "$workerCount workers",
+                        "$workerCount procesos de búsqueda",
+                        "${stages.size} etapas",
                         "Límite: ${describeBudget(budget)}",
-                        "${stages.size} etapas de búsqueda",
-                        "Configuración adaptada al rendimiento de este dispositivo",
+                        "Configuración adaptada automáticamente a este dispositivo",
                     ),
             )
 
@@ -263,9 +263,21 @@ class DefaultAutomaticPasswordAuditPlanner(
 
         private fun describeBudget(budget: PasswordAuditBudget): String {
             val parts = mutableListOf<String>()
-            budget.maxDuration?.let { parts += it.toString() }
+            budget.maxDuration?.let { parts += formatDurationNovice(it) }
             budget.maxAttempts?.let { parts += "${it.toAbbreviatedString()} intentos" }
             return parts.joinToString(" · ")
+        }
+
+        private fun formatDurationNovice(duration: Duration): String {
+            val seconds = duration.inWholeSeconds
+            return when {
+                seconds < 60 -> "$seconds s"
+                seconds % 60L == 0L -> {
+                    val minutes = seconds / 60
+                    if (minutes == 1L) "1 minuto" else "$minutes minutos"
+                }
+                else -> duration.toString()
+            }
         }
     }
 }

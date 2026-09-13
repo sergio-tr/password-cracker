@@ -9,6 +9,7 @@ import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultReport
 import com.wifiauditlab.assessment.domain.audit.PasswordStrengthAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.wifi.WifiBand
+import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
@@ -18,10 +19,32 @@ import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 
+/** Where the known password comes from. Vault plaintext is not held in UI state. */
+enum class PasswordAuditSecretSource {
+    Vault,
+    Manual,
+}
+
+/** Novice vs advanced configuration surface. */
+enum class PasswordAuditInteractionMode {
+    Automatic,
+    Advanced,
+}
+
+/** Coarse screen phase for Quick Audit (execution lives alongside Ready). */
+enum class PasswordAuditScreenPhase {
+    Loading,
+    Ready,
+    Invalid,
+    Starting,
+}
+
 /** Payload from Nearby detail → Quick Audit (no password). */
 data class PasswordAuditRequest(
     val network: PasswordAuditNetworkContext,
     val savedNetworkId: SavedNetworkId?,
+    /** Used to re-check connection eligibility before start. */
+    val observation: WifiObservation? = null,
 )
 
 class PasswordAuditTargetStore {
@@ -45,15 +68,19 @@ data class PasswordAuditUiState(
     val ssidLabel: String = "",
     val familyLabel: String = "",
     val metaLine: String = "",
+    val connectedLabel: String = "Conectado",
     val savedNetworkId: SavedNetworkId? = null,
     val vaultSecretAvailable: Boolean = false,
+    val secretSource: PasswordAuditSecretSource = PasswordAuditSecretSource.Manual,
     val passwordInput: String = "",
     val passwordVisible: Boolean = false,
-    val passwordFromVault: Boolean = false,
+    val saveToVault: Boolean = false,
     val passwordError: String? = null,
+    val mode: PasswordAuditInteractionMode = PasswordAuditInteractionMode.Automatic,
     val preset: PasswordAuditBudgetPreset = PasswordAuditBudgetPreset.Standard,
     val advancedExpanded: Boolean = false,
-    val customDurationSeconds: String = "300",
+    val planDetailsExpanded: Boolean = false,
+    val customDurationSeconds: String = "60",
     val customMaxAttempts: String = "",
     val plan: PasswordAuditPlan? = null,
     val planNotApplicableReason: String? = null,
@@ -63,6 +90,7 @@ data class PasswordAuditUiState(
     val strength: PasswordStrengthAssessment? = null,
     val startBlockedReason: String? = null,
     val infoMessage: String? = null,
+    val connectionLostMessage: String? = null,
     val searchState: SearchState = SearchState.Idle,
     val metrics: SearchMetrics? = null,
     val outcome: SearchOutcome? = null,
@@ -75,6 +103,34 @@ data class PasswordAuditUiState(
             searchState == SearchState.Preparing ||
                 searchState == SearchState.Running ||
                 searchState == SearchState.Cancelling
+
+    val hasSecretReady: Boolean
+        get() =
+            when (secretSource) {
+                PasswordAuditSecretSource.Vault -> vaultSecretAvailable
+                PasswordAuditSecretSource.Manual -> passwordInput.isNotEmpty()
+            }
+
+    val phase: PasswordAuditScreenPhase
+        get() =
+            when {
+                missingTarget -> PasswordAuditScreenPhase.Invalid
+                loadingPlan && plan == null && planNotApplicableReason == null ->
+                    PasswordAuditScreenPhase.Loading
+                searchState == SearchState.Preparing -> PasswordAuditScreenPhase.Starting
+                planNotApplicableReason != null && plan == null -> PasswordAuditScreenPhase.Invalid
+                else -> PasswordAuditScreenPhase.Ready
+            }
+
+    val novicePlanLines: List<String>
+        get() {
+            val plan = plan ?: return emptyList()
+            val lines = mutableListOf<String>()
+            lines += "${plan.workerCount} procesos de búsqueda"
+            lines += "${plan.stages.size} etapas"
+            explanation?.details?.firstOrNull { it.startsWith("Límite:") }?.let { lines += it }
+            return lines
+        }
 }
 
 fun passwordAuditRequestFromNearby(item: NearbyItem): PasswordAuditRequest {
@@ -90,6 +146,7 @@ fun passwordAuditRequestFromNearby(item: NearbyItem): PasswordAuditRequest {
                 band = observation.channel.band.takeUnless { it == WifiBand.UNKNOWN },
             ),
         savedNetworkId = item.savedNetworkId,
+        observation = observation,
     )
 }
 
@@ -103,8 +160,8 @@ fun PasswordAuditNetworkContext.metaLine(): String =
 
 fun PasswordAuditBudgetPreset.chipLabel(): String =
     when (this) {
-        PasswordAuditBudgetPreset.Quick -> "Rápida"
-        PasswordAuditBudgetPreset.Standard -> "Estándar"
-        PasswordAuditBudgetPreset.Deep -> "Profunda"
-        PasswordAuditBudgetPreset.Custom -> "Personalizada"
+        PasswordAuditBudgetPreset.Quick -> "30 s"
+        PasswordAuditBudgetPreset.Standard -> "1 min"
+        PasswordAuditBudgetPreset.Deep -> "5 min"
+        PasswordAuditBudgetPreset.Custom -> "Personalizado"
     }

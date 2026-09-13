@@ -28,6 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -348,10 +349,12 @@ private fun PasswordAuditSection(
     onRequestPermissions: () -> Unit,
 ) {
     val auditCta = stringResource(R.string.audit_cta_nearby)
+    val openWifiSettings = stringResource(R.string.audit_open_wifi_settings)
     when (eligibility) {
         null -> Text("Comprobando elegibilidad de auditoría…")
         is PasswordAuditEligibility.EligibleConnectedNetwork -> {
-            Text("Conectado ahora", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.audit_connected_now), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.audit_available), style = MaterialTheme.typography.bodySmall)
             Button(
                 onClick = onOpenPasswordAudit,
                 modifier =
@@ -365,17 +368,15 @@ private fun PasswordAuditSection(
             }
         }
         PasswordAuditEligibility.NotCurrentlyConnected -> {
-            Text(
-                "Para realizar una auditoría de contraseña conocida, " +
-                    "conéctate primero a esta red.",
-            )
+            Text(stringResource(R.string.audit_not_connected_title), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.audit_not_connected_body))
             OutlinedButton(
                 onClick = onOpenWifiSettings,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "Abrir ajustes Wi-Fi" },
-            ) { Text("Abrir ajustes Wi-Fi") }
+                        .semantics { contentDescription = openWifiSettings },
+            ) { Text(openWifiSettings) }
         }
         is PasswordAuditEligibility.UnsupportedAuthenticationModel -> {
             Text(eligibility.reason)
