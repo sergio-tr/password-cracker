@@ -3,6 +3,7 @@ package com.wifiauditlab.android.ui.audit
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -49,6 +50,7 @@ import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
+import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import kotlinx.coroutines.Dispatchers
@@ -176,6 +178,10 @@ class PasswordAuditComposeTest {
         }
     }
 
+    private fun scrollToText(text: String) {
+        composeTestRule.onNodeWithText(text, substring = true).performScrollTo().assertIsDisplayed()
+    }
+
     @Test
     fun automaticDefaults_readyWithoutOpeningAdvanced() {
         val vm = viewModel(HangingEngine(progressMetrics))
@@ -249,6 +255,60 @@ class PasswordAuditComposeTest {
         composeTestRule.onNodeWithText(str(R.string.audit_how_to_improve))
             .performScrollTo()
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun ready_showsSearchProfileAndExpandableStages() {
+        val vm = viewModel(HangingEngine(progressMetrics))
+        setAudit(vm)
+        waitUntilReady(vm)
+        val profileLabel =
+            composeTestRule.activity.getString(
+                R.string.search_plan_profile_label,
+                str(R.string.search_profile_wpa2_personal_psk),
+            )
+        waitForText(profileLabel)
+        waitForText(str(R.string.search_plan_psk_summary))
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithTag("search_plan_how_search").fetchSemanticsNodes().isNotEmpty()
+        }
+        // Expand via VM — off-screen TextButton clicks are unreliable on small emulator viewports.
+        vm.setSearchStagesExpanded(true)
+        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(8_000) {
+            composeTestRule.onAllNodesWithTag("search_plan_stage").fetchSemanticsNodes().isNotEmpty()
+        }
+        waitForText(str(R.string.search_plan_stage_digits_8))
+        waitForText(
+            composeTestRule.activity.getString(
+                R.string.search_plan_stage_weight,
+                str(R.string.search_plan_stage_digits_8),
+                20,
+            ),
+        )
+    }
+
+    @Test
+    fun wpa3Ready_showsWpa3SearchProfile() {
+        val vm =
+            viewModel(
+                HangingEngine(progressMetrics),
+                eligibleRequest(
+                    family = SecurityFamily.WPA3_PERSONAL,
+                    keyManagements = setOf("SAE"),
+                ),
+            )
+        setAudit(vm)
+        waitUntilReady(vm)
+        val wpa3Profile = str(R.string.search_profile_wpa3_personal_psk)
+        waitForText(wpa3Profile)
+        assertEquals(
+            SharedPasswordSearchProfile.WPA3_PERSONAL_PSK,
+            vm.state.value.plan!!.explanation.details
+                .filterIsInstance<com.wifiauditlab.lab.domain.audit.PlanExplanationDetail.WifiPskMechanism>()
+                .first()
+                .profile,
+        )
     }
 
     @Test

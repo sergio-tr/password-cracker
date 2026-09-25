@@ -205,6 +205,7 @@ class PasswordAuditViewModel(
                 customDurationSeconds = "60",
                 customMaxAttempts = "",
                 planDetailsExpanded = false,
+                searchStagesExpanded = false,
                 infoMessage = null,
             )
         }
@@ -227,6 +228,14 @@ class PasswordAuditViewModel(
 
     fun setPlanDetailsExpanded(expanded: Boolean) {
         _state.update { it.copy(planDetailsExpanded = expanded) }
+    }
+
+    fun setSearchStagesExpanded(expanded: Boolean) {
+        _state.update { it.copy(searchStagesExpanded = expanded) }
+    }
+
+    fun toggleSearchStagesExpanded() {
+        _state.update { it.copy(searchStagesExpanded = !it.searchStagesExpanded) }
     }
 
     fun selectPreset(preset: PasswordAuditBudgetPreset) {

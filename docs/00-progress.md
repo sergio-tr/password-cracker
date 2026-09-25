@@ -33,7 +33,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
-| Planner automático de auditoría | **Partial** (FIX-06 + FIX-07 + FIX-08): `AutomaticPasswordAuditPlanner` + `WifiPskProgressiveAuditPolicy` auth-aware PSK; presets Quick/Standard/Deep; ciego al target; Lab guiado y Audit cableados vía `SecurityFamily.toSharedPasswordSearchProfile()`; validación PSK ≥ 8; `GuidedAlphabetFitter` separado del planner; regresión JVM + `ProductRegressionComposeTest` (FIX-08). **Manual UX pending user.** |
+| Planner automático de auditoría | **Partial** (FIX-06 + FIX-07 + FIX-08 + FIX-09): `AutomaticPasswordAuditPlanner` + `WifiPskProgressiveAuditPolicy` auth-aware PSK; presets Quick/Standard/Deep; ciego al target; Lab guiado y Audit cableados vía `SecurityFamily.toSharedPasswordSearchProfile()`; validación PSK ≥ 8; `GuidedAlphabetFitter` separado del planner; **FIX-09:** perfil + etapas visibles en Audit Ready y Lab Ready (`SearchPlanExplainabilitySection`, strings ES/EN); regresión JVM + Compose. **Manual UX pending user.** |
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
 | Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
 | STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
@@ -62,7 +62,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planner ciego + encapsulado en Lab guiado y Password Audit | Sin diccionarios rockyou / credenciales reales |
 | `SecurityFamily.toSharedPasswordSearchProfile()` en UI | Validación manual UX/locale/dispositivo pendiente usuario |
 | Validación UI PSK ≥ 8; OPEN/Enterprise sin campo/CTA PSK | Charset auth-aware = subconjuntos progresivos budget-capped, no exhaustivo 8–63 cada run |
-| Regresión FIX-08: `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `LabViewModelTest`, `PasswordAuditViewModelTest`, `ProductRegressionComposeTest` | Promoción a **Implemented** UX sólo tras pase manual documentado |
+| Regresión FIX-08/09: `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `LabViewModelTest`, `PasswordAuditViewModelTest`, `PasswordAuditComposeTest`, `LabComposeTest`, `ProductRegressionComposeTest` | Promoción a **Implemented** UX sólo tras pase manual documentado |
 
 ## Partial
 

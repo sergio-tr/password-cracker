@@ -227,6 +227,25 @@
         <item quantity="one">%d attempt</item>
         <item quantity="other">%d attempts</item>
     </plurals>
+    <!-- Search plan explainability (FIX-09) -->
+    <string name="search_profile_wpa2_personal_psk">WPA2-Personal (PSK)</string>
+    <string name="search_profile_wpa3_personal_psk">WPA3-Personal (SAE)</string>
+    <string name="search_profile_wpa2_wpa3_transition_psk">WPA2/WPA3 transition (PSK)</string>
+    <string name="search_profile_wpa_personal_psk">WPA-Personal (PSK)</string>
+    <string name="search_plan_profile_label">Search profile: %1$s</string>
+    <string name="search_plan_psk_summary">Wi‑Fi passphrases ≥ 8 characters; tries printable subsets with a budget cap.</string>
+    <string name="search_plan_how_search">How it searches</string>
+    <string name="search_plan_hide_stages">Hide stages</string>
+    <string name="search_plan_stage_digits_8">digits 8</string>
+    <string name="search_plan_stage_lower_8">lowercase 8</string>
+    <string name="search_plan_stage_lower_alnum_8">lowercase + digits 8</string>
+    <string name="search_plan_stage_lower_alnum_8_10">lowercase + digits 8–10</string>
+    <string name="search_plan_stage_alnum_8_12">alphanumeric 8–12</string>
+    <string name="search_plan_stage_printable_8_12">printable 8–12</string>
+    <string name="search_plan_stage_fallback">length %1$d–%2$d</string>
+    <string name="search_plan_stage_weight">%1$s · %2$d%%</string>
+    <string name="search_plan_cd_how_search">How it searches — plan stages</string>
+
     <plurals name="audit_duration_minutes">
         <item quantity="one">%d minute</item>
         <item quantity="other">%d minutes</item>
