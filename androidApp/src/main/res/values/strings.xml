@@ -167,11 +167,12 @@
     <string name="audit_inapplicable_enterprise">La autenticación enterprise (802.1X) no se modela como una contraseña Wi-Fi compartida.</string>
     <string name="audit_inapplicable_passpoint">Passpoint no utiliza una contraseña Wi-Fi compartida del mismo modo.</string>
     <string name="audit_inapplicable_dpp">DPP (Easy Connect) no se representa como una contraseña compartida.</string>
-    <string name="audit_inapplicable_wep">WEP está obsoleto; esta auditoría se centra en contraseñas personales modernas (WPA/WPA2/WPA3).</string>
+    <string name="audit_inapplicable_wep">WEP legacy: usa auditoría de clave hex local (10/26 dígitos); no hay autenticación contra el AP.</string>
     <string name="audit_inapplicable_unknown">No se puede determinar si esta red usa una contraseña Wi-Fi compartida.</string>
     <string name="audit_inapplicable_unsupported">Este mecanismo de autenticación no admite una auditoría de contraseña compartida.</string>
     <string name="audit_plan_device_adapted">Configuración adaptada automáticamente a este dispositivo</string>
     <string name="audit_plan_wifi_psk_mechanism">Auditoría PSK Wi‑Fi: %1$s (frases de paso ≥ 8 caracteres imprimibles)</string>
+    <string name="audit_plan_wep_hex_mechanism">Auditoría WEP local: %1$s (clave hex 10 o 26 dígitos)</string>
     <string name="audit_plan_budget_prefix">Límite: %1$s</string>
     <string name="audit_duration_seconds">%1$d s</string>
     <string name="audit_duration_min_sec">%1$d min %2$d s</string>
@@ -234,8 +235,10 @@
     <string name="search_profile_wpa3_personal_psk">WPA3-Personal (SAE)</string>
     <string name="search_profile_wpa2_wpa3_transition_psk">WPA2/WPA3 transición (PSK)</string>
     <string name="search_profile_wpa_personal_psk">WPA-Personal (PSK)</string>
+    <string name="search_profile_wep_hex">WEP (hex)</string>
     <string name="search_plan_profile_label">Perfil de búsqueda: %1$s</string>
     <string name="search_plan_psk_summary">Frases de paso Wi‑Fi ≥ 8 caracteres; prueba subconjuntos imprimibles con límite de presupuesto.</string>
+    <string name="search_plan_wep_hex_summary">Claves WEP en hex (10 o 26 dígitos); mayúsculas y minúsculas por separado, con límite de presupuesto.</string>
     <string name="search_plan_how_search">Cómo busca</string>
     <string name="search_plan_hide_stages">Ocultar etapas</string>
     <string name="search_plan_stage_digits_8">dígitos 8</string>
@@ -244,6 +247,10 @@
     <string name="search_plan_stage_lower_alnum_8_10">minúsculas y números 8–10</string>
     <string name="search_plan_stage_alnum_8_12">alfanumérico 8–12</string>
     <string name="search_plan_stage_printable_8_12">imprimible 8–12</string>
+    <string name="search_plan_stage_hex_upper_10">hex mayúsculas 10</string>
+    <string name="search_plan_stage_hex_lower_10">hex minúsculas 10</string>
+    <string name="search_plan_stage_hex_upper_26">hex mayúsculas 26</string>
+    <string name="search_plan_stage_hex_lower_26">hex minúsculas 26</string>
     <string name="search_plan_stage_fallback">longitud %1$d–%2$d</string>
     <string name="search_plan_stage_weight">%1$s · %2$d%%</string>
     <string name="search_plan_cd_how_search">Cómo busca — etapas del plan</string>
@@ -296,6 +303,7 @@
     <string name="lab_cd_local_only_banner">Aviso de búsqueda solo local</string>
     <string name="lab_err_password_required">Introduce la contraseña del prototipo.</string>
     <string name="lab_err_password_psk_min_length">La contraseña Wi‑Fi debe tener al menos 8 caracteres.</string>
+    <string name="lab_err_password_wep_hex">La clave WEP debe ser hex de 10 o 26 dígitos (0-9, A-F).</string>
     <string name="lab_err_password_alphabet">La contraseña contiene símbolos fuera del alfabeto seleccionado.</string>
     <string name="lab_err_password_alphabet_guided">La contraseña usa símbolos que no encajan en el alfabeto automático. Abre Opciones avanzadas y elige un alfabeto más amplio.</string>
     <string name="lab_cd_guided_prototype">Auditoría guiada de prototipo local</string>
@@ -394,7 +402,7 @@
     <string name="lab_guided_open_owe">Esta red no utiliza una contraseña Wi-Fi compartida del mismo modo, por lo que este experimento no es representativo de su autenticación.</string>
     <string name="lab_guided_enterprise">Esta red usa autenticación enterprise/Passpoint, no una contraseña Wi-Fi compartida. Puedes abrir un laboratorio genérico, pero no equivale a su autenticación.</string>
     <string name="lab_guided_dpp">DPP (Easy Connect) no se modela como una contraseña compartida. El laboratorio genérico sigue siendo una simulación local.</string>
-    <string name="lab_guided_wep">WEP está obsoleto; la demo de laboratorio es sintética y no autentica contra la red.</string>
+    <string name="lab_guided_wep">WEP es legacy: el laboratorio prueba claves hex locales (10/26) y no autentica contra la red.</string>
     <string name="lab_guided_unknown">No está claro si esta red usa una contraseña compartida. El laboratorio permanece como simulación local.</string>
     <string name="lab_band_unknown">Banda desconocida</string>
 

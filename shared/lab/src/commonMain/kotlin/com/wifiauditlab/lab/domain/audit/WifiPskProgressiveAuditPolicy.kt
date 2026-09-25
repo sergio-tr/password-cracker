@@ -33,6 +33,9 @@ object WifiPskProgressiveAuditPolicy {
     )
 
     fun stagesFor(profile: SharedPasswordSearchProfile): List<StageSpec> {
+        require(profile.isWifiPskProfile()) {
+            "WifiPskProgressiveAuditPolicy only applies to PSK/SAE profiles; got $profile"
+        }
         val prefix = profile.name.lowercase().replace('_', '-')
         val weights = weightsFor(profile)
         return listOf(
@@ -105,6 +108,7 @@ object WifiPskProgressiveAuditPolicy {
             SharedPasswordSearchProfile.WPA3_PERSONAL_PSK -> "WPA3-Personal SAE"
             SharedPasswordSearchProfile.WPA2_WPA3_TRANSITION_PSK -> "WPA2/WPA3 transition PSK"
             SharedPasswordSearchProfile.WPA_PERSONAL_PSK -> "WPA-Personal PSK"
+            SharedPasswordSearchProfile.WEP_HEX -> WepHexProgressiveAuditPolicy.profileLabel()
         }
 
     private data class ProfileWeights(
@@ -147,5 +151,7 @@ object WifiPskProgressiveAuditPolicy {
                     alnum8To12 = 15,
                     printable8To12 = 5,
                 )
+            SharedPasswordSearchProfile.WEP_HEX ->
+                error("WEP hex uses WepHexProgressiveAuditPolicy")
         }
 }

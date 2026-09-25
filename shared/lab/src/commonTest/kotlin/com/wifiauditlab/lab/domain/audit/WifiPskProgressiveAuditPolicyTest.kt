@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 class WifiPskProgressiveAuditPolicyTest {
     @Test
     fun all_profiles_sum_weights_to_100() {
-        SharedPasswordSearchProfile.entries.forEach { profile ->
+        SharedPasswordSearchProfile.entries.filter { it.isWifiPskProfile() }.forEach { profile ->
             val stages = WifiPskProgressiveAuditPolicy.stagesFor(profile)
             assertEquals(100, stages.sumOf { it.budgetWeight })
             assertTrue(stages.all { it.lengthPolicy.minLength >= WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH })
@@ -18,7 +18,7 @@ class WifiPskProgressiveAuditPolicyTest {
     @Test
     fun stage_alphabets_are_printable_ascii_subsets() {
         val printable = Alphabet.PRINTABLE_ASCII.symbols.toSet()
-        SharedPasswordSearchProfile.entries.forEach { profile ->
+        SharedPasswordSearchProfile.entries.filter { it.isWifiPskProfile() }.forEach { profile ->
             WifiPskProgressiveAuditPolicy.stagesFor(profile).forEach { stage ->
                 assertTrue(stage.alphabet.symbols.all { it in printable })
             }

@@ -59,10 +59,18 @@ fun SharedPasswordSearchProfile.labelRes(): Int =
         SharedPasswordSearchProfile.WPA3_PERSONAL_PSK -> R.string.search_profile_wpa3_personal_psk
         SharedPasswordSearchProfile.WPA2_WPA3_TRANSITION_PSK -> R.string.search_profile_wpa2_wpa3_transition_psk
         SharedPasswordSearchProfile.WPA_PERSONAL_PSK -> R.string.search_profile_wpa_personal_psk
+        SharedPasswordSearchProfile.WEP_HEX -> R.string.search_profile_wep_hex
     }
 
 @Composable
 fun SharedPasswordSearchProfile.label(): String = stringResource(labelRes())
+
+@StringRes
+fun SharedPasswordSearchProfile.summaryRes(): Int =
+    when (this) {
+        SharedPasswordSearchProfile.WEP_HEX -> R.string.search_plan_wep_hex_summary
+        else -> R.string.search_plan_psk_summary
+    }
 
 @Composable
 fun SearchPlanExplainabilitySection(
@@ -87,7 +95,7 @@ fun SearchPlanExplainabilitySection(
             modifier = Modifier.testTag("search_plan_profile"),
         )
         Text(
-            stringResource(R.string.search_plan_psk_summary),
+            stringResource(summary.profile.summaryRes()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -129,9 +137,19 @@ private fun SearchStageUiSummary.readableStageLabel(): String =
 @Composable
 fun CandidateModel.readableStageLabel(): String {
     val exact8 = lengthPolicy.minLength == 8 && lengthPolicy.maxLength == 8
+    val exact10 = lengthPolicy.minLength == 10 && lengthPolicy.maxLength == 10
+    val exact26 = lengthPolicy.minLength == 26 && lengthPolicy.maxLength == 26
     val range8to10 = lengthPolicy.minLength == 8 && lengthPolicy.maxLength == 10
     val range8to12 = lengthPolicy.minLength == 8 && lengthPolicy.maxLength == 12
     return when {
+        alphabet == Alphabet.HEX_UPPER && exact10 ->
+            stringResource(R.string.search_plan_stage_hex_upper_10)
+        alphabet == Alphabet.HEX_LOWER && exact10 ->
+            stringResource(R.string.search_plan_stage_hex_lower_10)
+        alphabet == Alphabet.HEX_UPPER && exact26 ->
+            stringResource(R.string.search_plan_stage_hex_upper_26)
+        alphabet == Alphabet.HEX_LOWER && exact26 ->
+            stringResource(R.string.search_plan_stage_hex_lower_26)
         alphabet == Alphabet.DIGITS && exact8 -> stringResource(R.string.search_plan_stage_digits_8)
         alphabet == Alphabet.LOWERCASE && exact8 -> stringResource(R.string.search_plan_stage_lower_8)
         alphabet == Alphabet.LOWER_ALPHANUMERIC && exact8 ->

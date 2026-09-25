@@ -38,6 +38,7 @@ class GuidedLabDefaultsTest {
         assertTrue(SecurityFamily.WPA2_PERSONAL.supportsSharedPasswordDemo())
         assertTrue(SecurityFamily.WPA3_PERSONAL.supportsSharedPasswordDemo())
         assertTrue(SecurityFamily.WPA2_WPA3_PERSONAL.supportsSharedPasswordDemo())
+        assertTrue(SecurityFamily.WEP.supportsSharedPasswordDemo())
         assertFalse(SecurityFamily.OPEN.supportsSharedPasswordDemo())
         assertFalse(SecurityFamily.OWE.supportsSharedPasswordDemo())
         assertFalse(SecurityFamily.WPA2_ENTERPRISE.supportsSharedPasswordDemo())
