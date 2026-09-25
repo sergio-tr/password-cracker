@@ -23,7 +23,9 @@ import com.wifiauditlab.lab.domain.audit.AutomaticPlanExplanation
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.audit.PlanExplanationDetail
 import com.wifiauditlab.lab.domain.audit.PlanExplanationHeadline
+import com.wifiauditlab.lab.domain.audit.WepHexProgressiveAuditPolicy
 import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
+import com.wifiauditlab.lab.domain.audit.isWepHexProfile
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -54,10 +56,18 @@ fun PlanExplanationDetail.line(): String =
         is PlanExplanationDetail.BudgetLimit -> formatBudgetLimit(maxDuration, maxAttempts)
         PlanExplanationDetail.DeviceAdapted -> stringResource(R.string.audit_plan_device_adapted)
         is PlanExplanationDetail.WifiPskMechanism ->
-            stringResource(
-                R.string.audit_plan_wifi_psk_mechanism,
-                WifiPskProgressiveAuditPolicy.profileLabel(profile),
-            )
+            when {
+                profile.isWepHexProfile() ->
+                    stringResource(
+                        R.string.audit_plan_wep_hex_mechanism,
+                        WepHexProgressiveAuditPolicy.profileLabel(),
+                    )
+                else ->
+                    stringResource(
+                        R.string.audit_plan_wifi_psk_mechanism,
+                        WifiPskProgressiveAuditPolicy.profileLabel(profile),
+                    )
+            }
     }
 
 @Composable

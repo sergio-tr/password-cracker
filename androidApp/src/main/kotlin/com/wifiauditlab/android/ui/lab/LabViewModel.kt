@@ -9,6 +9,7 @@ import com.wifiauditlab.android.ui.plan.SearchPlanUiSummary
 import com.wifiauditlab.android.ui.plan.toSearchPlanUiSummary
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
+import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
@@ -30,7 +31,9 @@ import com.wifiauditlab.lab.domain.audit.PasswordAuditEngineChoice
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
+import com.wifiauditlab.lab.domain.audit.WepHexProgressiveAuditPolicy
 import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
+import com.wifiauditlab.lab.domain.audit.isWepHexProfile
 import com.wifiauditlab.lab.domain.engine.CancellationController
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
@@ -700,6 +703,10 @@ class LabViewModel(
         if (state.secretMode == LabSecretMode.LocalPrototype &&
             state.prototype.securityFamily.supportsSharedPasswordDemo()
         ) {
+            val profile = state.prototype.securityFamily.toSharedPasswordSearchProfile()
+            if (profile?.isWepHexProfile() == true) {
+                return DefaultAutomaticPasswordAuditPlanner.blindChallengePolicyFor(profile)
+            }
             val resolved = config.resolvedAlphabet()
             val printable = Alphabet.PRINTABLE_ASCII
             val alphabet =
@@ -764,7 +771,12 @@ class LabViewModel(
             if (state.prototype.ssid.isBlank()) return R.string.lab_err_ssid_required
             if (!state.prototype.securityFamily.supportsSharedPasswordDemo()) return null
             if (state.targetPassword.isBlank()) return R.string.lab_err_password_required
-            if (state.targetPassword.length < WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH) {
+            val profile = state.prototype.securityFamily.toSharedPasswordSearchProfile()
+            if (profile?.isWepHexProfile() == true) {
+                if (!WepHexProgressiveAuditPolicy.isValidHexKey(state.targetPassword)) {
+                    return R.string.lab_err_password_wep_hex
+                }
+            } else if (state.targetPassword.length < WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH) {
                 return R.string.lab_err_password_psk_min_length
             }
             return validatePasswordAlphabet(state)
@@ -786,20 +798,33 @@ class LabViewModel(
         return null
     }
 
-    private fun guidedValidationAlphabet(state: LabUiState): Alphabet =
-        if (usesPrototypePlanner(state)) {
-            GuidedAlphabetFitter.fitForWifiPsk(state.targetPassword)?.let { fit ->
-                fit.customAlphabet ?: fit.choice.alphabet
-            } ?: DefaultAutomaticPasswordAuditPlanner.BLIND_CHALLENGE_POLICY.alphabet
-        } else {
-            state.config.resolvedAlphabet()
+    private fun guidedValidationAlphabet(state: LabUiState): Alphabet {
+        val profile = state.prototype.securityFamily.toSharedPasswordSearchProfile()
+        if (!usesPrototypePlanner(state)) {
+            return state.config.resolvedAlphabet()
         }
+        if (profile?.isWepHexProfile() == true) {
+            return GuidedAlphabetFitter.fitForWepHex(state.targetPassword)?.let { fit ->
+                fit.customAlphabet ?: Alphabet.HEX_UPPER
+            } ?: Alphabet.of("0123456789ABCDEFabcdef")
+        }
+        return GuidedAlphabetFitter.fitForWifiPsk(state.targetPassword)?.let { fit ->
+            fit.customAlphabet ?: fit.choice.alphabet
+        } ?: DefaultAutomaticPasswordAuditPlanner.BLIND_CHALLENGE_POLICY.alphabet
+    }
 
     private fun applyGuidedAlphabetFit(
         config: LabConfig,
         password: String,
+        family: SecurityFamily = _state.value.prototype.securityFamily,
     ): LabConfig {
-        val fit = GuidedAlphabetFitter.fitForWifiPsk(password) ?: return config
+        val profile = family.toSharedPasswordSearchProfile()
+        val fit =
+            if (profile?.isWepHexProfile() == true) {
+                GuidedAlphabetFitter.fitForWepHex(password)
+            } else {
+                GuidedAlphabetFitter.fitForWifiPsk(password)
+            } ?: return config
         return config.copy(
             alphabet = fit.choice,
             customAlphabet = fit.customAlphabet,

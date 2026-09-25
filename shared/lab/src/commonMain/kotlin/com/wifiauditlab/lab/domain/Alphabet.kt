@@ -31,6 +31,12 @@ class Alphabet private constructor(val symbols: String) {
         val LOWER_ALPHANUMERIC: Alphabet = of(LOWERCASE.symbols + DIGITS.symbols)
         val ALPHANUMERIC: Alphabet = of(LOWERCASE.symbols + UPPERCASE.symbols + DIGITS.symbols)
 
+        /** Uppercase hex 0-9A-F — WEP key material (40/104-bit hex entry). */
+        val HEX_UPPER: Alphabet = of("0123456789ABCDEF")
+
+        /** Lowercase hex 0-9a-f — alternate WEP hex entry casing. */
+        val HEX_LOWER: Alphabet = of("0123456789abcdef")
+
         /** Printable ASCII 0x20–0x7E — valid Wi‑Fi PSK passphrase charset (inclusive). */
         val PRINTABLE_ASCII: Alphabet = of((32..126).map { it.toChar() }.joinToString(""))
 

@@ -15,8 +15,8 @@ fun SecurityFamily.toPasswordAuditInapplicableReason(): PasswordAuditInapplicabl
         -> PasswordAuditInapplicableReason.Enterprise
         SecurityFamily.PASSPOINT -> PasswordAuditInapplicableReason.Passpoint
         SecurityFamily.DPP -> PasswordAuditInapplicableReason.Dpp
-        SecurityFamily.WEP -> PasswordAuditInapplicableReason.Wep
         SecurityFamily.UNKNOWN -> PasswordAuditInapplicableReason.UnknownFamily
+        SecurityFamily.WEP,
         SecurityFamily.WPA_PERSONAL,
         SecurityFamily.WPA2_PERSONAL,
         SecurityFamily.WPA3_PERSONAL,

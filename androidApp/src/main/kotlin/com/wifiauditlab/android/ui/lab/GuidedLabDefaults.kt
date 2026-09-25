@@ -46,6 +46,7 @@ fun SecurityFamily.supportsSharedPasswordDemo(): Boolean =
         SecurityFamily.WPA2_PERSONAL,
         SecurityFamily.WPA3_PERSONAL,
         SecurityFamily.WPA2_WPA3_PERSONAL,
+        SecurityFamily.WEP,
         -> true
         else -> false
     }
@@ -53,13 +54,13 @@ fun SecurityFamily.supportsSharedPasswordDemo(): Boolean =
 @StringRes
 fun SecurityFamily.guidedLabExplanationRes(): Int =
     when {
+        this == SecurityFamily.WEP -> R.string.lab_guided_wep
         supportsSharedPasswordDemo() -> R.string.lab_guided_shared_password
         this == SecurityFamily.OPEN || this == SecurityFamily.OWE -> R.string.lab_guided_open_owe
         this == SecurityFamily.WPA2_ENTERPRISE ||
             this == SecurityFamily.WPA3_ENTERPRISE ||
             this == SecurityFamily.PASSPOINT -> R.string.lab_guided_enterprise
         this == SecurityFamily.DPP -> R.string.lab_guided_dpp
-        this == SecurityFamily.WEP -> R.string.lab_guided_wep
         else -> R.string.lab_guided_unknown
     }
 

@@ -2,6 +2,7 @@ package com.wifiauditlab.lab.domain.audit
 
 import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
 import com.wifiauditlab.core.math.CombinationCount
+import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
@@ -176,6 +177,34 @@ class AutomaticPasswordAuditPlannerTest {
             SharedPasswordSearchProfile.WPA3_PERSONAL_PSK,
             (wpa3.explanation.details.single { it is PlanExplanationDetail.WifiPskMechanism } as PlanExplanationDetail.WifiPskMechanism).profile,
         )
+    }
+
+    @Test
+    fun wep_hex_profile_uses_hex_stages_not_psk() {
+        val plan =
+            ready(
+                planner.createPlan(
+                    PasswordAuditContext(
+                        sharedPasswordApplicable = true,
+                        searchProfile = SharedPasswordSearchProfile.WEP_HEX,
+                    ),
+                    basePerformance,
+                    PasswordAuditBudget.standard(),
+                ),
+            )
+        assertEquals(4, plan.stages.size)
+        assertTrue(plan.stages.all { it.id.value.startsWith("wep-hex-") })
+        assertTrue(
+            plan.stages.all {
+                it.candidateModel.lengthPolicy.minLength == 10 ||
+                    it.candidateModel.lengthPolicy.minLength == 26
+            },
+        )
+        assertEquals(
+            SharedPasswordSearchProfile.WEP_HEX,
+            (plan.explanation.details.single { it is PlanExplanationDetail.WifiPskMechanism } as PlanExplanationDetail.WifiPskMechanism).profile,
+        )
+        assertEquals(Alphabet.HEX_UPPER, plan.stages.first().candidateModel.alphabet)
     }
 
     @Test

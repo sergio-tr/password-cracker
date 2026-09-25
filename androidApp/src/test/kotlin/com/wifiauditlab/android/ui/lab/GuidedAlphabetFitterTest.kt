@@ -1,6 +1,8 @@
 package com.wifiauditlab.android.ui.lab
 
+import com.wifiauditlab.lab.domain.Alphabet
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -30,5 +32,18 @@ class GuidedAlphabetFitterTest {
         val fit = GuidedAlphabetFitter.fit("abc\u0001")
         assertEquals(AlphabetChoice.ALPHANUMERIC, fit?.choice)
         assertEquals('\u0001', fit?.customAlphabet?.symbols?.firstOrNull { it == '\u0001' })
+    }
+
+    @Test
+    fun fitForWepHex_accepts10DigitKey() {
+        val fit = GuidedAlphabetFitter.fitForWepHex("ABCDEF0123")
+        assertNotNull(fit)
+        assertEquals(Alphabet.HEX_UPPER, fit!!.customAlphabet)
+    }
+
+    @Test
+    fun fitForWepHex_rejectsWrongLength() {
+        assertNull(GuidedAlphabetFitter.fitForWepHex("12345678"))
+        assertNull(GuidedAlphabetFitter.fitForWepHex("not-hex!!"))
     }
 }

@@ -83,6 +83,7 @@ fun SecurityFamily.supportsSharedPasswordAudit(): Boolean =
         SecurityFamily.WPA2_PERSONAL,
         SecurityFamily.WPA3_PERSONAL,
         SecurityFamily.WPA2_WPA3_PERSONAL,
+        SecurityFamily.WEP,
         -> true
         else -> false
     }

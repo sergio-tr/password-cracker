@@ -2,6 +2,7 @@ package com.wifiauditlab.android.ui.lab
 
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.WepHexProgressiveAuditPolicy
 import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
 
 /**
@@ -9,9 +10,10 @@ import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
  * expanding in order: digits → lowercase → mixed case → symbols (custom union).
  *
  * [fitForWifiPsk] restricts suggestions to [Alphabet.PRINTABLE_ASCII] (Wi‑Fi PSK
- * passphrase charset). The fitter only assists Advanced/config alphabet suggestion
- * and guided UI feedback; **guided search space still comes from
- * [WifiPskProgressiveAuditPolicy] via [AutomaticPasswordAuditPlanner]** (target-blind).
+ * passphrase charset). [fitForWepHex] accepts only hex keys of length 10 or 26.
+ * The fitter only assists Advanced/config alphabet suggestion and guided UI
+ * feedback; **guided search space still comes from auth-aware progressive
+ * policies via [AutomaticPasswordAuditPlanner]** (target-blind).
  */
 object GuidedAlphabetFitter {
     data class FitResult(
@@ -29,6 +31,21 @@ object GuidedAlphabetFitter {
             return null
         }
         return fitWithinPrintable(password)
+    }
+
+    /**
+     * Fits [password] for WEP hex-key prototype / audit UI.
+     * Returns null when length is not 10/26 or any character is outside hex.
+     */
+    fun fitForWepHex(password: String): FitResult? {
+        if (!WepHexProgressiveAuditPolicy.isValidHexKey(password)) return null
+        val alphabet =
+            if (password.any { it in 'a'..'f' } && password.none { it in 'A'..'F' }) {
+                Alphabet.HEX_LOWER
+            } else {
+                Alphabet.HEX_UPPER
+            }
+        return FitResult(AlphabetChoice.DIGITS, customAlphabet = alphabet)
     }
 
     /** Fits [password] for synthetic RandomHidden exercises (no PSK charset restriction). */
