@@ -44,6 +44,7 @@ import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
 import com.wifiauditlab.lab.domain.audit.PlanExplanationDetail
 import com.wifiauditlab.lab.domain.audit.PlanExplanationHeadline
+import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
@@ -120,6 +121,27 @@ class PasswordAuditViewModelTest {
                 )
             assertNotNull(vm.state.value.plan)
             assertNull(vm.state.value.planNotApplicableReason)
+        }
+
+    @Test
+    fun wpa3PlanStagesAreProfileAware() =
+        runTest {
+            val vm =
+                viewModel(
+                    request =
+                        eligibleRequest(
+                            family = SecurityFamily.WPA3_PERSONAL,
+                            keyManagements = setOf("SAE"),
+                        ),
+                )
+            val plan = vm.state.value.plan!!
+            assertTrue(plan.stages.all { it.id.value.contains("wpa3") })
+            assertTrue(
+                vm.state.value.explanation!!.details.any {
+                    it is PlanExplanationDetail.WifiPskMechanism &&
+                        it.profile == SharedPasswordSearchProfile.WPA3_PERSONAL_PSK
+                },
+            )
         }
 
     @Test

@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wifiauditlab.android.R
+import com.wifiauditlab.android.ui.audit.toSharedPasswordSearchProfile
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.core.math.CombinationCount
@@ -27,7 +28,7 @@ import com.wifiauditlab.lab.domain.audit.PasswordAuditEngineChoice
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
-import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
+import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
 import com.wifiauditlab.lab.domain.engine.CancellationController
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
@@ -438,6 +439,18 @@ class LabViewModel(
     }
 
     private fun recomputePrototypePreview(snapshot: LabUiState) {
+        val profile = snapshot.prototype.securityFamily.toSharedPasswordSearchProfile()
+        if (profile == null) {
+            cachedPrototypePlan = null
+            _state.update {
+                it.copy(
+                    estimatedCombinations = CombinationCount.ZERO,
+                    feasibility = null,
+                    configErrorRes = validateForStart(snapshot.config, snapshot),
+                )
+            }
+            return
+        }
         val budget = runCatching { prototypeBudget(snapshot.config) }.getOrNull()
         if (budget == null) {
             cachedPrototypePlan = null
@@ -455,7 +468,7 @@ class LabViewModel(
                 planner.createPlan(
                     PasswordAuditContext(
                         sharedPasswordApplicable = true,
-                        searchProfile = SharedPasswordSearchProfile.WPA2_PERSONAL_PSK,
+                        searchProfile = profile,
                     ),
                     PasswordAuditPerformanceProfile(
                         calibratedAttemptsPerSecond = calibratedThroughput,
@@ -534,7 +547,7 @@ class LabViewModel(
                 applyEngineSelection(auditPlan)
                 Triple(ch, auditPlan.searchPlan, auditPlan.searchLimits)
             } else {
-                val blindPolicy = blindPolicyFromConfig(snapshot.config)
+                val blindPolicy = blindPolicyFromConfig(snapshot.config, snapshot)
                 val ch =
                     LabChallenge.withEncapsulatedVerifier(
                         policy = blindPolicy,
@@ -659,11 +672,38 @@ class LabViewModel(
     private fun buildSyntheticSearchChallenge(state: LabUiState): LabChallenge =
         buildSyntheticPreviewChallenge(state)
 
-    private fun blindPolicyFromConfig(config: LabConfig): LabSecretPolicy =
-        LabSecretPolicy(
+    private fun blindPolicyFromConfig(
+        config: LabConfig,
+        state: LabUiState,
+    ): LabSecretPolicy {
+        if (state.secretMode == LabSecretMode.LocalPrototype &&
+            state.prototype.securityFamily.supportsSharedPasswordDemo()
+        ) {
+            val resolved = config.resolvedAlphabet()
+            val printable = Alphabet.PRINTABLE_ASCII
+            val alphabet =
+                if (resolved.symbols.all { printable.symbols.contains(it) }) {
+                    resolved
+                } else {
+                    val subset =
+                        resolved.symbols.filter { printable.symbols.contains(it) }.toSet()
+                    if (subset.isEmpty()) printable else Alphabet.of(subset.joinToString(""))
+                }
+            val minLen = WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH
+            val maxLen =
+                config.secretLength
+                    .coerceAtLeast(minLen)
+                    .coerceAtMost(WifiPskProgressiveAuditPolicy.MAX_PASSPHRASE_LENGTH)
+            return LabSecretPolicy(
+                alphabet = alphabet,
+                length = LengthPolicy(minLen, maxLen),
+            )
+        }
+        return LabSecretPolicy(
             alphabet = config.resolvedAlphabet(),
             length = LengthPolicy(1, config.secretLength),
         )
+    }
 
     private fun usesPrototypePlanner(state: LabUiState): Boolean =
         state.secretMode == LabSecretMode.LocalPrototype &&
@@ -703,6 +743,9 @@ class LabViewModel(
             if (state.prototype.ssid.isBlank()) return R.string.lab_err_ssid_required
             if (!state.prototype.securityFamily.supportsSharedPasswordDemo()) return null
             if (state.targetPassword.isBlank()) return R.string.lab_err_password_required
+            if (state.targetPassword.length < WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH) {
+                return R.string.lab_err_password_psk_min_length
+            }
             return validatePasswordAlphabet(state)
         }
 
@@ -724,7 +767,7 @@ class LabViewModel(
 
     private fun guidedValidationAlphabet(state: LabUiState): Alphabet =
         if (usesPrototypePlanner(state)) {
-            GuidedAlphabetFitter.fit(state.targetPassword)?.let { fit ->
+            GuidedAlphabetFitter.fitForWifiPsk(state.targetPassword)?.let { fit ->
                 fit.customAlphabet ?: fit.choice.alphabet
             } ?: DefaultAutomaticPasswordAuditPlanner.BLIND_CHALLENGE_POLICY.alphabet
         } else {
@@ -735,7 +778,7 @@ class LabViewModel(
         config: LabConfig,
         password: String,
     ): LabConfig {
-        val fit = GuidedAlphabetFitter.fit(password) ?: return config
+        val fit = GuidedAlphabetFitter.fitForWifiPsk(password) ?: return config
         return config.copy(
             alphabet = fit.choice,
             customAlphabet = fit.customAlphabet,

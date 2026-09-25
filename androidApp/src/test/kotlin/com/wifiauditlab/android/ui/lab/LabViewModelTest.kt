@@ -15,7 +15,14 @@ import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
+import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.PasswordAuditBudget
+import com.wifiauditlab.lab.domain.audit.PasswordAuditContext
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
+import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
 import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.FeasibilityRating
@@ -39,6 +46,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -117,6 +125,30 @@ class LabViewModelTest {
 
     private val assessNetworkSecurity = AssessNetworkSecurity(SecurityAssessmentRegistry.default())
 
+    private class ProfileCapturingPlanner(
+        private val delegate: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
+    ) : AutomaticPasswordAuditPlanner {
+        var lastProfile: SharedPasswordSearchProfile? = null
+            private set
+        var lastPlan: PasswordAuditPlan? = null
+            private set
+
+        override fun createPlan(
+            context: PasswordAuditContext,
+            performance: PasswordAuditPerformanceProfile,
+            budget: PasswordAuditBudget,
+        ): PasswordAuditPlanResult {
+            lastProfile = context.searchProfile
+            return when (val result = delegate.createPlan(context, performance, budget)) {
+                is PasswordAuditPlanResult.Ready -> {
+                    lastPlan = result.plan
+                    result
+                }
+                else -> result
+            }
+        }
+    }
+
     private fun viewModel(
         engine: LabSearchEngine,
         optimizer: SearchPlanOptimizer = DefaultSearchPlanOptimizer(),
@@ -129,20 +161,21 @@ class LabViewModelTest {
                 ) = SearchFeasibility(FeasibilityRating.Reasonable, 1.seconds, "ok")
             },
         estimator: SearchPerformanceEstimator = FixedThroughputEstimator(),
+        planner: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
     ) = LabViewModel(
         engine,
         optimizer,
         analyzer,
         estimator,
         assessNetworkSecurity,
-        planner = DefaultAutomaticPasswordAuditPlanner(),
+        planner = planner,
         searchDispatcher = dispatcher,
     )
 
     private fun LabViewModel.preparePrototype(
         preset: PrototypeSecurityPreset = PrototypeSecurityPreset.WPA2_PERSONAL,
         ssid: String = "LabNet",
-        password: String = "1234",
+        password: String = PSK_DEMO_PASSWORD,
     ) {
         updatePrototype(
             LocalNetworkPrototype(
@@ -302,7 +335,7 @@ class LabViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
-            vm.preparePrototype(password = "1234")
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
             advanceUntilIdle()
             assertEquals(GuidedPrototypePhase.Configure, vm.state.value.guidedPhase)
             assertFalse(vm.state.value.canStartSearch)
@@ -327,7 +360,7 @@ class LabViewModelTest {
                     ),
                 )
             advanceUntilIdle()
-            vm.preparePrototype(password = "1234")
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
             advanceUntilIdle()
             vm.createAndTest()
             vm.start()
@@ -337,7 +370,7 @@ class LabViewModelTest {
             vm.repeatGuidedRun()
             advanceUntilIdle()
             assertEquals(GuidedPrototypePhase.Ready, vm.state.value.guidedPhase)
-            assertEquals("1234", vm.state.value.targetPassword)
+            assertEquals(PSK_DEMO_PASSWORD, vm.state.value.targetPassword)
             assertEquals(PrototypeSecurityPreset.WPA2_PERSONAL.toProfile(), vm.state.value.prototype.securityProfile)
         }
 
@@ -346,7 +379,7 @@ class LabViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
-            vm.preparePrototype(preset = PrototypeSecurityPreset.WPA3_PERSONAL, password = "5678")
+            vm.preparePrototype(preset = PrototypeSecurityPreset.WPA3_PERSONAL, password = "56781234")
             advanceUntilIdle()
             vm.createAndTest()
             vm.start()
@@ -354,7 +387,7 @@ class LabViewModelTest {
             vm.editGuidedPassword()
             assertEquals(GuidedPrototypePhase.Configure, vm.state.value.guidedPhase)
             assertEquals(GuidedFocusTarget.Password, vm.state.value.guidedFocusTarget)
-            assertEquals("5678", vm.state.value.targetPassword)
+            assertEquals("56781234", vm.state.value.targetPassword)
             assertEquals(SecurityFamily.WPA3_PERSONAL, vm.state.value.prototype.securityFamily)
         }
 
@@ -363,7 +396,7 @@ class LabViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
-            vm.preparePrototype(password = "1234")
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
             advanceUntilIdle()
             vm.createAndTest()
             vm.start()
@@ -371,7 +404,7 @@ class LabViewModelTest {
             vm.changeGuidedSecurity()
             assertEquals(GuidedPrototypePhase.Configure, vm.state.value.guidedPhase)
             assertEquals(GuidedFocusTarget.Security, vm.state.value.guidedFocusTarget)
-            assertEquals("1234", vm.state.value.targetPassword)
+            assertEquals(PSK_DEMO_PASSWORD, vm.state.value.targetPassword)
         }
 
     @Test
@@ -379,10 +412,10 @@ class LabViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
-            vm.preparePrototype(password = "abc")
+            vm.preparePrototype(password = "abcdefgh")
             advanceUntilIdle()
             val blindSpace = vm.state.value.estimatedCombinations
-            vm.onTargetPasswordChanged("abc!@")
+            vm.onTargetPasswordChanged("abcdefgh!@")
             advanceUntilIdle()
             assertNotNull(vm.state.value.config.customAlphabet)
             assertEquals(blindSpace, vm.state.value.estimatedCombinations)
@@ -394,7 +427,7 @@ class LabViewModelTest {
             val engine = CapturingEngine()
             val vm = viewModel(engine)
             advanceUntilIdle()
-            vm.preparePrototype(password = "1234")
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
             advanceUntilIdle()
             vm.createAndTest()
             vm.start()
@@ -402,7 +435,7 @@ class LabViewModelTest {
             val challenge = engine.lastChallenge
             assertNotNull(challenge)
             assertTrue(challenge!!.toString().contains("verifier=encapsulated"))
-            assertFalse(challenge.toString().contains("1234"))
+            assertFalse(challenge.toString().contains(PSK_DEMO_PASSWORD))
         }
 
     @Test
@@ -413,7 +446,7 @@ class LabViewModelTest {
             advanceUntilIdle()
             vm.preparePrototype(
                 preset = PrototypeSecurityPreset.WPA3_PERSONAL,
-                password = "5678",
+                password = "56781234",
             )
             advanceUntilIdle()
             vm.createAndTest()
@@ -430,7 +463,7 @@ class LabViewModelTest {
             advanceUntilIdle()
             vm.preparePrototype(
                 preset = PrototypeSecurityPreset.WPA2_WPA3_TRANSITION,
-                password = "abcd",
+                password = "abcd1234",
             )
             advanceUntilIdle()
             vm.createAndTest()
@@ -448,18 +481,18 @@ class LabViewModelTest {
                         listOf(
                             LabSearchEvent.Preparing,
                             LabSearchEvent.Started(SearchSessionId("s"), samplePlan(), CombinationCount.of(10)),
-                            LabSearchEvent.CandidateFound("1234", metrics.copy(attempts = CombinationCount.of(2))),
+                            LabSearchEvent.CandidateFound(PSK_DEMO_PASSWORD, metrics.copy(attempts = CombinationCount.of(2))),
                         ),
                     ),
                 )
             advanceUntilIdle()
-            vm.preparePrototype(password = "1234")
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
             advanceUntilIdle()
             vm.createAndTest()
             vm.start()
             advanceUntilIdle()
             assertEquals(SearchOutcome.Found, vm.state.value.outcome)
-            assertEquals("1234", vm.state.value.foundCandidate)
+            assertEquals(PSK_DEMO_PASSWORD, vm.state.value.foundCandidate)
             assertEquals("", vm.state.value.targetPassword)
             assertEquals(GuidedPrototypePhase.PostResult, vm.state.value.guidedPhase)
             assertNotNull(vm.state.value.resultNetworkAssessment)
@@ -479,7 +512,7 @@ class LabViewModelTest {
                     ),
                 )
             advanceUntilIdle()
-            vm.preparePrototype(password = "1234")
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
             advanceUntilIdle()
             vm.createAndTest()
             vm.start()
@@ -492,12 +525,62 @@ class LabViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))
             advanceUntilIdle()
-            vm.preparePrototype(password = "12")
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
             advanceUntilIdle()
             val spaceShort = vm.state.value.estimatedCombinations
             vm.onTargetPasswordChanged("1234567890123456")
             advanceUntilIdle()
             assertEquals(spaceShort, vm.state.value.estimatedCombinations)
+        }
+
+    @Test
+    fun prototypePlanner_usesSecurityFamilyProfile() =
+        runTest(dispatcher) {
+            val planner = ProfileCapturingPlanner()
+            val vm = viewModel(ScriptedEngine(emptyList()), planner = planner)
+            advanceUntilIdle()
+            vm.preparePrototype(
+                preset = PrototypeSecurityPreset.WPA2_PERSONAL,
+                password = PSK_DEMO_PASSWORD,
+            )
+            advanceUntilIdle()
+            val wpa2StageIds = planner.lastPlan!!.stages.map { it.id.value }
+            assertEquals(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK, planner.lastProfile)
+            assertTrue(wpa2StageIds.all { it.contains("wpa2") })
+
+            vm.updatePrototype(
+                vm.state.value.prototype.copy(
+                    securityProfile = PrototypeSecurityPreset.WPA3_PERSONAL.toProfile(),
+                ),
+            )
+            advanceUntilIdle()
+            val wpa3StageIds = planner.lastPlan!!.stages.map { it.id.value }
+            assertEquals(SharedPasswordSearchProfile.WPA3_PERSONAL_PSK, planner.lastProfile)
+            assertTrue(wpa3StageIds.all { it.contains("wpa3") })
+            assertNotEquals(wpa2StageIds, wpa3StageIds)
+        }
+
+    @Test
+    fun prototypePskShortPassword_blocksStartWithMinLengthError() =
+        runTest(dispatcher) {
+            val vm = viewModel(ScriptedEngine(emptyList()))
+            advanceUntilIdle()
+            vm.preparePrototype(password = "1234")
+            advanceUntilIdle()
+            assertEquals(
+                com.wifiauditlab.android.R.string.lab_err_password_psk_min_length,
+                vm.state.value.configErrorRes,
+            )
+            assertFalse(vm.state.value.canStartSearch)
+            vm.createAndTest()
+            advanceUntilIdle()
+            assertEquals(
+                com.wifiauditlab.android.R.string.lab_err_password_psk_min_length,
+                vm.state.value.configErrorRes,
+            )
+            vm.start()
+            advanceUntilIdle()
+            assertEquals(SearchState.Idle, vm.state.value.searchState)
         }
 
     @Test
@@ -559,6 +642,11 @@ class LabViewModelTest {
             LabChallenge.withKnownSecret(Alphabet.DIGITS, "01"),
             LengthPrioritizedStrategy.ID,
         )
+
+    private companion object {
+        /** Meets Wi‑Fi PSK min length for guided prototype start flows. */
+        const val PSK_DEMO_PASSWORD = "12345678"
+    }
 
     @Test
     fun randomMode_usesHiddenSecretChallenge() =

@@ -115,7 +115,11 @@ longitud real, ni salida de `SecretStrengthAnalyzer`.
   primero (digits → lower → alnum → printable ASCII 8–12); pesos suman 100;
   stage expansivo puede solapar — no se deduplica en memoria.
 - `SharedPasswordSearchProfile` (en `:shared:lab`) distingue WPA2 / WPA3 / transición
-  / WPA genérico sin importar `SecurityFamily` de assessment.
+  / WPA genérico; androidApp mapea `SecurityFamily.toSharedPasswordSearchProfile()`
+  en Lab guiado y Password Audit (FIX-07).
+- `GuidedAlphabetFitter.fitForWifiPsk` (androidApp) sólo sugiere alfabeto en UI /
+  modo Avanzado dentro de printable ASCII; **no** define el espacio de búsqueda guiado
+  (sigue viniendo del planner + `WifiPskProgressiveAuditPolicy`).
 - `GenericProgressiveAuditPolicy` se conserva para experimentos sintéticos del Lab
   (secretos cortos); el planner de auditoría de producto usa sólo la política PSK.
 - `BLIND_CHALLENGE_POLICY`: printable ASCII 8–63 (tope de protocolo; búsqueda

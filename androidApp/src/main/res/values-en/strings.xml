@@ -273,6 +273,7 @@
     <string name="lab_prototype_local_only_body">This prototype is local-only: it assesses the Wi-Fi configuration without connecting to a router or authenticating against an access point.</string>
     <string name="lab_cd_local_only_banner">Local-only search notice</string>
     <string name="lab_err_password_required">Enter the prototype password.</string>
+    <string name="lab_err_password_psk_min_length">Wi‑Fi password must be at least 8 characters.</string>
     <string name="lab_err_password_alphabet">The password contains symbols outside the selected alphabet.</string>
     <string name="lab_err_password_alphabet_guided">The password uses symbols that do not fit the automatic alphabet. Open Advanced options and choose a broader alphabet.</string>
     <string name="lab_cd_guided_prototype">Guided local prototype audit</string>
