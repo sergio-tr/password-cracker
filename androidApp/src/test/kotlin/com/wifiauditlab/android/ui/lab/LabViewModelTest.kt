@@ -307,6 +307,98 @@ class LabViewModelTest {
         }
 
     @Test
+    fun advanced_localPrototype_uses_authAware_progressive_plan() =
+        runTest(dispatcher) {
+            val engine =
+                CapturingEngine(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                        ),
+                    ),
+                )
+            val planner = ProfileCapturingPlanner()
+            val vm = viewModel(engine, planner = planner)
+            advanceUntilIdle()
+            vm.setMode(LabInteractionMode.Advanced)
+            vm.setSecretMode(LabSecretMode.LocalPrototype)
+            vm.preparePrototype(password = PSK_DEMO_PASSWORD)
+            advanceUntilIdle()
+
+            assertNotNull(vm.state.value.searchPlanSummary)
+            assertEquals(
+                SharedPasswordSearchProfile.WPA2_PERSONAL_PSK,
+                vm.state.value.searchPlanSummary!!.profile,
+            )
+            assertEquals(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK, planner.lastProfile)
+
+            // Alphabet override must not shrink the auth-aware search space / strategy.
+            vm.updateConfig(
+                vm.state.value.config.copy(
+                    alphabet = AlphabetChoice.DIGITS,
+                    secretLength = 4,
+                    strategy = StrategyChoice.LENGTH,
+                ),
+            )
+            advanceUntilIdle()
+            assertEquals(
+                SharedPasswordSearchProfile.WPA2_PERSONAL_PSK,
+                vm.state.value.searchPlanSummary!!.profile,
+            )
+
+            vm.start()
+            advanceUntilIdle()
+
+            val plan = engine.lastPlan
+            assertNotNull(plan)
+            assertEquals(DefaultAutomaticPasswordAuditPlanner.AUTOMATIC_STRATEGY_ID, plan!!.strategyId)
+            val alphabets = plan.buckets.map { it.alphabet }.toSet()
+            assertTrue("PSK progressive should span alphabets, got $alphabets", alphabets.size > 1)
+            assertTrue(Alphabet.DIGITS in alphabets)
+            assertTrue(Alphabet.PRINTABLE_ASCII in alphabets || Alphabet.ALPHANUMERIC in alphabets)
+            assertTrue(engine.lastChallenge!!.toString().contains("verifier=encapsulated"))
+        }
+
+    @Test
+    fun advanced_localPrototype_wep_uses_hex_progressive_plan() =
+        runTest(dispatcher) {
+            val engine =
+                CapturingEngine(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                        ),
+                    ),
+                )
+            val planner = ProfileCapturingPlanner()
+            val vm = viewModel(engine, planner = planner)
+            advanceUntilIdle()
+            vm.setMode(LabInteractionMode.Advanced)
+            vm.setSecretMode(LabSecretMode.LocalPrototype)
+            vm.preparePrototype(
+                preset = PrototypeSecurityPreset.WEP_LEGACY,
+                password = "0123456789",
+            )
+            advanceUntilIdle()
+
+            assertEquals(SharedPasswordSearchProfile.WEP_HEX, planner.lastProfile)
+            assertNotNull(vm.state.value.searchPlanSummary)
+            assertEquals(SharedPasswordSearchProfile.WEP_HEX, vm.state.value.searchPlanSummary!!.profile)
+
+            vm.start()
+            advanceUntilIdle()
+
+            val plan = engine.lastPlan
+            assertNotNull(plan)
+            assertEquals(DefaultAutomaticPasswordAuditPlanner.AUTOMATIC_STRATEGY_ID, plan!!.strategyId)
+            val alphabets = plan.buckets.map { it.alphabet }.toSet()
+            assertTrue(alphabets.all { it == Alphabet.HEX_UPPER || it == Alphabet.HEX_LOWER })
+            assertEquals(setOf(10, 26), plan.buckets.map { it.length }.toSet())
+        }
+
+    @Test
     fun missing_limits_are_invalid_and_start_is_blocked() =
         runTest(dispatcher) {
             val vm = viewModel(ScriptedEngine(emptyList()))

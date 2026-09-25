@@ -605,7 +605,7 @@ class LabViewModel(
         val verifier = EncapsulatedPasswordVerifier.encapsulate(password)
 
         val (challenge, plan, limits) =
-            if (snapshot.mode == LabInteractionMode.Guided) {
+            if (usesPrototypePlanner(snapshot)) {
                 val auditPlan =
                     cachedPrototypePlan ?: run {
                         _state.update { it.copy(configErrorRes = R.string.lab_err_limits_required) }
@@ -620,6 +620,7 @@ class LabViewModel(
                 applyEngineSelection(auditPlan)
                 Triple(ch, auditPlan.searchPlan, auditPlan.searchLimits)
             } else {
+                // OPEN / Enterprise LocalPrototype: no shared-password search space.
                 val blindPolicy = blindPolicyFromConfig(snapshot.config, snapshot)
                 val ch =
                     LabChallenge.withEncapsulatedVerifier(
@@ -752,29 +753,12 @@ class LabViewModel(
         if (state.secretMode == LabSecretMode.LocalPrototype &&
             state.prototype.securityFamily.supportsSharedPasswordDemo()
         ) {
+            // Auth-aware demos should use [usesPrototypePlanner]; this branch is a safety net
+            // that still refuses non-protocol alphabets / lengths (PSK ≥ 8, WEP hex).
             val profile = state.prototype.securityFamily.toSharedPasswordSearchProfile()
-            if (profile?.isWepHexProfile() == true) {
+            if (profile != null) {
                 return DefaultAutomaticPasswordAuditPlanner.blindChallengePolicyFor(profile)
             }
-            val resolved = config.resolvedAlphabet()
-            val printable = Alphabet.PRINTABLE_ASCII
-            val alphabet =
-                if (resolved.symbols.all { printable.symbols.contains(it) }) {
-                    resolved
-                } else {
-                    val subset =
-                        resolved.symbols.filter { printable.symbols.contains(it) }.toSet()
-                    if (subset.isEmpty()) printable else Alphabet.of(subset.joinToString(""))
-                }
-            val minLen = WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH
-            val maxLen =
-                config.secretLength
-                    .coerceAtLeast(minLen)
-                    .coerceAtMost(WifiPskProgressiveAuditPolicy.MAX_PASSPHRASE_LENGTH)
-            return LabSecretPolicy(
-                alphabet = alphabet,
-                length = LengthPolicy(minLen, maxLen),
-            )
         }
         return LabSecretPolicy(
             alphabet = config.resolvedAlphabet(),
@@ -782,10 +766,13 @@ class LabViewModel(
         )
     }
 
+    /**
+     * Guided and Advanced LocalPrototype for PSK/WEP use [AutomaticPasswordAuditPlanner]
+     * (auth-aware stages). RandomHidden Advanced keeps the strategy optimizer.
+     */
     private fun usesPrototypePlanner(state: LabUiState): Boolean =
         state.secretMode == LabSecretMode.LocalPrototype &&
-            state.prototype.securityFamily.supportsSharedPasswordDemo() &&
-            state.mode == LabInteractionMode.Guided
+            state.prototype.securityFamily.supportsSharedPasswordDemo()
 
     /** Guided RandomHidden uses [GenericProgressiveAuditPolicy]; Advanced keeps the strategy optimizer. */
     private fun usesSyntheticProgressive(state: LabUiState): Boolean =

@@ -29,11 +29,11 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
 | Lab desde red cercana | **Partial** (UX-02 + FIX-03/04): CTA + contexto solo lectura + prototipo local en Lab; FIX-03/04 merged, CI green; manual pendiente usuario. |
-| Modo guiado del Lab | **Partial** (FIX-04 + FIX-07/08): bucle Crear y probar → Iniciar → resultado con acciones Editar/Cambiar/Repetir; familia → perfil PSK auth-aware; PSK ≥ 8; OPEN/Enterprise sin CTA PSK; regresión FIX-08 en JVM + Compose; manual pendiente usuario. |
+| Modo guiado del Lab | **Partial** (FIX-04 + FIX-07/08/12): bucle Crear y probar → Iniciar → resultado; familia → perfil PSK/WEP auth-aware; Advanced LocalPrototype usa el mismo planner; PSK ≥ 8; OPEN/Enterprise sin CTA PSK; regresión en JVM + Compose; manual pendiente usuario. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
-| Planner automático de auditoría | **Partial** (FIX-06…11): PSK auth-aware + explainability (FIX-09); **FIX-10:** WEP hex local (`WepHexProgressiveAuditPolicy`, 10/26); **FIX-11:** Guided RandomHidden usa `GenericProgressiveSearchPlanBuilder`; Advanced RandomHidden sigue el strategy optimizer; pesos = heurísticos. Manual UX pending. |
+| Planner automático de auditoría | **Partial** (FIX-06…12): PSK/WEP auth-aware + explainability (FIX-09); Guided+Advanced LocalPrototype usan planner; Guided RandomHidden → `GenericProgressiveSearchPlanBuilder` (FIX-11); Advanced RandomHidden → optimizer; pesos = heurísticos. Manual UX pending. |
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
 | Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
 | STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
@@ -54,14 +54,15 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Tooling CI | JVM job + Android emulator job (`docs/ci-emulator.md`). |
 | Docs `01`–`13`, ADRs, release checklist, test evidence | Índice vivo aquí; walkthrough known-password en `docs/13-known-password-audit-walkthrough.md`. |
 
-## Auth-aware — hecho vs pendiente (FIX-06…11)
+## Auth-aware — hecho vs pendiente (FIX-06…12)
 
 | Hecho (Code+CI) | Pendiente |
 | --- | --- |
 | `WifiPskProgressiveAuditPolicy` + explainability UI (FIX-09) | Sin crack remoto / diccionarios rockyou |
 | `WepHexProgressiveAuditPolicy` (10/26 hex, FIX-10) | Pesos de etapa = heurística fija (calibración = throughput) |
-| Guided RandomHidden → `GenericProgressiveAuditPolicy` (FIX-11) | Advanced LocalPrototype puede bypassar política PSK (FIX-12) |
-| Lab/Audit WEP + PSK elegibles localmente | Manual UX dispositivo |
+| Guided RandomHidden → `GenericProgressiveAuditPolicy` (FIX-11) | Manual UX dispositivo |
+| Advanced LocalPrototype → mismo planner auth-aware (FIX-12) | |
+| Lab/Audit WEP + PSK elegibles localmente | |
 | OPEN/Enterprise sin CTA shared-password | |
 | Regresión JVM + Compose | |
 
