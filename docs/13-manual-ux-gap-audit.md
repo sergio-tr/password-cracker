@@ -1,10 +1,10 @@
 # 13 · Manual UX gap audit (bloqueante)
 
-Fecha: **2026-09-13**.  
-Fuente de verdad: **prueba manual del usuario** + inspección de código en `main` (post FIX-04).  
+Fecha: **2026-09-25**.  
+Fuente de verdad: **prueba manual del usuario** + inspección de código en `main` (post FIX-12).  
 Prioridad sobre filas `Implemented` de `docs/00-progress.md` que contradigan este informe.
 
-## Estado por problema (post FIX-01..04)
+## Estado por problema (post FIX-01..12)
 
 | ID | Problema | Fix | Estado automático | Estado manual |
 | --- | --- | --- | --- | --- |
@@ -12,9 +12,10 @@ Prioridad sobre filas `Implemented` de `docs/00-progress.md` que contradigan est
 | P2 | Cambiar idioma no cambia la app | FIX-01 + FIX-05 | **Code+CI green** — `MainActivityRuntimeLocaleTest` (ES→EN, EN→ES, EN→SYSTEM, recreate persiste); `AppLanguagePreferencesInstrumentedTest` | **Manual pending user** |
 | P3 | Navegación / UX poco Material | FIX-02 + FIX-05 | **Partial** — `ProductRegressionComposeTest`: ArrowBack en Audit/Security/Permissions; top-level Nearby/Vault/Lab/Settings sin ArrowBack | **Manual pending user** |
 | P4 | Lab sin prototipo local de red | FIX-03A + FIX-03B + FIX-04 + FIX-05 | **Partial** — `LabComposeTest` + `ProductRegressionComposeTest`: WPA2 STOP→editar→repetir; OPEN/Enterprise sin campo PSK (`lab_prototype_no_password_audit`) | **Manual pending user** |
-| P5 | Planner/Lab auth-aware PSK (WPA2/WPA3, ≥8, fitter ≠ planner) | FIX-06 + FIX-07 + FIX-08 | **Code+CI green** — `AutomaticPasswordAuditPlannerTest` (prefijos stage WPA2/WPA3, minLength ≥ 8), `WifiPskProgressiveAuditPolicyTest`, `LabViewModelTest`/`PasswordAuditViewModelTest`, `ProductRegressionComposeTest` (WPA2 Crear y probar→Start, contraseña corta, WPA3 perfil-aware, OPEN/Enterprise ya cubiertos) | **Manual pending user** — validar flujo producto en dispositivo |
+| P5 | Planner/Lab auth-aware (PSK/WEP, etapas, Guided+Advanced) | FIX-06…12 | **Code+CI green** — políticas PSK/WEP, explainability, Guided RandomHidden progressive, Advanced LocalPrototype = mismo planner; regresión JVM + emulador | **Manual pending user** — validar flujo producto en dispositivo |
 
-FIX-05/08 cierran regresión automática + docs honestas; **no** promueven a `Implemented` sin pase manual del usuario.
+FIX-05/08/12 cierran regresión automática + docs honestas; **no** promueven a `Implemented` sin pase manual del usuario.
+Auth-aware Code+CI: **cerrado** (sin más FIX numerados abiertos).
 
 ## Problemas confirmados (snapshot pre-FIX, referencia histórica)
 

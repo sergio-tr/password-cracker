@@ -66,6 +66,10 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | OPEN/Enterprise sin CTA shared-password | |
 | Regresión JVM + Compose | |
 
+**Code+CI auth-aware (visión local):** cerrado con FIX-12. No hay más FIX numerados
+abiertos para charset/etapas por método de auth. Lo que mantiene filas en
+**Partial** es el **pase manual del usuario** (y pesos heurísticos conscientes).
+
 ## Partial
 
 | Área | Notas |
@@ -86,6 +90,6 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Lab Result como pantalla propia | Hoy vive en la misma pantalla de ejecución. |
 | Sesiones lab resumibles | Pause/Resume + checkpoint (FASE 25). |
 | Biometría Vault + hardening | FASE 26–27. |
-| Observabilidad local + evidence RC + release eng. | Bloqueado hasta FIX-01…05. |
+| Observabilidad local + evidence RC + release eng. | Tras pase manual UX (FIX-01…05 Code+CI ya green). |
 | Biometría / iOS / release eng. | Bloqueado por prioridad UX (manual gap audit). |
 | Targets iOS reales | Requiere macOS/Xcode; ver `docs/11-ios-readiness.md` (FASE 32). |
