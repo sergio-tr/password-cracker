@@ -31,17 +31,27 @@ import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.core.audit.PasswordAuditInapplicableReason
+import com.wifiauditlab.core.math.CombinationCount
+import com.wifiauditlab.lab.domain.LabChallenge
+import com.wifiauditlab.lab.domain.LabSearchEvent
+import com.wifiauditlab.lab.domain.LabSearchPlan
+import com.wifiauditlab.lab.domain.SearchLimits
+import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
+import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
 import com.wifiauditlab.lab.domain.audit.PlanExplanationDetail
 import com.wifiauditlab.lab.domain.audit.PlanExplanationHeadline
+import com.wifiauditlab.lab.domain.engine.CancellationSignal
+import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.engine.DefaultLabSearchEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -172,9 +182,13 @@ class PasswordAuditViewModelTest {
                         securityFamily = SecurityFamily.WPA2_PERSONAL,
                         knownBssids = setOf(Bssid.of("11:22:33:44:55:66")),
                     ),
-                    NetworkSecret("42"),
+                    NetworkSecret(PSK_DEMO_PASSWORD),
                 )
-            val vm = viewModel(request = eligibleRequest().copy(savedNetworkId = created.id))
+            val vm =
+                viewModel(
+                    request = eligibleRequest().copy(savedNetworkId = created.id),
+                    engine = foundEngine(PSK_DEMO_PASSWORD),
+                )
             vm.onCustomDurationChanged("30")
             vm.onCustomAttemptsChanged("20000")
             vm.applyCustomBudget()
@@ -209,14 +223,18 @@ class PasswordAuditViewModelTest {
         }
 
     @Test
-    fun startFindsShortDigitPasswordLocally() =
+    fun startFindsPskDigitPassphraseLocally() =
         runTest {
-            val vm = viewModel(request = eligibleRequest())
+            val vm =
+                viewModel(
+                    request = eligibleRequest(),
+                    engine = foundEngine(PSK_DEMO_PASSWORD),
+                )
             vm.onCustomDurationChanged("30")
             vm.onCustomAttemptsChanged("20000")
             vm.applyCustomBudget()
             advanceUntilIdle()
-            vm.onPasswordChanged("42")
+            vm.onPasswordChanged(PSK_DEMO_PASSWORD)
             assertNull(vm.state.value.startBlockedReason)
             vm.onStartAuditClicked()
             advanceUntilIdle()
@@ -359,6 +377,7 @@ class PasswordAuditViewModelTest {
         store: PasswordAuditTargetStore = PasswordAuditTargetStore().also { it.set(eligibleRequest()) },
         request: PasswordAuditRequest? = null,
         eligibility: (suspend (WifiObservation) -> PasswordAuditEligibility)? = null,
+        engine: LabSearchEngine = DefaultLabSearchEngine(),
     ): PasswordAuditViewModel {
         val target =
             if (request != null) {
@@ -382,12 +401,38 @@ class PasswordAuditViewModelTest {
             createSavedNetwork = CreateSavedNetwork(repo, vault),
             eligibilityChecker = checker,
             assessNetworkSecurity = AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
-            engine = DefaultLabSearchEngine(),
+            engine = engine,
             calibration = null,
             strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
             availableProcessors = 4,
             ioDispatcher = dispatcher,
         )
+    }
+
+    private fun foundEngine(candidate: String): LabSearchEngine {
+        val metrics =
+            SearchMetrics.initial(
+                totalBuckets = 1,
+                searchSpace = CombinationCount.of(10),
+            )
+        return object : LabSearchEngine {
+            override fun run(
+                challenge: LabChallenge,
+                plan: LabSearchPlan,
+                limits: SearchLimits,
+                cancellation: CancellationSignal,
+            ): Flow<LabSearchEvent> =
+                flow {
+                    emit(LabSearchEvent.Preparing)
+                    emit(LabSearchEvent.Started(SearchSessionId("audit"), plan, plan.searchSpace))
+                    emit(LabSearchEvent.CandidateFound(candidate, metrics.copy(attempts = CombinationCount.of(1))))
+                }
+        }
+    }
+
+    private companion object {
+        /** Meets Wi‑Fi PSK min length; scripted Found tests avoid scanning 10^8 digit space. */
+        const val PSK_DEMO_PASSWORD = "12345678"
     }
 
     private fun eligibleRequest(

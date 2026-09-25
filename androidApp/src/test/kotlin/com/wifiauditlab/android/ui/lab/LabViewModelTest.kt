@@ -16,6 +16,7 @@ import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
@@ -511,7 +512,14 @@ class LabViewModelTest {
             vm.start()
             advanceUntilIdle()
             assertFalse(engine.lastChallenge!!.toString().contains("longpassword"))
-            assertTrue(engine.lastChallenge!!.lengthPolicy.maxLength <= 8)
+            assertTrue(
+                engine.lastChallenge!!.lengthPolicy.minLength >=
+                    WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH,
+            )
+            assertEquals(
+                WifiPskProgressiveAuditPolicy.MAX_PASSPHRASE_LENGTH,
+                engine.lastChallenge!!.lengthPolicy.maxLength,
+            )
         }
 
     @Test
