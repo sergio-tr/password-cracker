@@ -30,6 +30,13 @@ class Alphabet private constructor(val symbols: String) {
         val UPPERCASE: Alphabet = of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         val LOWER_ALPHANUMERIC: Alphabet = of(LOWERCASE.symbols + DIGITS.symbols)
         val ALPHANUMERIC: Alphabet = of(LOWERCASE.symbols + UPPERCASE.symbols + DIGITS.symbols)
+
+        /** Printable ASCII 0x20–0x7E — valid Wi‑Fi PSK passphrase charset (inclusive). */
+        val PRINTABLE_ASCII: Alphabet = of((32..126).map { it.toChar() }.joinToString(""))
+
+        /** Common punctuation symbols valid in Wi‑Fi PSK passphrases (subset of [PRINTABLE_ASCII]). */
+        val WIFI_PSK_SYMBOLS: Alphabet =
+            of("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
     }
 }
 

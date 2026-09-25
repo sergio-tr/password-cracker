@@ -105,14 +105,21 @@ comparación; el baseline de corrección sigue siendo `DefaultLabSearchEngine`.
 ## Planner automático (known-password audit)
 
 `DefaultAutomaticPasswordAuditPlanner` construye un `PasswordAuditPlan` multi-stage
-**ciego al target**: solo recibe `PasswordAuditContext` (aplicabilidad),
-`PasswordAuditPerformanceProfile` y `PasswordAuditBudget` (al menos duración o
-intentos). No puede recibir contraseña, longitud real, ni salida de
-`SecretStrengthAnalyzer`.
+**ciego al target**: recibe `PasswordAuditContext` (aplicabilidad +
+`SharedPasswordSearchProfile` cuando aplica), `PasswordAuditPerformanceProfile` y
+`PasswordAuditBudget` (al menos duración o intentos). No puede recibir contraseña,
+longitud real, ni salida de `SecretStrengthAnalyzer`.
 
-- Política progresiva genérica (`GenericProgressiveAuditPolicy`): etapas con
-  alphabets/lengths crecientes; stages 1–5 disjuntos; stage expansivo puede
-  solapar — no se deduplica en memoria; contadores no fingen unicidad.
+- Política PSK consciente del mecanismo (`WifiPskProgressiveAuditPolicy`): etapas
+  con longitud mínima **≥ 8** (reglas WPA/WPA2/WPA3-Personal); alphabets reducidos
+  primero (digits → lower → alnum → printable ASCII 8–12); pesos suman 100;
+  stage expansivo puede solapar — no se deduplica en memoria.
+- `SharedPasswordSearchProfile` (en `:shared:lab`) distingue WPA2 / WPA3 / transición
+  / WPA genérico sin importar `SecurityFamily` de assessment.
+- `GenericProgressiveAuditPolicy` se conserva para experimentos sintéticos del Lab
+  (secretos cortos); el planner de auditoría de producto usa sólo la política PSK.
+- `BLIND_CHALLENGE_POLICY`: printable ASCII 8–63 (tope de protocolo; búsqueda
+  limitada por presupuesto).
 - Presupuesto repartido por pesos centralizados (`StageBudgetAllocator`).
 - Workers vía `WorkerPoolConfig.recommendedWorkerCount`; 1 worker → baseline;
   ≥2 → V2.

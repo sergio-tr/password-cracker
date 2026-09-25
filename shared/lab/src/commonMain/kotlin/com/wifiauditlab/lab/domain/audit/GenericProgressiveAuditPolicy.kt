@@ -5,7 +5,8 @@ import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LengthPolicy
 
 /**
- * Central progressive stage policy for automatic known-password audits.
+ * Progressive stage policy for **synthetic** lab experiments (short secrets).
+ * Product known-password audits use [WifiPskProgressiveAuditPolicy] instead.
  *
  * Stages 1–5 are mathematically disjoint (distinct alphabets or non-overlapping
  * length ranges within the same alphabet). Stage 6 expands to lower-alphanumeric

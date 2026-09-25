@@ -533,6 +533,7 @@ class PasswordAuditViewModel(
                         } else {
                             family.unsupportedAuditReason()
                         },
+                    searchProfile = family.toSharedPasswordSearchProfile(),
                 )
             val performance =
                 PasswordAuditPerformanceProfile(

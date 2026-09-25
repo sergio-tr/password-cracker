@@ -33,7 +33,10 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          # Legacy `tools` package was removed from the SDK repo; do not rely on action defaults.
+          packages: platform-tools
 
       - name: Install SDK packages
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
@@ -87,7 +90,10 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          # Legacy `tools` package was removed from the SDK repo; do not rely on action defaults.
+          packages: platform-tools
 
       - name: Install SDK packages
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"

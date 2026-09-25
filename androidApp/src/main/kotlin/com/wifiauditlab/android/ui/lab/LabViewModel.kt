@@ -27,6 +27,7 @@ import com.wifiauditlab.lab.domain.audit.PasswordAuditEngineChoice
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
+import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
 import com.wifiauditlab.lab.domain.engine.CancellationController
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import com.wifiauditlab.lab.domain.engine.SearchCalibrationService
@@ -452,7 +453,10 @@ class LabViewModel(
         when (
             val result =
                 planner.createPlan(
-                    PasswordAuditContext(sharedPasswordApplicable = true),
+                    PasswordAuditContext(
+                        sharedPasswordApplicable = true,
+                        searchProfile = SharedPasswordSearchProfile.WPA2_PERSONAL_PSK,
+                    ),
                     PasswordAuditPerformanceProfile(
                         calibratedAttemptsPerSecond = calibratedThroughput,
                         availableProcessors = availableProcessors,

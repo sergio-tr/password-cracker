@@ -169,6 +169,7 @@
     <string name="audit_inapplicable_unknown">Cannot determine whether this network uses a shared Wi-Fi password.</string>
     <string name="audit_inapplicable_unsupported">This authentication mechanism does not support a shared-password audit.</string>
     <string name="audit_plan_device_adapted">Configuration automatically adapted to this device</string>
+    <string name="audit_plan_wifi_psk_mechanism">Wi‑Fi PSK audit: %1$s (passphrases ≥ 8 printable characters)</string>
     <string name="audit_plan_budget_prefix">Limit: %1$s</string>
     <string name="audit_duration_seconds">%1$d s</string>
     <string name="audit_duration_min_sec">%1$d min %2$d s</string>
