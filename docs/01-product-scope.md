@@ -11,8 +11,11 @@ Aplicación Android didáctica de auditoría Wi-Fi que permite:
 - Guardar redes conocidas con alias y ubicación descriptiva.
 - Gestionar de forma segura credenciales introducidas por el usuario (Vault, CRUD).
 - **Auditar la resistencia de una contraseña Wi-Fi conocida** (Quick Audit): el
-  Search Engine local mide cuánto tarda en encontrarla dentro de un presupuesto;
-  la red real solo aporta contexto y elegibilidad — nunca se autentica contra el AP.
+  Search Engine local mide cuánto tarda en encontrarla dentro de un presupuesto
+  acotado; el espacio de búsqueda auth-aware (WPA2/WPA3 PSK) usa etapas progresivas
+  con longitud mínima ≥ 8 y subconjuntos printable ASCII — no un exhaustivo 8–63
+  ni diccionarios de credenciales reales. La red real solo aporta contexto y
+  elegibilidad — nunca se autentica contra el AP.
 - Disponer de un **laboratorio sintético** para estudiar algoritmos de exploración
   de espacios de búsqueda, con progreso en tiempo real, límites y cancelación.
 
@@ -42,6 +45,8 @@ Automático → INICIAR → métricas → DETENER o fin de presupuesto → infor
 
 ## No-objetivos
 
-- No se implementan heurísticas orientadas a atacar credenciales reales.
+- No se implementan heurísticas orientadas a atacar credenciales reales (sin rockyou
+  ni diccionarios de contraseñas filtradas).
 - No se realizan conexiones ni intentos de autenticación contra redes externas.
+- No se intenta descubrir contraseñas desconocidas de redes cercanas (by design).
 - La geolocalización real es opcional y sólo se almacena si el usuario lo pide.

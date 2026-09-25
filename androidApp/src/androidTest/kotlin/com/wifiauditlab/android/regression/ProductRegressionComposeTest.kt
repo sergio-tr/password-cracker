@@ -72,7 +72,14 @@ import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
+import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.PasswordAuditBudget
+import com.wifiauditlab.lab.domain.audit.PasswordAuditContext
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
+import com.wifiauditlab.lab.domain.audit.PasswordAuditPlanResult
+import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.LabBenchmarkService
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
@@ -87,7 +94,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -155,13 +164,41 @@ class ProductRegressionComposeTest {
             LengthPrioritizedStrategy.ID,
         )
 
-    private fun labViewModel(engine: LabSearchEngine = NoOpEngine()): LabViewModel =
+    private class ProfileCapturingPlanner(
+        private val delegate: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
+    ) : AutomaticPasswordAuditPlanner {
+        var lastProfile: SharedPasswordSearchProfile? = null
+            private set
+        var lastPlan: PasswordAuditPlan? = null
+            private set
+
+        override fun createPlan(
+            context: PasswordAuditContext,
+            performance: PasswordAuditPerformanceProfile,
+            budget: PasswordAuditBudget,
+        ): PasswordAuditPlanResult {
+            lastProfile = context.searchProfile
+            return when (val result = delegate.createPlan(context, performance, budget)) {
+                is PasswordAuditPlanResult.Ready -> {
+                    lastPlan = result.plan
+                    result
+                }
+                else -> result
+            }
+        }
+    }
+
+    private fun labViewModel(
+        engine: LabSearchEngine = NoOpEngine(),
+        planner: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
+    ): LabViewModel =
         LabViewModel(
             engine,
             DefaultSearchPlanOptimizer(),
             DefaultSearchFeasibilityAnalyzer(),
             FixedThroughputEstimator(),
             AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
+            planner = planner,
             searchDispatcher = Dispatchers.Main.immediate,
         )
 
@@ -557,6 +594,98 @@ class ProductRegressionComposeTest {
                 .fetchSemanticsNodes()
                 .isEmpty(),
         )
+    }
+
+    // ── Auth-aware PSK (FIX-06/07/08) ─────────────────────────────────────────
+
+    @Test
+    fun authAware_wpa2ValidPassword_showsCreateAndTestThenStart() {
+        val vm = labViewModel()
+        setLab(vm)
+
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("Wpa2Ok")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("12345678")
+        scrollToText(activity.getString(R.string.lab_create_and_test))
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        createAndTest()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.guidedPhase == GuidedPrototypePhase.Ready && vm.state.value.canStartSearch
+        }
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun authAware_shortPassword_showsMinLengthErrorAndNoStart() {
+        val vm = labViewModel()
+        setLab(vm)
+
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("Short")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        val minLenMsg = activity.getString(R.string.lab_err_password_psk_min_length)
+        waitForText(minLenMsg)
+        scrollToText(minLenMsg)
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        createAndTest()
+        composeTestRule.waitForIdle()
+        assertEquals(GuidedPrototypePhase.Configure, vm.state.value.guidedPhase)
+        assertFalse(vm.state.value.canStartSearch)
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithContentDescription(activity.getString(R.string.lab_cd_start_search))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun authAware_wpa3Preset_buildsProfileAwarePlan() {
+        val planner = ProfileCapturingPlanner()
+        val vm = labViewModel(planner = planner)
+        setLab(vm)
+
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_preset_wpa3))
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.prototype.securityFamily == SecurityFamily.WPA3_PERSONAL &&
+                vm.state.value.prototypeAssessment != null &&
+                !vm.state.value.prototypeAssessmentLoading
+        }
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("Wpa3Plan")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("87654321")
+        createAndTest()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.guidedPhase == GuidedPrototypePhase.Ready &&
+                vm.state.value.estimatedCombinations > CombinationCount.ZERO
+        }
+        assertEquals(SharedPasswordSearchProfile.WPA3_PERSONAL_PSK, planner.lastProfile)
+        assertNotNull(planner.lastPlan)
+        assertTrue(planner.lastPlan!!.stages.all { it.id.value.contains("wpa3-personal-psk") })
     }
 
     @Test

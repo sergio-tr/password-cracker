@@ -16,6 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -139,6 +140,42 @@ class AutomaticPasswordAuditPlannerTest {
             },
         )
         assertTrue(plan.explanation.toString().contains("WPA2"))
+    }
+
+    @Test
+    fun wpa2_and_wpa3_plans_have_distinct_stage_prefixes_and_mechanism_profiles() {
+        val wpa2 =
+            ready(
+                planner.createPlan(
+                    eligibleContext,
+                    basePerformance,
+                    PasswordAuditBudget.standard(),
+                ),
+            )
+        val wpa3 =
+            ready(
+                planner.createPlan(
+                    PasswordAuditContext(
+                        sharedPasswordApplicable = true,
+                        searchProfile = SharedPasswordSearchProfile.WPA3_PERSONAL_PSK,
+                    ),
+                    basePerformance,
+                    PasswordAuditBudget.standard(),
+                ),
+            )
+        val wpa2Ids = wpa2.stages.map { it.id.value }
+        val wpa3Ids = wpa3.stages.map { it.id.value }
+        assertTrue(wpa2Ids.all { it.startsWith("wpa2-personal-psk-") })
+        assertTrue(wpa3Ids.all { it.startsWith("wpa3-personal-psk-") })
+        assertNotEquals(wpa2Ids, wpa3Ids)
+        assertEquals(
+            SharedPasswordSearchProfile.WPA2_PERSONAL_PSK,
+            (wpa2.explanation.details.single { it is PlanExplanationDetail.WifiPskMechanism } as PlanExplanationDetail.WifiPskMechanism).profile,
+        )
+        assertEquals(
+            SharedPasswordSearchProfile.WPA3_PERSONAL_PSK,
+            (wpa3.explanation.details.single { it is PlanExplanationDetail.WifiPskMechanism } as PlanExplanationDetail.WifiPskMechanism).profile,
+        )
     }
 
     @Test

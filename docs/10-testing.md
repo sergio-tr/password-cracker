@@ -30,14 +30,15 @@ Artifacts (siempre / al fallar JVM): reports JUnit/HTML, logcat **sanitizado**
 | Secretos | Redaction + use cases | Mask UI | `KeystoreSecretVault` + lifecycle | — |
 | Lab | Engine + VM | Fake engine UI + STOP | — | Runs largos físicos |
 | Quick Audit | `PasswordAuditViewModelTest` (presets, Vault, eligibility, cancel, missing-target) | `PasswordAuditComposeTest` (STOP, found, vault, advanced restore) | — | Flujo físico conectado |
-| Known-password domain | `AutomaticPasswordAuditPlannerTest`, `TargetIsolationTest`, `PasswordAuditResultComposerTest` | — | — | — |
+| Known-password domain | `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`, `PasswordAuditResultComposerTest` | — | — | — |
+| Auth-aware PSK (FIX-06/07/08) | `LabViewModelTest` (PSK ≥ 8, OPEN/Enterprise), `PasswordAuditViewModelTest` (WPA3 plan) | `ProductRegressionComposeTest` (WPA2 start path, short PSK, WPA3 preset) | — | Flujo producto en dispositivo |
 
 ## Clasificación `androidTest`
 
 | Clase | Tipo |
 | --- | --- |
 | `NearbyComposeTest` … `LabComposeTest` | Compose UI (fakes; sin Wi‑Fi físico) |
-| `ProductRegressionComposeTest` | FIX-05 regresión producto: i18n packs, nav chrome, Lab guiado + prototipo OPEN/Enterprise/WPA2 STOP→editar |
+| `ProductRegressionComposeTest` | FIX-05/08 regresión producto: i18n packs, nav chrome, Lab guiado + auth-aware PSK (WPA2 start, PSK corta, WPA3 plan, OPEN/Enterprise) |
 | `MainActivityRuntimeLocaleTest` | FIX-01A runtime locale ES/EN/SYSTEM + persistencia tras recreate |
 | `ComposeHardcodedStringGuardTest` (JVM) | FIX-05 static guard literales Compose user-facing |
 | `AppLanguagePreferencesInstrumentedTest` | Persistencia idioma + divergencia ES/EN |
@@ -62,7 +63,7 @@ Sin dependencia de APs reales, Internet ni diálogos OEM.
 ViewModels en `androidApp/src/test`, dominio en `shared/*/…Test`. Destacados
 para auditoría: `DefaultPasswordAuditEligibilityCheckerTest`,
 `HeuristicSecretStrengthAnalyzerTest`, `PasswordAuditResultComposerTest`,
-`AutomaticPasswordAuditPlannerTest`, `TargetIsolationTest`.
+`AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`.
 
 ## Deferred
 

@@ -1,9 +1,9 @@
 # Test evidence
 
 Evidencia de la suite automática y de los casos manuales del RC.
-Actualizado en FIX-05 (regresión producto + cierre docs honesto).
+Actualizado en FIX-08 (regresión auth-aware PSK + cierre ola FIX-06/07).
 
-## FIX-01..04 — PRs merged (CI green)
+## FIX-01..08 — PRs merged / en curso (CI green)
 
 | Fix | PR | Área |
 | --- | --- | --- |
@@ -11,6 +11,9 @@ Actualizado en FIX-05 (regresión producto + cierre docs honesto).
 | FIX-02 Navigation + usability | [#45](https://github.com/sergio-tr/password-cracker/pull/45) | `ArrowBack`, CD `navigate_back`, iconografía CTAs |
 | FIX-03 Local network prototype | [#46](https://github.com/sergio-tr/password-cracker/pull/46) | Prototipo local configurable + motor encapsulado |
 | FIX-04 Guided local prototype | [#47](https://github.com/sergio-tr/password-cracker/pull/47) | Flujo guiado novice, SSID/contraseña sin Avanzado |
+| FIX-06 Auth-aware PSK policy | [#56](https://github.com/sergio-tr/password-cracker/pull/56) | `WifiPskProgressiveAuditPolicy`, planner multi-stage ≥ 8 |
+| FIX-07 Lab/Audit wiring | [#57](https://github.com/sergio-tr/password-cracker/pull/57) | `SecurityFamily.toSharedPasswordSearchProfile()`, PSK ≥ 8 UI, fitter ≠ planner |
+| FIX-08 Auth-aware regression | — | Regresión JVM + `ProductRegressionComposeTest`; docs honestas |
 
 ## AUTOMATED — JVM
 
@@ -24,7 +27,8 @@ CI job `jvm` (`.github/workflows/ci.yml`):
 | Lab cancelación (`LabViewModelTest.stop_*`) | PASS |
 | Quick Audit cancelación (`PasswordAuditViewModelTest.stop*`) | PASS |
 | Engine cancel (`DefaultLabSearchEngineTest.cancel_*`) | PASS |
-| Known-password domain (`PasswordAuditResultComposerTest`, `AutomaticPasswordAuditPlannerTest`, `TargetIsolationTest`) | PASS |
+| Known-password domain (`PasswordAuditResultComposerTest`, `AutomaticPasswordAuditPlannerTest`, `TargetIsolationTest`, `WifiPskProgressiveAuditPolicyTest`) | PASS |
+| Auth-aware PSK VM (`LabViewModelTest` min length / OPEN·Enterprise, `PasswordAuditViewModelTest` WPA3 stages) | PASS |
 
 ## AUTOMATED — ANDROID EMULATOR
 
@@ -44,7 +48,7 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 | --- | --- |
 | Suite Compose + instrumentación | 16 clases `androidTest` + `ComposeHardcodedStringGuardTest` (JVM static guard) |
 | `PasswordAuditComposeTest` | STOP bottomBar, found + recommendations, vault deferred, advanced restore |
-| `ProductRegressionComposeTest` | Nav top-level sin back / child con back; Lab guiado; WPA2 STOP→editar→repetir; OPEN/Enterprise sin PSK; packs ES/EN |
+| `ProductRegressionComposeTest` | Nav top-level sin back / child con back; Lab guiado; WPA2 STOP→editar→repetir; OPEN/Enterprise sin PSK; FIX-08 auth-aware (WPA2 Crear y probar→Start, PSK corta, WPA3 plan perfil-aware); packs ES/EN |
 | `MainActivityRuntimeLocaleTest` | ES/EN/SYSTEM + locale persiste tras `Activity.recreate()` |
 | `ComposeHardcodedStringGuardTest` | Static guard: no nuevos `Text("…")` / `contentDescription = "…"` user-facing en UI Compose |
 | Keystore / SQLDelight / Compose | PASS en emulador |
