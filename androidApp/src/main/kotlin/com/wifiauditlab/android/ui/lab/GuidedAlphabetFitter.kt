@@ -1,9 +1,7 @@
 package com.wifiauditlab.android.ui.lab
 
 import com.wifiauditlab.lab.domain.Alphabet
-import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.WepHexProgressiveAuditPolicy
-import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
 
 /**
  * Picks the smallest alphabet preset that covers every character in [password],
@@ -12,8 +10,8 @@ import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
  * [fitForWifiPsk] restricts suggestions to [Alphabet.PRINTABLE_ASCII] (Wi‑Fi PSK
  * passphrase charset). [fitForWepHex] accepts only hex keys of length 10 or 26.
  * The fitter only assists Advanced/config alphabet suggestion and guided UI
- * feedback; **guided search space still comes from auth-aware progressive
- * policies via [AutomaticPasswordAuditPlanner]** (target-blind).
+ * feedback; guided search space still comes from auth-aware progressive
+ * policies via the automatic planner (target-blind).
  */
 object GuidedAlphabetFitter {
     data class FitResult(
