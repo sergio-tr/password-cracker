@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.FakeSavedNetworkRepository
@@ -188,10 +189,13 @@ class NearbyComposeTest {
             .onNodeWithText(aliasLabel)
             .performScrollTo()
             .performTextReplacement("Lab-Casa")
+        // IME covers the bottom sheet actions on small API 29 viewports after text edit.
+        Espresso.closeSoftKeyboard()
+        composeTestRule.waitForIdle()
         val saveVault = activity.getString(R.string.nearby_save_vault)
         waitForText(saveVault)
-        // Avoid assertIsDisplayed after scroll — flaky on small API 29 emulator viewports.
-        composeTestRule.onNodeWithText(saveVault).performClick()
+        // Scroll into view then click; skip assertIsDisplayed (partially clipped after scroll is OK).
+        composeTestRule.onNodeWithText(saveVault).performScrollTo().performClick()
         composeTestRule.waitForIdle()
         composeTestRule.waitUntil(15_000) { repo.networks.value.isNotEmpty() }
         assertEquals("Lab-Casa", repo.networks.value.single().alias)
