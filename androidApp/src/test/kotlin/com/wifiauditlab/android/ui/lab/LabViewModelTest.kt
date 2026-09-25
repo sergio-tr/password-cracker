@@ -17,6 +17,7 @@ import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.GenericProgressiveSearchPlanBuilder
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudget
 import com.wifiauditlab.lab.domain.audit.PasswordAuditContext
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPerformanceProfile
@@ -82,6 +83,8 @@ class LabViewModelTest {
     ) : LabSearchEngine {
         var lastChallenge: LabChallenge? = null
             private set
+        var lastPlan: LabSearchPlan? = null
+            private set
 
         override fun run(
             challenge: LabChallenge,
@@ -90,6 +93,7 @@ class LabViewModelTest {
             cancellation: CancellationSignal,
         ): Flow<LabSearchEvent> {
             lastChallenge = challenge
+            lastPlan = plan
             return delegate.run(challenge, plan, limits, cancellation)
         }
     }
@@ -230,6 +234,76 @@ class LabViewModelTest {
             assertTrue(vm.state.value.estimatedCombinations > CombinationCount.ZERO)
             assertEquals(FeasibilityRating.Reasonable, vm.state.value.feasibility?.rating)
             assertNull(vm.state.value.configErrorRes)
+            assertNull(vm.state.value.searchPlanSummary)
+        }
+
+    @Test
+    fun guided_randomHidden_uses_progressive_multiAlphabet_plan() =
+        runTest(dispatcher) {
+            val engine =
+                CapturingEngine(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                        ),
+                    ),
+                )
+            val vm = viewModel(engine)
+            advanceUntilIdle()
+            assertEquals(LabInteractionMode.Guided, vm.state.value.mode)
+            vm.setSecretMode(LabSecretMode.RandomHidden)
+            advanceUntilIdle()
+            assertNull(vm.state.value.searchPlanSummary)
+            assertTrue(vm.state.value.estimatedCombinations > CombinationCount.of(10_000))
+
+            vm.start()
+            advanceUntilIdle()
+
+            val plan = engine.lastPlan
+            assertNotNull(plan)
+            assertEquals(GenericProgressiveSearchPlanBuilder.STRATEGY_ID, plan!!.strategyId)
+            val alphabets = plan.buckets.map { it.alphabet }.toSet()
+            val lengths = plan.buckets.map { it.length }.toSet()
+            assertTrue("guided synthetic should span alphabets, got $alphabets", alphabets.size > 1)
+            assertTrue("guided synthetic should span lengths, got $lengths", lengths.size > 1)
+            assertTrue(Alphabet.DIGITS in alphabets)
+            assertTrue(Alphabet.LOWERCASE in alphabets)
+            assertNull(vm.state.value.searchPlanSummary)
+        }
+
+    @Test
+    fun advanced_randomHidden_keeps_strategy_optimizer_path() =
+        runTest(dispatcher) {
+            val engine =
+                CapturingEngine(
+                    ScriptedEngine(
+                        listOf(
+                            LabSearchEvent.Preparing,
+                            LabSearchEvent.LimitReached(LimitReason.Attempts, metrics),
+                        ),
+                    ),
+                )
+            val vm = viewModel(engine)
+            advanceUntilIdle()
+            vm.setMode(LabInteractionMode.Advanced)
+            vm.setSecretMode(LabSecretMode.RandomHidden)
+            vm.updateConfig(
+                vm.state.value.config.copy(
+                    alphabet = AlphabetChoice.DIGITS,
+                    secretLength = 4,
+                    strategy = StrategyChoice.LENGTH,
+                ),
+            )
+            advanceUntilIdle()
+            vm.start()
+            advanceUntilIdle()
+
+            val plan = engine.lastPlan
+            assertNotNull(plan)
+            assertEquals(LengthPrioritizedStrategy.ID, plan!!.strategyId)
+            assertEquals(setOf(Alphabet.DIGITS), plan.buckets.map { it.alphabet }.toSet())
+            assertEquals(setOf(4), plan.buckets.map { it.length }.toSet())
         }
 
     @Test

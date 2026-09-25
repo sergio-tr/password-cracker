@@ -33,7 +33,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
-| Planner automático de auditoría | **Partial** (FIX-06…09 + FIX-10): PSK auth-aware + explainability; **FIX-10:** WEP hex local (`WepHexProgressiveAuditPolicy`, 10/26 hex stages, Lab/Audit elegibles). Manual UX pending. |
+| Planner automático de auditoría | **Partial** (FIX-06…11): PSK auth-aware + explainability (FIX-09); **FIX-10:** WEP hex local (`WepHexProgressiveAuditPolicy`, 10/26); **FIX-11:** Guided RandomHidden usa `GenericProgressiveSearchPlanBuilder`; Advanced RandomHidden sigue el strategy optimizer; pesos = heurísticos. Manual UX pending. |
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
 | Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
 | STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
@@ -54,15 +54,16 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Tooling CI | JVM job + Android emulator job (`docs/ci-emulator.md`). |
 | Docs `01`–`13`, ADRs, release checklist, test evidence | Índice vivo aquí; walkthrough known-password en `docs/13-known-password-audit-walkthrough.md`. |
 
-## Auth-aware — hecho vs pendiente (FIX-06…10)
+## Auth-aware — hecho vs pendiente (FIX-06…11)
 
 | Hecho (Code+CI) | Pendiente |
 | --- | --- |
 | `WifiPskProgressiveAuditPolicy` + explainability UI (FIX-09) | Sin crack remoto / diccionarios rockyou |
-| `WepHexProgressiveAuditPolicy` (10/26 hex, FIX-10) | RandomHidden aún no usa `GenericProgressiveAuditPolicy.STAGES` (FIX-11) |
-| Lab/Audit WEP + PSK elegibles localmente | Pesos de etapa = heurística fija (calibración = throughput) |
-| OPEN/Enterprise sin CTA shared-password | Advanced LocalPrototype puede bypassar política PSK (FIX-12) |
-| Regresión JVM + Compose | Manual UX dispositivo |
+| `WepHexProgressiveAuditPolicy` (10/26 hex, FIX-10) | Pesos de etapa = heurística fija (calibración = throughput) |
+| Guided RandomHidden → `GenericProgressiveAuditPolicy` (FIX-11) | Advanced LocalPrototype puede bypassar política PSK (FIX-12) |
+| Lab/Audit WEP + PSK elegibles localmente | Manual UX dispositivo |
+| OPEN/Enterprise sin CTA shared-password | |
+| Regresión JVM + Compose | |
 
 ## Partial
 

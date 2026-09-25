@@ -25,6 +25,7 @@ import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.SearchStrategyId
 import com.wifiauditlab.lab.domain.audit.AutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
+import com.wifiauditlab.lab.domain.audit.GenericProgressiveSearchPlanBuilder
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudget
 import com.wifiauditlab.lab.domain.audit.PasswordAuditContext
 import com.wifiauditlab.lab.domain.audit.PasswordAuditEngineChoice
@@ -151,6 +152,8 @@ class LabViewModel(
     private val estimator: SearchPerformanceEstimator,
     private val assessNetworkSecurity: AssessNetworkSecurity,
     private val planner: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
+    private val progressiveSyntheticBuilder: GenericProgressiveSearchPlanBuilder =
+        GenericProgressiveSearchPlanBuilder(),
     private val searchDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val calibration: SearchCalibrationService? = null,
     private val networkContextStore: LabNetworkContextStore? = null,
@@ -446,6 +449,10 @@ class LabViewModel(
 
     private fun recomputeSyntheticPreview(snapshot: LabUiState) {
         cachedPrototypePlan = null
+        if (usesSyntheticProgressive(snapshot)) {
+            recomputeGuidedSyntheticPreview(snapshot)
+            return
+        }
         val challenge = buildSyntheticPreviewChallenge(snapshot)
         val plan = optimizer.optimize(challenge, snapshot.config.strategy.id)
         val limits = runCatching { buildLimits(snapshot.config) }.getOrNull()
@@ -453,6 +460,38 @@ class LabViewModel(
             it.copy(
                 estimatedCombinations = plan.searchSpace,
                 feasibility = limits?.let { l -> analyzer.analyze(plan, l, estimator) },
+                searchPlanSummary = null,
+                configErrorRes = validateForStart(snapshot.config, snapshot),
+            )
+        }
+    }
+
+    private fun recomputeGuidedSyntheticPreview(snapshot: LabUiState) {
+        val progressive =
+            runCatching {
+                progressiveSyntheticBuilder.build(
+                    maxAttempts = snapshot.config.maxAttempts?.let { CombinationCount.of(it) },
+                    maxDuration = snapshot.config.maxDurationSeconds?.seconds,
+                    calibratedThroughput = calibratedThroughput,
+                )
+            }.getOrNull()
+        if (progressive == null) {
+            _state.update {
+                it.copy(
+                    estimatedCombinations = CombinationCount.ZERO,
+                    feasibility = null,
+                    searchPlanSummary = null,
+                    configErrorRes = R.string.lab_err_limits_required,
+                )
+            }
+            return
+        }
+        _state.update {
+            it.copy(
+                estimatedCombinations = progressive.searchPlan.searchSpace,
+                feasibility =
+                    analyzer.analyze(progressive.searchPlan, progressive.searchLimits, estimator),
+                searchPlanSummary = null,
                 configErrorRes = validateForStart(snapshot.config, snapshot),
             )
         }
@@ -538,9 +577,19 @@ class LabViewModel(
     }
 
     private fun startSyntheticSearch(snapshot: LabUiState) {
-        val limits = buildLimits(snapshot.config)
         val challenge = buildSyntheticSearchChallenge(snapshot)
-        val plan = optimizer.optimize(challenge, snapshot.config.strategy.id)
+        val (plan, limits) =
+            if (usesSyntheticProgressive(snapshot)) {
+                val progressive =
+                    progressiveSyntheticBuilder.build(
+                        maxAttempts = snapshot.config.maxAttempts?.let { CombinationCount.of(it) },
+                        maxDuration = snapshot.config.maxDurationSeconds?.seconds,
+                        calibratedThroughput = calibratedThroughput,
+                    )
+                progressive.searchPlan to progressive.searchLimits
+            } else {
+                optimizer.optimize(challenge, snapshot.config.strategy.id) to buildLimits(snapshot.config)
+            }
         (engine as? WorkerAwareLabSearchEngine)?.workers = snapshot.config.workers
         launchSearch(challenge, plan, limits, clearPassword = false)
     }
@@ -736,6 +785,11 @@ class LabViewModel(
     private fun usesPrototypePlanner(state: LabUiState): Boolean =
         state.secretMode == LabSecretMode.LocalPrototype &&
             state.prototype.securityFamily.supportsSharedPasswordDemo() &&
+            state.mode == LabInteractionMode.Guided
+
+    /** Guided RandomHidden uses [GenericProgressiveAuditPolicy]; Advanced keeps the strategy optimizer. */
+    private fun usesSyntheticProgressive(state: LabUiState): Boolean =
+        state.secretMode == LabSecretMode.RandomHidden &&
             state.mode == LabInteractionMode.Guided
 
     private fun prototypeBudget(config: LabConfig): PasswordAuditBudget =

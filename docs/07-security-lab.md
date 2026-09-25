@@ -51,7 +51,7 @@ Garantía de módulos: `:shared:lab` **no** depende de `:shared:assessment`.
 ## Flujo conceptual
 
 ```
-LabChallenge -> SearchPlanOptimizer / AutomaticPasswordAuditPlanner
+LabChallenge -> SearchPlanOptimizer / AutomaticPasswordAuditPlanner / GenericProgressiveSearchPlanBuilder
         -> LabSearchPlan -> LabSearchEngine -> LabSearchResult
                                 |
     CandidateSource / CandidateVerifier / SearchMetricsCollector / CancellationController
