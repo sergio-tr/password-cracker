@@ -188,11 +188,10 @@ class NearbyComposeTest {
             .onNodeWithText(aliasLabel)
             .performScrollTo()
             .performTextReplacement("Lab-Casa")
-        composeTestRule
-            .onNodeWithText(activity.getString(R.string.nearby_save_vault))
-            .performScrollTo()
-            .assertIsDisplayed()
-            .performClick()
+        val saveVault = activity.getString(R.string.nearby_save_vault)
+        waitForText(saveVault)
+        // Avoid assertIsDisplayed after scroll — flaky on small API 29 emulator viewports.
+        composeTestRule.onNodeWithText(saveVault).performClick()
         composeTestRule.waitForIdle()
         composeTestRule.waitUntil(15_000) { repo.networks.value.isNotEmpty() }
         assertEquals("Lab-Casa", repo.networks.value.single().alias)

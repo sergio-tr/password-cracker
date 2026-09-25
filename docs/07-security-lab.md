@@ -16,7 +16,8 @@ Modos de verificación:
   (banda, estándar, PMF). Al cambiar el perfil se ejecuta `AssessNetworkSecurity` y se
   muestra rating + significado (estilo Análisis de seguridad). Para familias PSK personal
   (WPA/WPA2/WPA3/transición) el paso **Contraseña del prototipo** (oculta por defecto)
-  alimenta la ruta encapsulada; OPEN/Enterprise/WEP muestran evaluación sin CTA PSK.
+  alimenta la ruta encapsulada; OPEN/Enterprise muestran evaluación sin CTA shared-password;
+  WEP usa auditoría hex local (10/26).
   Chip «Secreto aleatorio» sigue disponible para ejercicios sintéticos. Banner «Solo local»
   siempre visible.
 - **Bucle guiado FIX-04 + FIX-07 + FIX-08** — flujo novice: SSID → preset → contraseña (si aplica) →

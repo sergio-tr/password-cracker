@@ -45,8 +45,8 @@ class DefaultAutomaticPasswordAuditPlanner(
                     context.inapplicableReason ?: PasswordAuditInapplicableReason.UnsupportedAuth,
                 )
 
-        val specs = WifiPskProgressiveAuditPolicy.stagesFor(profile)
-        val weights = specs.map { it.budgetWeight }
+        val stageInputs = stageSpecsFor(profile)
+        val weights = stageInputs.map { it.budgetWeight }
         val throughput = performance.calibratedAttemptsPerSecond ?: defaultThroughput
         val estimator: SearchPerformanceEstimator = FixedThroughputEstimator(throughput)
 
@@ -58,8 +58,8 @@ class DefaultAutomaticPasswordAuditPlanner(
         val durationShares = allocateDurations(budget.maxDuration, weights)
 
         val stages =
-            specs.mapIndexed { index, spec ->
-                val space = WifiPskProgressiveAuditPolicy.exactSpace(spec.alphabet, spec.lengthPolicy)
+            stageInputs.mapIndexed { index, spec ->
+                val space = GenericProgressiveAuditPolicy.exactSpace(spec.alphabet, spec.lengthPolicy)
                 PasswordAuditStage(
                     id = PasswordAuditStageId(spec.id),
                     candidateModel = CandidateModel(spec.alphabet, spec.lengthPolicy),
@@ -159,6 +159,41 @@ class DefaultAutomaticPasswordAuditPlanner(
         )
     }
 
+    private data class StageInput(
+        val id: String,
+        val alphabet: Alphabet,
+        val lengthPolicy: LengthPolicy,
+        val priority: Int,
+        val budgetWeight: Int,
+        val mayOverlapPriorStages: Boolean,
+    )
+
+    private fun stageSpecsFor(profile: SharedPasswordSearchProfile): List<StageInput> =
+        when {
+            profile.isWepHexProfile() ->
+                WepHexProgressiveAuditPolicy.STAGES.map {
+                    StageInput(
+                        id = it.id,
+                        alphabet = it.alphabet,
+                        lengthPolicy = it.lengthPolicy,
+                        priority = it.priority,
+                        budgetWeight = it.budgetWeight,
+                        mayOverlapPriorStages = it.mayOverlapPriorStages,
+                    )
+                }
+            else ->
+                WifiPskProgressiveAuditPolicy.stagesFor(profile).map {
+                    StageInput(
+                        id = it.id,
+                        alphabet = it.alphabet,
+                        lengthPolicy = it.lengthPolicy,
+                        priority = it.priority,
+                        budgetWeight = it.budgetWeight,
+                        mayOverlapPriorStages = it.mayOverlapPriorStages,
+                    )
+                }
+        }
+
     private fun budgetedFeasibility(
         budgeted: CombinationCount?,
         limits: SearchLimits,
@@ -213,18 +248,30 @@ class DefaultAutomaticPasswordAuditPlanner(
         const val DETERMINISTIC_SEED: Long = 0L
 
         /**
-         * Blind verifier attachment policy for Wi‑Fi PSK audits: printable ASCII
-         * passphrases length 8–63 (protocol max). Exhaustive search is budget-capped.
+         * Blind verifier attachment policy for local shared-secret audits.
+         * PSK/SAE: printable ASCII 8–63. WEP hex: 10 or 26 hex digits (upper+lower alphabets).
          */
         fun blindChallengePolicyFor(profile: SharedPasswordSearchProfile): LabSecretPolicy =
-            LabSecretPolicy(
-                alphabet = Alphabet.PRINTABLE_ASCII,
-                length =
-                    LengthPolicy(
-                        WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH,
-                        WifiPskProgressiveAuditPolicy.MAX_PASSPHRASE_LENGTH,
-                    ),
-            )
+            when {
+                profile.isWepHexProfile() ->
+                    LabSecretPolicy(
+                        alphabet = Alphabet.of("0123456789ABCDEFabcdef"),
+                        length =
+                            LengthPolicy(
+                                WepHexProgressiveAuditPolicy.HEX_LEN_40,
+                                WepHexProgressiveAuditPolicy.HEX_LEN_104,
+                            ),
+                    )
+                else ->
+                    LabSecretPolicy(
+                        alphabet = Alphabet.PRINTABLE_ASCII,
+                        length =
+                            LengthPolicy(
+                                WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH,
+                                WifiPskProgressiveAuditPolicy.MAX_PASSPHRASE_LENGTH,
+                            ),
+                    )
+            }
 
         /** Default blind policy (WPA2-Personal PSK) for tests and prototypes. */
         val BLIND_CHALLENGE_POLICY: LabSecretPolicy =
