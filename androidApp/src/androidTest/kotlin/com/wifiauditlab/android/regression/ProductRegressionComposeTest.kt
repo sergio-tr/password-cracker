@@ -141,7 +141,7 @@ class ProductRegressionComposeTest {
                 } else {
                     emit(LabSearchEvent.Preparing)
                     emit(LabSearchEvent.Started(SearchSessionId("rerun"), this@CancelThenFindEngine.plan, plan.searchSpace))
-                    emit(LabSearchEvent.CandidateFound("5678", metrics.copy(attempts = CombinationCount.of(2))))
+                    emit(LabSearchEvent.CandidateFound("87654321", metrics.copy(attempts = CombinationCount.of(2))))
                 }
             }
     }
@@ -500,7 +500,7 @@ class ProductRegressionComposeTest {
             .performScrollTo()
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("Wpa2Stop")
         scrollToText(activity.getString(R.string.lab_prototype_password))
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("1234")
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("12345678")
         createAndTest()
         startSearch()
 
@@ -523,7 +523,7 @@ class ProductRegressionComposeTest {
 
         scrollToText(activity.getString(R.string.lab_prototype_password))
         composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextClearance()
-        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("5678")
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("87654321")
         createAndTest()
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }

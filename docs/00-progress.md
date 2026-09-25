@@ -33,7 +33,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
-| Planner automático de auditoría | **Partial** (FIX-06): `AutomaticPasswordAuditPlanner` + `WifiPskProgressiveAuditPolicy` auth-aware PSK; presets Quick/Standard/Deep; ciego al target; mapping familia→perfil en androidApp (FIX-07 pendiente end-to-end). |
+| Planner automático de auditoría | **Partial** (FIX-06 + FIX-07): `AutomaticPasswordAuditPlanner` + `WifiPskProgressiveAuditPolicy` auth-aware PSK; presets Quick/Standard/Deep; ciego al target; Lab guiado y Audit cableados vía `SecurityFamily.toSharedPasswordSearchProfile()`; validación PSK ≥ 8; `GuidedAlphabetFitter` separado del planner. |
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
 | Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
 | STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
