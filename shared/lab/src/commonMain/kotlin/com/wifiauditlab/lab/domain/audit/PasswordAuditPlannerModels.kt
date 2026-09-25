@@ -19,6 +19,8 @@ import kotlin.time.Duration
 data class PasswordAuditContext(
     val sharedPasswordApplicable: Boolean,
     val inapplicableReason: PasswordAuditInapplicableReason? = null,
+    /** Required when [sharedPasswordApplicable] is true; selects Wi‑Fi PSK stage policy. */
+    val searchProfile: SharedPasswordSearchProfile? = null,
 )
 
 /**

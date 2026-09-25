@@ -22,4 +22,9 @@ sealed interface PlanExplanationDetail {
     ) : PlanExplanationDetail
 
     data object DeviceAdapted : PlanExplanationDetail
+
+    /** Wi‑Fi PSK/SAE passphrase rules applied to the automatic search plan. */
+    data class WifiPskMechanism(
+        val profile: SharedPasswordSearchProfile,
+    ) : PlanExplanationDetail
 }

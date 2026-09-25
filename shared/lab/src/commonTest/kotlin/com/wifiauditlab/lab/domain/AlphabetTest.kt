@@ -19,6 +19,8 @@ class AlphabetTest {
         assertEquals(26, Alphabet.UPPERCASE.size)
         assertEquals(36, Alphabet.LOWER_ALPHANUMERIC.size)
         assertEquals(62, Alphabet.ALPHANUMERIC.size)
+        assertEquals(95, Alphabet.PRINTABLE_ASCII.size)
+        assertTrue(Alphabet.WIFI_PSK_SYMBOLS.symbols.all { Alphabet.PRINTABLE_ASCII.symbols.contains(it) })
         assertEquals('0', Alphabet.DIGITS[0])
         assertEquals('9', Alphabet.DIGITS[9])
     }

@@ -1,5 +1,6 @@
 package com.wifiauditlab.lab.domain
 
+import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.engine.SearchPlanOptimizer
 import com.wifiauditlab.lab.engine.DefaultSearchPlanOptimizer
 import com.wifiauditlab.lab.engine.LengthPrioritizedStrategy
@@ -28,7 +29,7 @@ class TargetIsolationTest {
     fun auditChallenge_policyIsIndependentOfTargetLength() {
         val target = "hunter2hunter2" // length 14
         val verifier = EncapsulatedPasswordVerifier.encapsulate(target)
-        val blindPolicy = LabSecretPolicy(Alphabet.DIGITS, LengthPolicy(1, 8))
+        val blindPolicy = DefaultAutomaticPasswordAuditPlanner.BLIND_CHALLENGE_POLICY
         val challenge =
             LabChallenge.withEncapsulatedVerifier(
                 policy = blindPolicy,
@@ -37,16 +38,16 @@ class TargetIsolationTest {
             )
 
         assertNull(challenge.secretLength)
-        assertEquals(1, challenge.lengthPolicy.minLength)
-        assertEquals(8, challenge.lengthPolicy.maxLength)
+        assertEquals(8, challenge.lengthPolicy.minLength)
+        assertEquals(63, challenge.lengthPolicy.maxLength)
         assertFalse(challenge.toString().contains(target))
         assertTrue(challenge.isSolution(target))
         assertFalse(challenge.isSolution("00000000"))
 
         val plan = optimizer.optimize(challenge, LengthPrioritizedStrategy.ID)
-        // Plan space is digits length 1..8 — not length-14 alphanumeric of the target.
-        assertTrue(plan.searchSpace.toLongOrNull() != null)
+        // Plan space follows blind PSK policy — not length-14 alphanumeric of the target.
         assertEquals(blindPolicy.searchSpace, plan.searchSpace)
+        assertFalse(plan.searchSpace.isZero)
     }
 
     @Test

@@ -39,8 +39,13 @@ class DefaultAutomaticPasswordAuditPlanner(
                 context.inapplicableReason ?: PasswordAuditInapplicableReason.UnsupportedAuth,
             )
         }
+        val profile =
+            context.searchProfile
+                ?: return PasswordAuditPlanResult.NotApplicable(
+                    context.inapplicableReason ?: PasswordAuditInapplicableReason.UnsupportedAuth,
+                )
 
-        val specs = GenericProgressiveAuditPolicy.STAGES
+        val specs = WifiPskProgressiveAuditPolicy.stagesFor(profile)
         val weights = specs.map { it.budgetWeight }
         val throughput = performance.calibratedAttemptsPerSecond ?: defaultThroughput
         val estimator: SearchPerformanceEstimator = FixedThroughputEstimator(throughput)
@@ -54,7 +59,7 @@ class DefaultAutomaticPasswordAuditPlanner(
 
         val stages =
             specs.mapIndexed { index, spec ->
-                val space = GenericProgressiveAuditPolicy.exactSpace(spec.alphabet, spec.lengthPolicy)
+                val space = WifiPskProgressiveAuditPolicy.exactSpace(spec.alphabet, spec.lengthPolicy)
                 PasswordAuditStage(
                     id = PasswordAuditStageId(spec.id),
                     candidateModel = CandidateModel(spec.alphabet, spec.lengthPolicy),
@@ -127,6 +132,7 @@ class DefaultAutomaticPasswordAuditPlanner(
             AutomaticPlanExplanation(
                 details =
                     listOf(
+                        PlanExplanationDetail.WifiPskMechanism(profile),
                         PlanExplanationDetail.WorkerCount(workerCount),
                         PlanExplanationDetail.StageCount(stages.size),
                         PlanExplanationDetail.BudgetLimit(budget.maxDuration, budget.maxAttempts),
@@ -148,7 +154,7 @@ class DefaultAutomaticPasswordAuditPlanner(
                 feasibility = feasibility,
                 explanation = explanation,
                 stagesMayOverlap = stagesMayOverlap,
-                blindChallengePolicy = BLIND_CHALLENGE_POLICY,
+                blindChallengePolicy = blindChallengePolicyFor(profile),
             ),
         )
     }
@@ -206,8 +212,23 @@ class DefaultAutomaticPasswordAuditPlanner(
         /** Fixed seed so identical inputs always yield an identical plan. */
         const val DETERMINISTIC_SEED: Long = 0L
 
+        /**
+         * Blind verifier attachment policy for Wi‑Fi PSK audits: printable ASCII
+         * passphrases length 8–63 (protocol max). Exhaustive search is budget-capped.
+         */
+        fun blindChallengePolicyFor(profile: SharedPasswordSearchProfile): LabSecretPolicy =
+            LabSecretPolicy(
+                alphabet = Alphabet.PRINTABLE_ASCII,
+                length =
+                    LengthPolicy(
+                        WifiPskProgressiveAuditPolicy.MIN_PASSPHRASE_LENGTH,
+                        WifiPskProgressiveAuditPolicy.MAX_PASSPHRASE_LENGTH,
+                    ),
+            )
+
+        /** Default blind policy (WPA2-Personal PSK) for tests and prototypes. */
         val BLIND_CHALLENGE_POLICY: LabSecretPolicy =
-            LabSecretPolicy(Alphabet.ALPHANUMERIC, LengthPolicy(1, 8))
+            blindChallengePolicyFor(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK)
 
         fun estimateAttemptCapacity(
             throughputAttemptsPerSecond: Double,

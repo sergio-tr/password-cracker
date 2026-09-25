@@ -24,7 +24,10 @@ class AutomaticPasswordAuditPlannerTest {
     private val planner = DefaultAutomaticPasswordAuditPlanner()
 
     private val eligibleContext =
-        PasswordAuditContext(sharedPasswordApplicable = true)
+        PasswordAuditContext(
+            sharedPasswordApplicable = true,
+            searchProfile = SharedPasswordSearchProfile.WPA2_PERSONAL_PSK,
+        )
 
     private val basePerformance =
         PasswordAuditPerformanceProfile(
@@ -107,6 +110,79 @@ class AutomaticPasswordAuditPlannerTest {
     }
 
     @Test
+    fun applicable_without_search_profile_yields_not_applicable() {
+        val result =
+            planner.createPlan(
+                PasswordAuditContext(sharedPasswordApplicable = true, searchProfile = null),
+                basePerformance,
+                PasswordAuditBudget.standard(),
+            )
+        val denied = assertIs<PasswordAuditPlanResult.NotApplicable>(result)
+        assertEquals(PasswordAuditInapplicableReason.UnsupportedAuth, denied.reason)
+    }
+
+    @Test
+    fun wpa2_profile_stages_respect_psk_minimum_length() {
+        val plan =
+            ready(
+                planner.createPlan(
+                    eligibleContext,
+                    basePerformance,
+                    PasswordAuditBudget.standard(),
+                ),
+            )
+        assertTrue(plan.stages.all { it.candidateModel.lengthPolicy.minLength >= 8 })
+        assertTrue(
+            plan.explanation.details.any {
+                it is PlanExplanationDetail.WifiPskMechanism &&
+                    it.profile == SharedPasswordSearchProfile.WPA2_PERSONAL_PSK
+            },
+        )
+        assertTrue(plan.explanation.toString().contains("WPA2"))
+    }
+
+    @Test
+    fun wpa3_profile_uses_same_length_floor_with_distinct_explanation() {
+        val plan =
+            ready(
+                planner.createPlan(
+                    PasswordAuditContext(
+                        sharedPasswordApplicable = true,
+                        searchProfile = SharedPasswordSearchProfile.WPA3_PERSONAL_PSK,
+                    ),
+                    basePerformance,
+                    PasswordAuditBudget.standard(),
+                ),
+            )
+        assertTrue(plan.stages.all { it.candidateModel.lengthPolicy.minLength >= 8 })
+        assertTrue(
+            plan.explanation.details.any {
+                it is PlanExplanationDetail.WifiPskMechanism &&
+                    it.profile == SharedPasswordSearchProfile.WPA3_PERSONAL_PSK
+            },
+        )
+        assertTrue(plan.explanation.toString().contains("WPA3"))
+        assertTrue(plan.stages.first().id.value.contains("wpa3-personal-psk"))
+    }
+
+    @Test
+    fun transition_profile_produces_plan() {
+        val plan =
+            ready(
+                planner.createPlan(
+                    PasswordAuditContext(
+                        sharedPasswordApplicable = true,
+                        searchProfile = SharedPasswordSearchProfile.WPA2_WPA3_TRANSITION_PSK,
+                    ),
+                    basePerformance,
+                    PasswordAuditBudget.standard(),
+                ),
+            )
+        assertTrue(plan.stages.all { it.candidateModel.lengthPolicy.minLength >= 8 })
+        assertTrue(plan.stages.first().id.value.contains("wpa2-wpa3-transition-psk"))
+    }
+
+    @Test
     fun unsupported_authentication_yields_not_applicable() {
         val result =
             planner.createPlan(
@@ -137,7 +213,10 @@ class AutomaticPasswordAuditPlannerTest {
     @Test
     fun stage_invariants_hold() {
         val plan = ready(planner.createPlan(eligibleContext, basePerformance, PasswordAuditBudget.standard()))
-        assertEquals(GenericProgressiveAuditPolicy.STAGES.size, plan.stages.size)
+        assertEquals(
+            WifiPskProgressiveAuditPolicy.stagesFor(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK).size,
+            plan.stages.size,
+        )
         assertEquals(plan.stages.map { it.priority }, plan.stages.map { it.priority }.sorted())
         assertTrue(plan.stages.none { it.estimatedSpace.isZero })
 
@@ -150,7 +229,7 @@ class AutomaticPasswordAuditPlannerTest {
         }
         plan.stages.forEach { stage ->
             val expected =
-                GenericProgressiveAuditPolicy.exactSpace(
+                WifiPskProgressiveAuditPolicy.exactSpace(
                     stage.candidateModel.alphabet,
                     stage.candidateModel.lengthPolicy,
                 )
@@ -196,6 +275,7 @@ class AutomaticPasswordAuditPlannerTest {
     fun explanation_is_novice_friendly() {
         val plan = ready(planner.createPlan(eligibleContext, basePerformance, PasswordAuditBudget.standard()))
         assertEquals(PlanExplanationHeadline.AutomaticConfiguration, plan.explanation.headline)
+        assertTrue(plan.explanation.details.any { it is PlanExplanationDetail.WifiPskMechanism })
         assertTrue(plan.explanation.details.any { it is PlanExplanationDetail.WorkerCount })
         assertTrue(plan.explanation.details.any { it is PlanExplanationDetail.StageCount })
         assertTrue(plan.explanation.details.any { it is PlanExplanationDetail.DeviceAdapted })
@@ -227,7 +307,7 @@ class AutomaticPasswordAuditPlannerTest {
                         ),
                     ),
                 )
-            val verifier = EncapsulatedPasswordVerifier.encapsulate("42")
+            val verifier = EncapsulatedPasswordVerifier.encapsulate("12345678")
             val challenge =
                 LabChallenge.withEncapsulatedVerifier(
                     policy = plan.blindChallengePolicy,
@@ -248,7 +328,7 @@ class AutomaticPasswordAuditPlannerTest {
                 "expected found or limit, was $terminal",
             )
             if (terminal is LabSearchEvent.CandidateFound) {
-                assertEquals("42", terminal.candidate)
+                assertEquals("12345678", terminal.candidate)
             }
         }
 

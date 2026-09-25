@@ -171,6 +171,7 @@
     <string name="audit_inapplicable_unknown">No se puede determinar si esta red usa una contraseña Wi-Fi compartida.</string>
     <string name="audit_inapplicable_unsupported">Este mecanismo de autenticación no admite una auditoría de contraseña compartida.</string>
     <string name="audit_plan_device_adapted">Configuración adaptada automáticamente a este dispositivo</string>
+    <string name="audit_plan_wifi_psk_mechanism">Auditoría PSK Wi‑Fi: %1$s (frases de paso ≥ 8 caracteres imprimibles)</string>
     <string name="audit_plan_budget_prefix">Límite: %1$s</string>
     <string name="audit_duration_seconds">%1$d s</string>
     <string name="audit_duration_min_sec">%1$d min %2$d s</string>

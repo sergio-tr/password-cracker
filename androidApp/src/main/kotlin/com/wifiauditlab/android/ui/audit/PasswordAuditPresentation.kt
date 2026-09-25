@@ -23,6 +23,7 @@ import com.wifiauditlab.lab.domain.audit.AutomaticPlanExplanation
 import com.wifiauditlab.lab.domain.audit.PasswordAuditPlan
 import com.wifiauditlab.lab.domain.audit.PlanExplanationDetail
 import com.wifiauditlab.lab.domain.audit.PlanExplanationHeadline
+import com.wifiauditlab.lab.domain.audit.WifiPskProgressiveAuditPolicy
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -52,6 +53,11 @@ fun PlanExplanationDetail.line(): String =
             pluralStringResource(R.plurals.audit_plan_stages, count, count)
         is PlanExplanationDetail.BudgetLimit -> formatBudgetLimit(maxDuration, maxAttempts)
         PlanExplanationDetail.DeviceAdapted -> stringResource(R.string.audit_plan_device_adapted)
+        is PlanExplanationDetail.WifiPskMechanism ->
+            stringResource(
+                R.string.audit_plan_wifi_psk_mechanism,
+                WifiPskProgressiveAuditPolicy.profileLabel(profile),
+            )
     }
 
 @Composable
