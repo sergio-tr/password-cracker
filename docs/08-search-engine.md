@@ -119,9 +119,11 @@ longitud real, ni salida de `SecretStrengthAnalyzer`.
   en Lab guiado y Password Audit (FIX-07). Regresión FIX-08:
   `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`,
   `ProductRegressionComposeTest` (auth-aware PSK).
-- `GuidedAlphabetFitter.fitForWifiPsk` (androidApp) sólo sugiere alfabeto en UI /
-  modo Avanzado dentro de printable ASCII; **no** define el espacio de búsqueda guiado
-  (sigue viniendo del planner + `WifiPskProgressiveAuditPolicy`).
+- `GuidedAlphabetFitter.fitForWifiPsk` / `fitForWepHex` (androidApp) sólo sugieren
+  alfabeto en UI / controles Avanzados dentro del charset del protocolo; **no**
+  definen el espacio de búsqueda del prototipo LocalPrototype (Guided ni Advanced),
+  que sigue viniendo del planner + `WifiPskProgressiveAuditPolicy` /
+  `WepHexProgressiveAuditPolicy` (FIX-12).
 - **Lab sintético Guided + RandomHidden (FIX-11):**
   `GenericProgressiveSearchPlanBuilder` cablea `GenericProgressiveAuditPolicy.STAGES`
   + `StageBudgetAllocator` a un `LabSearchPlan` multi-bucket (secretos cortos 1–8).
@@ -131,6 +133,8 @@ longitud real, ni salida de `SecretStrengthAnalyzer`.
 - **Lab sintético Advanced + RandomHidden:** sigue el `SearchPlanOptimizer` /
   estrategias configurables (uniform / length / tiered / …); no usa
   `GenericProgressiveAuditPolicy`.
+- **Lab LocalPrototype Guided + Advanced (FIX-12):** ambos usan
+  `AutomaticPasswordAuditPlanner` (PSK/WEP). Advanced RandomHidden no cambia.
 - `BLIND_CHALLENGE_POLICY`: printable ASCII 8–63 (tope de protocolo; búsqueda
   limitada por presupuesto).
 - Presupuesto repartido por pesos centralizados (`StageBudgetAllocator`).

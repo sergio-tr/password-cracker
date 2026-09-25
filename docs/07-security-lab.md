@@ -33,11 +33,13 @@ Modos de verificación:
 - **FIX-09 explainability (Partial, manual pending):** en fase Ready, tarjeta con
   perfil PSK auth-aware (`searchPlanSummary` en `LabUiState`), resumen novice y
   etapas expandibles «Cómo busca» (strings ES/EN; sin IDs internos ni contraseña).
-- **Prototipo local — auditoría de contraseña (FIX-03B, Implemented)** — contraseña en
+- **Prototipo local — auditoría de contraseña (FIX-03B + FIX-12, Implemented)** — contraseña en
   memoria → `EncapsulatedPasswordVerifier.encapsulate` →
-  `LabChallenge.withEncapsulatedVerifier` → `AutomaticPasswordAuditPlanner` (modo guiado)
-  o plan manual (Avanzado) → `LabSearchEngine` existente. Planner ciego al target;
-  `withKnownSecret` no se usa en producto. Sin autenticación contra AP ni handshakes.
+  `LabChallenge.withEncapsulatedVerifier` → `AutomaticPasswordAuditPlanner` (Guided **y**
+  Advanced LocalPrototype para PSK/WEP) → `LabSearchEngine` existente. Avanzado puede
+  ajustar presupuesto/workers; **no** redefine alfabeto/longitud del espacio auth-aware.
+  Planner ciego al target; `withKnownSecret` no se usa en producto. Sin autenticación
+  contra AP ni handshakes.
 - **Known-password audit** — mismo encapsulado en Password Audit (red real
   conectada); `withKnownSecret` queda reservado a tests/benchmarks.
 
