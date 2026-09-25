@@ -122,8 +122,15 @@ longitud real, ni salida de `SecretStrengthAnalyzer`.
 - `GuidedAlphabetFitter.fitForWifiPsk` (androidApp) sólo sugiere alfabeto en UI /
   modo Avanzado dentro de printable ASCII; **no** define el espacio de búsqueda guiado
   (sigue viniendo del planner + `WifiPskProgressiveAuditPolicy`).
-- `GenericProgressiveAuditPolicy` se conserva para experimentos sintéticos del Lab
-  (secretos cortos); el planner de auditoría de producto usa sólo la política PSK.
+- **Lab sintético Guided + RandomHidden (FIX-11):**
+  `GenericProgressiveSearchPlanBuilder` cablea `GenericProgressiveAuditPolicy.STAGES`
+  + `StageBudgetAllocator` a un `LabSearchPlan` multi-bucket (secretos cortos 1–8).
+  Los pesos de etapa son heurísticos relativos (suma 100), **no** priors empíricos ASAP.
+  `searchPlanSummary` PSK se deja en null en esta ruta (explainability es sólo
+  prototipo/auditoría auth-aware).
+- **Lab sintético Advanced + RandomHidden:** sigue el `SearchPlanOptimizer` /
+  estrategias configurables (uniform / length / tiered / …); no usa
+  `GenericProgressiveAuditPolicy`.
 - `BLIND_CHALLENGE_POLICY`: printable ASCII 8–63 (tope de protocolo; búsqueda
   limitada por presupuesto).
 - Presupuesto repartido por pesos centralizados (`StageBudgetAllocator`).
