@@ -1,5 +1,7 @@
 package com.wifiauditlab.android.ui.nearby
 
+import android.content.Context
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -8,7 +10,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
-import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.FakeSavedNetworkRepository
@@ -61,6 +62,16 @@ class NearbyComposeTest {
         composeTestRule.waitUntil(timeoutMs) {
             composeTestRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    private fun hideSoftKeyboard() {
+        composeTestRule.runOnUiThread {
+            val focused = activity.currentFocus ?: activity.window.decorView
+            val imm = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(focused.windowToken, 0)
+            focused.clearFocus()
+        }
+        composeTestRule.waitForIdle()
     }
 
     @Test
@@ -190,8 +201,7 @@ class NearbyComposeTest {
             .performScrollTo()
             .performTextReplacement("Lab-Casa")
         // IME covers the bottom sheet actions on small API 29 viewports after text edit.
-        Espresso.closeSoftKeyboard()
-        composeTestRule.waitForIdle()
+        hideSoftKeyboard()
         val saveVault = activity.getString(R.string.nearby_save_vault)
         waitForText(saveVault)
         // Scroll into view then click; skip assertIsDisplayed (partially clipped after scroll is OK).
