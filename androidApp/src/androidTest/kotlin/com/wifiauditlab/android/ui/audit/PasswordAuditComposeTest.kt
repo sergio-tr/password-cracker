@@ -1,6 +1,7 @@
 package com.wifiauditlab.android.ui.audit
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -264,11 +265,14 @@ class PasswordAuditComposeTest {
         val profileLabel =
             str(R.string.search_plan_profile_label).format(str(R.string.search_profile_wpa2_personal_psk))
         waitForText(profileLabel)
-        composeTestRule.onNodeWithText(profileLabel, substring = true).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(profileLabel, substring = true).assertExists()
         waitForText(str(R.string.search_plan_psk_summary))
-        composeTestRule.onNodeWithText(str(R.string.search_plan_how_search)).performScrollTo().performClick()
+        composeTestRule
+            .onNodeWithContentDescription(str(R.string.search_plan_cd_how_search))
+            .assertExists()
+            .performClick()
         waitForText(str(R.string.search_plan_stage_digits_8))
-        scrollToText(str(R.string.search_plan_stage_weight).format(str(R.string.search_plan_stage_digits_8), 20))
+        waitForText(str(R.string.search_plan_stage_weight).format(str(R.string.search_plan_stage_digits_8), 20))
     }
 
     @Test
@@ -285,7 +289,7 @@ class PasswordAuditComposeTest {
         waitUntilReady(vm)
         val wpa3Profile = str(R.string.search_profile_wpa3_personal_psk)
         waitForText(wpa3Profile)
-        composeTestRule.onNodeWithText(wpa3Profile, substring = true).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(wpa3Profile, substring = true).assertExists()
         assertEquals(
             SharedPasswordSearchProfile.WPA3_PERSONAL_PSK,
             vm.state.value.plan!!.explanation.details

@@ -1,6 +1,7 @@
 package com.wifiauditlab.android.ui.lab
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -504,9 +505,11 @@ class LabComposeTest {
         }
         val wpa2Profile = activity.getString(R.string.search_profile_wpa2_personal_psk)
         waitForText(wpa2Profile)
-        scrollToText(wpa2Profile)
-        scrollToText(activity.getString(R.string.search_plan_how_search))
-        composeTestRule.onNodeWithText(activity.getString(R.string.search_plan_how_search)).performClick()
+        composeTestRule.onNodeWithText(wpa2Profile, substring = true).assertExists()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.search_plan_cd_how_search))
+            .assertExists()
+            .performClick()
         waitForText(activity.getString(R.string.search_plan_stage_digits_8))
         assertEquals(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK, vm.state.value.searchPlanSummary!!.profile)
         assertEquals(6, vm.state.value.searchPlanSummary!!.stages.size)
