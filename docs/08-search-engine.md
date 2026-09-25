@@ -116,7 +116,9 @@ longitud real, ni salida de `SecretStrengthAnalyzer`.
   stage expansivo puede solapar — no se deduplica en memoria.
 - `SharedPasswordSearchProfile` (en `:shared:lab`) distingue WPA2 / WPA3 / transición
   / WPA genérico; androidApp mapea `SecurityFamily.toSharedPasswordSearchProfile()`
-  en Lab guiado y Password Audit (FIX-07).
+  en Lab guiado y Password Audit (FIX-07). Regresión FIX-08:
+  `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`,
+  `ProductRegressionComposeTest` (auth-aware PSK).
 - `GuidedAlphabetFitter.fitForWifiPsk` (androidApp) sólo sugiere alfabeto en UI /
   modo Avanzado dentro de printable ASCII; **no** define el espacio de búsqueda guiado
   (sigue viniendo del planner + `WifiPskProgressiveAuditPolicy`).

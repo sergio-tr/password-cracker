@@ -19,7 +19,7 @@ Modos de verificación:
   alimenta la ruta encapsulada; OPEN/Enterprise/WEP muestran evaluación sin CTA PSK.
   Chip «Secreto aleatorio» sigue disponible para ejercicios sintéticos. Banner «Solo local»
   siempre visible.
-- **Bucle guiado FIX-04 + FIX-07** — flujo novice: SSID → preset → contraseña (si aplica) →
+- **Bucle guiado FIX-04 + FIX-07 + FIX-08** — flujo novice: SSID → preset → contraseña (si aplica) →
   **Crear y probar** (ajusta alfabeto vía `GuidedAlphabetFitter.fitForWifiPsk` — sólo
   sugerencia UI / Avanzado; el espacio guiado viene de `WifiPskProgressiveAuditPolicy`
   vía `AutomaticPasswordAuditPlanner`, ciego al target) → **Iniciar prueba** → métricas → STOP/resultado.

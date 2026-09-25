@@ -28,13 +28,13 @@ se alinea a esta tabla; si hay conflicto, gana el código.
 | Connected network detection | **Implemented** | `DefaultPasswordAuditEligibilityCheckerTest` | Badge «Conectado» |
 | Password audit eligibility | **Implemented** | Eligibility + VM tests | CTA «Auditar contraseña» |
 | Known target isolation | **Implemented** | `TargetIsolationTest` | — |
-| Automatic planner | **Implemented** | `AutomaticPasswordAuditPlannerTest` | Presets Quick/Standard/Deep |
+| Automatic planner (auth-aware PSK) | **Partial** (FIX-06/07/08 Code+CI) | `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `ProductRegressionComposeTest` | Presets Quick/Standard/Deep; manual UX pending |
 | Quick Audit UI | **Implemented** | `PasswordAuditComposeTest` | `PasswordAuditScreen` |
 | Execution + STOP | **Implemented** | VM + Compose STOP tests | bottomBar `DETENER` |
 | Results + strength report | **Implemented** | `PasswordAuditResultComposerTest` | Informe Medido/Estimado/Modelado |
 | ES/EN localization | **Partial** | Audit tests usan `R.string` | Settings picker + audit/nav; Lab/Nearby/Vault/Onboarding ES hardcoded |
 | Compare-runs history | **Deferred** | — | Follow-up |
-| Compose UI tests | **Implemented** | 13 clases `androidTest` | CI emulador |
+| Compose UI tests | **Implemented** | 16+ clases `androidTest` incl. `ProductRegressionComposeTest` (FIX-05/08) | CI emulador |
 | Android instrumentation | **Implemented** | Keystore/SQLDelight/lifecycle | CI emulador |
 
 ---
@@ -44,7 +44,8 @@ se alinea a esta tabla; si hay conflicto, gana el código.
 | Afirmación obsoleta | Realidad actual |
 | --- | --- |
 | «Sin emulador / androidTest» | CI ejecuta `connectedDebugAndroidTest` en API 29 + 35. |
-| «Zero androidTest sources» | 13 ficheros bajo `androidApp/src/androidTest`, incl. `PasswordAuditComposeTest`. |
+| «Zero androidTest sources» | 16+ ficheros bajo `androidApp/src/androidTest`, incl. `PasswordAuditComposeTest`, `ProductRegressionComposeTest`. |
+| «Planner genérico 1–8 dígitos en auditoría producto» | `WifiPskProgressiveAuditPolicy`: minLength ≥ 8, perfil WPA2/WPA3/transición; `GenericProgressiveAuditPolicy` sólo Lab sintético. |
 | Calibración «solo memoria» | `SharedPreferencesCalibrationRepository` (FASE 22). |
 | Known-password audit ausente | PR1–PR7 completos; walkthrough en `docs/13-known-password-audit-walkthrough.md`. |
 

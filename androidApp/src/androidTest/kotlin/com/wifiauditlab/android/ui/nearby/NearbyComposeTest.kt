@@ -7,8 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextClearance
-import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.support.FakeSavedNetworkRepository
@@ -181,17 +180,23 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))), repo)
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
+        // Wait for async eligibility/assessment so the sheet layout is stable before editing.
+        waitForText(activity.getString(R.string.audit_open_wifi_settings), timeoutMs = 10_000)
         val aliasLabel = activity.getString(R.string.nearby_label_alias)
         waitForText(aliasLabel)
-        composeTestRule.onNodeWithText(aliasLabel).performScrollTo().performTextClearance()
-        composeTestRule.onNodeWithText(aliasLabel).performTextInput("Lab-Casa")
+        composeTestRule
+            .onNodeWithText(aliasLabel)
+            .performScrollTo()
+            .performTextReplacement("Lab-Casa")
         composeTestRule
             .onNodeWithText(activity.getString(R.string.nearby_save_vault))
             .performScrollTo()
+            .assertIsDisplayed()
             .performClick()
-        composeTestRule.waitUntil(5_000) { repo.networks.value.isNotEmpty() }
+        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(15_000) { repo.networks.value.isNotEmpty() }
         assertEquals("Lab-Casa", repo.networks.value.single().alias)
-        waitForText(activity.getString(R.string.nearby_vault_saved_confirm))
+        waitForText(activity.getString(R.string.nearby_vault_saved_confirm), timeoutMs = 10_000)
     }
 
     @Test

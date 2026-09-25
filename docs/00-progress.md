@@ -29,11 +29,11 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). |
 | Lab desde red cercana | **Partial** (UX-02 + FIX-03/04): CTA + contexto solo lectura + prototipo local en Lab; FIX-03/04 merged, CI green; manual pendiente usuario. |
-| Modo guiado del Lab | **Partial** (FIX-04): bucle Crear y probar → Iniciar → resultado con acciones Editar/Cambiar/Repetir; separación config vs contraseña; `GuidedAlphabetFitter`; CI green; manual pendiente usuario. |
+| Modo guiado del Lab | **Partial** (FIX-04 + FIX-07/08): bucle Crear y probar → Iniciar → resultado con acciones Editar/Cambiar/Repetir; familia → perfil PSK auth-aware; PSK ≥ 8; OPEN/Enterprise sin CTA PSK; regresión FIX-08 en JVM + Compose; manual pendiente usuario. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
-| Planner automático de auditoría | **Partial** (FIX-06 + FIX-07): `AutomaticPasswordAuditPlanner` + `WifiPskProgressiveAuditPolicy` auth-aware PSK; presets Quick/Standard/Deep; ciego al target; Lab guiado y Audit cableados vía `SecurityFamily.toSharedPasswordSearchProfile()`; validación PSK ≥ 8; `GuidedAlphabetFitter` separado del planner. |
+| Planner automático de auditoría | **Partial** (FIX-06 + FIX-07 + FIX-08): `AutomaticPasswordAuditPlanner` + `WifiPskProgressiveAuditPolicy` auth-aware PSK; presets Quick/Standard/Deep; ciego al target; Lab guiado y Audit cableados vía `SecurityFamily.toSharedPasswordSearchProfile()`; validación PSK ≥ 8; `GuidedAlphabetFitter` separado del planner; regresión JVM + `ProductRegressionComposeTest` (FIX-08). **Manual UX pending user.** |
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
 | Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
 | STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
@@ -53,6 +53,16 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Instrumentación Android | SQLDelight / Keystore / lifecycle — **CI emulador** API 29+35. |
 | Tooling CI | JVM job + Android emulator job (`docs/ci-emulator.md`). |
 | Docs `01`–`13`, ADRs, release checklist, test evidence | Índice vivo aquí; walkthrough known-password en `docs/13-known-password-audit-walkthrough.md`. |
+
+## Auth-aware PSK — hecho vs pendiente (FIX-06/07/08)
+
+| Hecho (Code+CI) | Pendiente (no producto terminado) |
+| --- | --- |
+| `WifiPskProgressiveAuditPolicy`: etapas ≥ 8, subconjuntos printable ASCII, pesos por familia WPA2/WPA3/transición | Sin crack remoto de contraseñas desconocidas en redes cercanas (by design) |
+| Planner ciego + encapsulado en Lab guiado y Password Audit | Sin diccionarios rockyou / credenciales reales |
+| `SecurityFamily.toSharedPasswordSearchProfile()` en UI | Validación manual UX/locale/dispositivo pendiente usuario |
+| Validación UI PSK ≥ 8; OPEN/Enterprise sin campo/CTA PSK | Charset auth-aware = subconjuntos progresivos budget-capped, no exhaustivo 8–63 cada run |
+| Regresión FIX-08: `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `LabViewModelTest`, `PasswordAuditViewModelTest`, `ProductRegressionComposeTest` | Promoción a **Implemented** UX sólo tras pase manual documentado |
 
 ## Partial
 

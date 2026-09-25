@@ -12,8 +12,9 @@ Prioridad sobre filas `Implemented` de `docs/00-progress.md` que contradigan est
 | P2 | Cambiar idioma no cambia la app | FIX-01 + FIX-05 | **Code+CI green** — `MainActivityRuntimeLocaleTest` (ES→EN, EN→ES, EN→SYSTEM, recreate persiste); `AppLanguagePreferencesInstrumentedTest` | **Manual pending user** |
 | P3 | Navegación / UX poco Material | FIX-02 + FIX-05 | **Partial** — `ProductRegressionComposeTest`: ArrowBack en Audit/Security/Permissions; top-level Nearby/Vault/Lab/Settings sin ArrowBack | **Manual pending user** |
 | P4 | Lab sin prototipo local de red | FIX-03A + FIX-03B + FIX-04 + FIX-05 | **Partial** — `LabComposeTest` + `ProductRegressionComposeTest`: WPA2 STOP→editar→repetir; OPEN/Enterprise sin campo PSK (`lab_prototype_no_password_audit`) | **Manual pending user** |
+| P5 | Planner/Lab auth-aware PSK (WPA2/WPA3, ≥8, fitter ≠ planner) | FIX-06 + FIX-07 + FIX-08 | **Code+CI green** — `AutomaticPasswordAuditPlannerTest` (prefijos stage WPA2/WPA3, minLength ≥ 8), `WifiPskProgressiveAuditPolicyTest`, `LabViewModelTest`/`PasswordAuditViewModelTest`, `ProductRegressionComposeTest` (WPA2 Crear y probar→Start, contraseña corta, WPA3 perfil-aware, OPEN/Enterprise ya cubiertos) | **Manual pending user** — validar flujo producto en dispositivo |
 
-FIX-05 (`test/product-regression-suite`) cierra regresión automática + docs honestas; **no** promueve a `Implemented` sin pase manual del usuario.
+FIX-05/08 cierran regresión automática + docs honestas; **no** promueven a `Implemented` sin pase manual del usuario.
 
 ## Problemas confirmados (snapshot pre-FIX, referencia histórica)
 
@@ -92,7 +93,10 @@ El modo **Random hidden** sigue usando `withHiddenSecret`. La auditoría known-p
 | FIX-02 | `feature/navigation-copy-consistency` | [#45](https://github.com/sergio-tr/password-cracker/pull/45) | ArrowBack child screens + copy novice Lab/Audit (sin `Text("Atrás")`) | Merged · **Code+CI green / Manual pending user** |
 | FIX-03 | `fix/03-local-network-prototype` | [#46](https://github.com/sergio-tr/password-cracker/pull/46) | Prototipo de red local configurable + motor local | Merged · **Code+CI green / Manual pending user** |
 | FIX-04 | `fix/04-guided-local-prototype-audit` | [#47](https://github.com/sergio-tr/password-cracker/pull/47) | Flujo guiado novice del prototipo | Merged · **Code+CI green / Manual pending user** |
-| FIX-05 | `test/product-regression-suite` | — | Suite regresión producto + docs honestas | En curso · **Automated CI green / Manual pending user** |
+| FIX-05 | `test/product-regression-suite` | — | Suite regresión producto + docs honestas | **Code+CI green / Manual pending user** |
+| FIX-06 | — | [#56](https://github.com/sergio-tr/password-cracker/pull/56) | `WifiPskProgressiveAuditPolicy` + planner auth-aware PSK | Merged · **Code+CI green / Manual pending user** |
+| FIX-07 | — | [#57](https://github.com/sergio-tr/password-cracker/pull/57) | Lab guiado + Audit cableados; PSK ≥ 8; fitter separado | Merged · **Code+CI green / Manual pending user** |
+| FIX-08 | `test/auth-aware-regression-and-docs` | — | Regresión auth-aware PSK + docs honestas (cierre ola) | En curso · **Automated CI green / Manual pending user** |
 
 ## Criterio para volver a `Implemented`
 
