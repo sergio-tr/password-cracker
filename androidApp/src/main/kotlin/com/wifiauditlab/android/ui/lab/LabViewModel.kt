@@ -279,6 +279,10 @@ class LabViewModel(
         _state.update { it.copy(searchStagesExpanded = expanded) }
     }
 
+    fun toggleSearchStagesExpanded() {
+        _state.update { it.copy(searchStagesExpanded = !it.searchStagesExpanded) }
+    }
+
     fun createAndTest() {
         val snapshot = _state.value
         if (!snapshot.isGuidedPrototypeFlow) return

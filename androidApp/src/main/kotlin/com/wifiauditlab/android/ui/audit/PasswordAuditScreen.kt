@@ -490,9 +490,7 @@ private fun PlanSection(
                     SearchPlanExplainabilitySection(
                         summary = state.plan.toSearchPlanUiSummary(),
                         stagesExpanded = state.searchStagesExpanded,
-                        onToggleStagesExpanded = {
-                            viewModel.setSearchStagesExpanded(!state.searchStagesExpanded)
-                        },
+                        onToggleStagesExpanded = viewModel::toggleSearchStagesExpanded,
                     )
                     state.explanation?.noviceLines(state.plan)?.forEach { Text("· $it") }
                     FeasibilityBlock(state.feasibilityRating)

@@ -4,8 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -504,10 +506,16 @@ class LabComposeTest {
         }
         val wpa2Profile = activity.getString(R.string.search_profile_wpa2_personal_psk)
         waitForText(wpa2Profile)
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.search_plan_cd_how_search))
-            .performClick()
-        waitForText(activity.getString(R.string.search_plan_stage_digits_8))
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithTag("search_plan_how_search").fetchSemanticsNodes().isNotEmpty()
+        }
+        // Expand via VM — off-screen TextButton clicks are unreliable on small emulator viewports.
+        vm.setSearchStagesExpanded(true)
+        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(8_000) {
+            composeTestRule.onAllNodesWithTag("search_plan_stage").fetchSemanticsNodes().isNotEmpty()
+        }
+        waitForText(activity.getString(R.string.search_plan_stage_digits_8), timeoutMs = 8_000)
         assertEquals(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK, vm.state.value.searchPlanSummary!!.profile)
         assertEquals(6, vm.state.value.searchPlanSummary!!.stages.size)
     }

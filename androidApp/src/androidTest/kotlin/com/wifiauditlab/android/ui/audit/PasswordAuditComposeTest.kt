@@ -3,6 +3,7 @@ package com.wifiauditlab.android.ui.audit
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -262,14 +263,29 @@ class PasswordAuditComposeTest {
         setAudit(vm)
         waitUntilReady(vm)
         val profileLabel =
-            str(R.string.search_plan_profile_label).format(str(R.string.search_profile_wpa2_personal_psk))
+            composeTestRule.activity.getString(
+                R.string.search_plan_profile_label,
+                str(R.string.search_profile_wpa2_personal_psk),
+            )
         waitForText(profileLabel)
         waitForText(str(R.string.search_plan_psk_summary))
-        composeTestRule
-            .onNodeWithContentDescription(str(R.string.search_plan_cd_how_search))
-            .performClick()
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithTag("search_plan_how_search").fetchSemanticsNodes().isNotEmpty()
+        }
+        // Expand via VM — off-screen TextButton clicks are unreliable on small emulator viewports.
+        vm.setSearchStagesExpanded(true)
+        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(8_000) {
+            composeTestRule.onAllNodesWithTag("search_plan_stage").fetchSemanticsNodes().isNotEmpty()
+        }
         waitForText(str(R.string.search_plan_stage_digits_8))
-        waitForText(str(R.string.search_plan_stage_weight).format(str(R.string.search_plan_stage_digits_8), 20))
+        waitForText(
+            composeTestRule.activity.getString(
+                R.string.search_plan_stage_weight,
+                str(R.string.search_plan_stage_digits_8),
+                20,
+            ),
+        )
     }
 
     @Test

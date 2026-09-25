@@ -73,6 +73,8 @@ fun SearchPlanExplainabilitySection(
 ) {
     if (summary == null) return
     val howSearchCd = stringResource(R.string.search_plan_cd_how_search)
+    val profileLabel =
+        stringResource(R.string.search_plan_profile_label, summary.profile.label())
     Column(
         modifier
             .fillMaxWidth()
@@ -80,7 +82,7 @@ fun SearchPlanExplainabilitySection(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
-            stringResource(R.string.search_plan_profile_label, summary.profile.label()),
+            profileLabel,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.testTag("search_plan_profile"),
         )
@@ -92,9 +94,9 @@ fun SearchPlanExplainabilitySection(
         TextButton(
             onClick = onToggleStagesExpanded,
             modifier =
-                Modifier.semantics {
-                    contentDescription = howSearchCd
-                },
+                Modifier
+                    .testTag("search_plan_how_search")
+                    .semantics { contentDescription = howSearchCd },
         ) {
             Text(
                 if (stagesExpanded) {

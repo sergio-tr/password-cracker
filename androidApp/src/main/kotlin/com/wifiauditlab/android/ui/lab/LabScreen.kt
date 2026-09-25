@@ -162,9 +162,7 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                         onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
                         onCreateAndTest = viewModel::createAndTest,
                         onFocusConsumed = viewModel::consumeGuidedFocusTarget,
-                        onToggleSearchStagesExpanded = {
-                            viewModel.setSearchStagesExpanded(!state.searchStagesExpanded)
-                        },
+                        onToggleSearchStagesExpanded = viewModel::toggleSearchStagesExpanded,
                     )
                 } else {
                     SecretModeCard(
