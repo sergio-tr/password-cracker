@@ -82,6 +82,7 @@ data class PasswordAuditUiState(
     val preset: PasswordAuditBudgetPreset = PasswordAuditBudgetPreset.Standard,
     val advancedExpanded: Boolean = false,
     val planDetailsExpanded: Boolean = false,
+    val searchStagesExpanded: Boolean = false,
     val customDurationSeconds: String = "60",
     val customMaxAttempts: String = "",
     val plan: PasswordAuditPlan? = null,

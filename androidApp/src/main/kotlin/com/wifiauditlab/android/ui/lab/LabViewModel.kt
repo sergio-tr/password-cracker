@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.audit.toSharedPasswordSearchProfile
+import com.wifiauditlab.android.ui.plan.SearchPlanUiSummary
+import com.wifiauditlab.android.ui.plan.toSearchPlanUiSummary
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.core.math.CombinationCount
@@ -111,6 +113,9 @@ data class LabUiState(
     val guidedFocusTarget: GuidedFocusTarget? = null,
     /** Network assessment snapshot taken when the last guided run started. */
     val resultNetworkAssessment: SecurityAssessment? = null,
+    /** Blind automatic search plan summary (profile + stages); no password material. */
+    val searchPlanSummary: SearchPlanUiSummary? = null,
+    val searchStagesExpanded: Boolean = false,
 ) {
     val effectiveSecretLength: Int
         get() = config.secretLength
@@ -270,6 +275,10 @@ class LabViewModel(
         _state.update { it.copy(guidedFocusTarget = null) }
     }
 
+    fun setSearchStagesExpanded(expanded: Boolean) {
+        _state.update { it.copy(searchStagesExpanded = expanded) }
+    }
+
     fun createAndTest() {
         val snapshot = _state.value
         if (!snapshot.isGuidedPrototypeFlow) return
@@ -335,6 +344,8 @@ class LabViewModel(
                 targetPassword = password,
                 passwordVisible = false,
                 configErrorRes = null,
+                searchPlanSummary = null,
+                searchStagesExpanded = false,
             )
         }
     }
@@ -354,6 +365,8 @@ class LabViewModel(
                 targetPassword = password,
                 passwordVisible = false,
                 configErrorRes = null,
+                searchPlanSummary = null,
+                searchStagesExpanded = false,
             )
         }
     }
@@ -446,6 +459,7 @@ class LabViewModel(
                 it.copy(
                     estimatedCombinations = CombinationCount.ZERO,
                     feasibility = null,
+                    searchPlanSummary = null,
                     configErrorRes = validateForStart(snapshot.config, snapshot),
                 )
             }
@@ -458,6 +472,7 @@ class LabViewModel(
                 it.copy(
                     estimatedCombinations = CombinationCount.ZERO,
                     feasibility = null,
+                    searchPlanSummary = null,
                     configErrorRes = R.string.lab_err_limits_required,
                 )
             }
@@ -483,6 +498,7 @@ class LabViewModel(
                     it.copy(
                         estimatedCombinations = result.plan.totalCandidateSpace,
                         feasibility = result.plan.feasibility,
+                        searchPlanSummary = result.plan.toSearchPlanUiSummary(),
                         configErrorRes = validateForStart(snapshot.config, snapshot),
                     )
                 }
@@ -493,6 +509,7 @@ class LabViewModel(
                     it.copy(
                         estimatedCombinations = CombinationCount.ZERO,
                         feasibility = null,
+                        searchPlanSummary = null,
                         configErrorRes = validateForStart(snapshot.config, snapshot),
                     )
                 }

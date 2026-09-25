@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
+import com.wifiauditlab.android.ui.plan.SearchPlanExplainabilitySection
 import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
@@ -161,6 +162,9 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                         onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
                         onCreateAndTest = viewModel::createAndTest,
                         onFocusConsumed = viewModel::consumeGuidedFocusTarget,
+                        onToggleSearchStagesExpanded = {
+                            viewModel.setSearchStagesExpanded(!state.searchStagesExpanded)
+                        },
                     )
                 } else {
                     SecretModeCard(
@@ -236,6 +240,7 @@ private fun GuidedPrototypeCard(
     onTogglePasswordVisibility: () -> Unit,
     onCreateAndTest: () -> Unit,
     onFocusConsumed: () -> Unit,
+    onToggleSearchStagesExpanded: () -> Unit,
 ) {
     val passwordFocusRequester = remember { BringIntoViewRequester() }
     val securityFocusRequester = remember { BringIntoViewRequester() }
@@ -362,6 +367,13 @@ private fun GuidedPrototypeCard(
                     title = stringResource(R.string.lab_guided_step_start),
                 ) {
                     Text(stringResource(R.string.lab_guided_step_start_body))
+                    if (state.prototype.securityFamily.supportsSharedPasswordDemo()) {
+                        SearchPlanExplainabilitySection(
+                            summary = state.searchPlanSummary,
+                            stagesExpanded = state.searchStagesExpanded,
+                            onToggleStagesExpanded = onToggleSearchStagesExpanded,
+                        )
+                    }
                 }
             }
             state.configErrorRes?.let { Text(stringResource(it)) }

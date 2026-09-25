@@ -132,11 +132,16 @@ longitud real, ni salida de `SecretStrengthAnalyzer`.
 - Distingue `totalCandidateSpace` vs `budgetedAttemptCapacity` y reutiliza
   `SearchFeasibilityAnalyzer` sobre el espacio presupuestado.
 - `AutomaticPlanExplanation` para UI Quick Audit (sin class names / bucket IDs).
+- **FIX-09 explainability (Partial, manual pending):** `SearchPlanExplainabilitySection`
+  en Password Audit (fase Ready) y Lab guiado (post **Crear y probar**): perfil
+  `SharedPasswordSearchProfile`, resumen PSK ≥ 8 / subconjuntos imprimibles /
+  presupuesto, y lista expandible «Cómo busca» con etapas legibles (alfabeto ×
+  longitud × peso %) — sin material de contraseña ni stage IDs crudos.
 
 Presets de dominio: Quick (30 s) / Standard (1 min, default) / Deep (5 min) / Custom.
 UI Quick Audit = `PasswordAuditScreen` con ejecución local, STOP e informe
 combinado (walkthrough: `docs/13-known-password-audit-walkthrough.md`).
-Explicación novice: «procesos de búsqueda» / etapas / límite — sin nombres internos.
+Explicación novice: perfil de búsqueda + «Cómo busca» / límite — sin nombres internos.
 
 ## Known-password audit path
 

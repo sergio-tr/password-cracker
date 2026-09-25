@@ -49,6 +49,7 @@ import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
 import com.wifiauditlab.lab.domain.audit.DefaultAutomaticPasswordAuditPlanner
 import com.wifiauditlab.lab.domain.audit.PasswordAuditBudgetPreset
+import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
 import kotlinx.coroutines.Dispatchers
@@ -176,6 +177,10 @@ class PasswordAuditComposeTest {
         }
     }
 
+    private fun scrollToText(text: String) {
+        composeTestRule.onNodeWithText(text, substring = true).performScrollTo().assertIsDisplayed()
+    }
+
     @Test
     fun automaticDefaults_readyWithoutOpeningAdvanced() {
         val vm = viewModel(HangingEngine(progressMetrics))
@@ -249,6 +254,45 @@ class PasswordAuditComposeTest {
         composeTestRule.onNodeWithText(str(R.string.audit_how_to_improve))
             .performScrollTo()
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun ready_showsSearchProfileAndExpandableStages() {
+        val vm = viewModel(HangingEngine(progressMetrics))
+        setAudit(vm)
+        waitUntilReady(vm)
+        val profileLabel =
+            str(R.string.search_plan_profile_label).format(str(R.string.search_profile_wpa2_personal_psk))
+        waitForText(profileLabel)
+        composeTestRule.onNodeWithText(profileLabel, substring = true).performScrollTo().assertIsDisplayed()
+        waitForText(str(R.string.search_plan_psk_summary))
+        composeTestRule.onNodeWithText(str(R.string.search_plan_how_search)).performScrollTo().performClick()
+        waitForText(str(R.string.search_plan_stage_digits_8))
+        scrollToText(str(R.string.search_plan_stage_weight).format(str(R.string.search_plan_stage_digits_8), 20))
+    }
+
+    @Test
+    fun wpa3Ready_showsWpa3SearchProfile() {
+        val vm =
+            viewModel(
+                HangingEngine(progressMetrics),
+                eligibleRequest(
+                    family = SecurityFamily.WPA3_PERSONAL,
+                    keyManagements = setOf("SAE"),
+                ),
+            )
+        setAudit(vm)
+        waitUntilReady(vm)
+        val wpa3Profile = str(R.string.search_profile_wpa3_personal_psk)
+        waitForText(wpa3Profile)
+        composeTestRule.onNodeWithText(wpa3Profile, substring = true).performScrollTo().assertIsDisplayed()
+        assertEquals(
+            SharedPasswordSearchProfile.WPA3_PERSONAL_PSK,
+            vm.state.value.plan!!.explanation.details
+                .filterIsInstance<com.wifiauditlab.lab.domain.audit.PlanExplanationDetail.WifiPskMechanism>()
+                .first()
+                .profile,
+        )
     }
 
     @Test

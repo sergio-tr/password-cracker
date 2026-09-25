@@ -29,6 +29,9 @@ Modos de verificación:
   reconstruir todo el experimento. La UI separa explícitamente **evaluación de
   configuración de red** y **resistencia de contraseña** (resultado de búsqueda); no
   implica que WPA3 haga la misma contraseña menos predecible para un humano.
+- **FIX-09 explainability (Partial, manual pending):** en fase Ready, tarjeta con
+  perfil PSK auth-aware (`searchPlanSummary` en `LabUiState`), resumen novice y
+  etapas expandibles «Cómo busca» (strings ES/EN; sin IDs internos ni contraseña).
 - **Prototipo local — auditoría de contraseña (FIX-03B, Implemented)** — contraseña en
   memoria → `EncapsulatedPasswordVerifier.encapsulate` →
   `LabChallenge.withEncapsulatedVerifier` → `AutomaticPasswordAuditPlanner` (modo guiado)

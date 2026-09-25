@@ -344,6 +344,9 @@ class LabViewModelTest {
             assertEquals(GuidedPrototypePhase.Ready, vm.state.value.guidedPhase)
             assertTrue(vm.state.value.canStartSearch)
             assertEquals(AlphabetChoice.DIGITS, vm.state.value.config.alphabet)
+            assertNotNull(vm.state.value.searchPlanSummary)
+            assertEquals(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK, vm.state.value.searchPlanSummary!!.profile)
+            assertEquals(6, vm.state.value.searchPlanSummary!!.stages.size)
         }
 
     @Test

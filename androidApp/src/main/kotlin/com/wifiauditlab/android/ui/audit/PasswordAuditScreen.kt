@@ -54,6 +54,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
+import com.wifiauditlab.android.ui.plan.SearchPlanExplainabilitySection
+import com.wifiauditlab.android.ui.plan.toSearchPlanUiSummary
 import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.audit.PasswordSearchOutcomeKind
 import com.wifiauditlab.core.math.CombinationCount
@@ -485,6 +487,13 @@ private fun PlanSection(
                     Text(state.planNotApplicableReason.label())
                 state.plan != null -> {
                     Text(stringResource(R.string.audit_plan_auto_config), fontWeight = FontWeight.Medium)
+                    SearchPlanExplainabilitySection(
+                        summary = state.plan.toSearchPlanUiSummary(),
+                        stagesExpanded = state.searchStagesExpanded,
+                        onToggleStagesExpanded = {
+                            viewModel.setSearchStagesExpanded(!state.searchStagesExpanded)
+                        },
+                    )
                     state.explanation?.noviceLines(state.plan)?.forEach { Text("· $it") }
                     FeasibilityBlock(state.feasibilityRating)
                     TextButton(
@@ -503,7 +512,7 @@ private fun PlanSection(
                         state.explanation?.details?.forEach {
                             Text("· ${it.line()}", style = MaterialTheme.typography.bodySmall)
                         }
-                        state.plan?.let { plan ->
+                        state.plan.let { plan ->
                             Text(
                                 stringResource(
                                     R.string.audit_plan_space,

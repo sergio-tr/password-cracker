@@ -30,6 +30,7 @@ import com.wifiauditlab.lab.domain.SearchMetrics
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchSessionId
 import com.wifiauditlab.lab.domain.SearchState
+import com.wifiauditlab.lab.domain.audit.SharedPasswordSearchProfile
 import com.wifiauditlab.lab.domain.engine.CancellationSignal
 import com.wifiauditlab.lab.domain.engine.FeasibilityRating
 import com.wifiauditlab.lab.domain.engine.LabSearchEngine
@@ -484,6 +485,52 @@ class LabComposeTest {
         startSearch()
         composeTestRule.waitUntil(5_000) { vm.state.value.outcome == SearchOutcome.Found }
         waitForText(activity.getString(R.string.lab_outcome_found))
+    }
+
+    @Test
+    fun guidedPrototype_ready_showsSearchPlanExplainability() {
+        val vm = viewModel(ScriptedEngine(emptyList()))
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("PlanLab")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("12345678")
+        createAndTest()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.guidedPhase == GuidedPrototypePhase.Ready &&
+                vm.state.value.searchPlanSummary != null
+        }
+        val wpa2Profile = activity.getString(R.string.search_profile_wpa2_personal_psk)
+        waitForText(wpa2Profile)
+        scrollToText(wpa2Profile)
+        scrollToText(activity.getString(R.string.search_plan_how_search))
+        composeTestRule.onNodeWithText(activity.getString(R.string.search_plan_how_search)).performClick()
+        waitForText(activity.getString(R.string.search_plan_stage_digits_8))
+        assertEquals(SharedPasswordSearchProfile.WPA2_PERSONAL_PSK, vm.state.value.searchPlanSummary!!.profile)
+        assertEquals(6, vm.state.value.searchPlanSummary!!.stages.size)
+    }
+
+    @Test
+    fun guidedPrototype_wpa3Ready_showsWpa3SearchProfile() {
+        val vm = viewModel(ScriptedEngine(emptyList()))
+        setLab(vm)
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_preset_wpa3))
+            .performScrollTo()
+            .performClick()
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.lab_prototype_ssid))
+            .performScrollTo()
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_ssid)).performTextInput("Wpa3Plan")
+        scrollToText(activity.getString(R.string.lab_prototype_password))
+        composeTestRule.onNodeWithText(activity.getString(R.string.lab_prototype_password)).performTextInput("87654321")
+        createAndTest()
+        composeTestRule.waitUntil(5_000) {
+            vm.state.value.searchPlanSummary?.profile == SharedPasswordSearchProfile.WPA3_PERSONAL_PSK
+        }
+        waitForText(activity.getString(R.string.search_profile_wpa3_personal_psk))
     }
 
     @Test
