@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -64,8 +65,11 @@ class MainActivityRuntimeLocaleTest {
 
         applyLanguageAndWait(AppLanguage.SYSTEM)
         composeRule.waitUntil(timeoutMillis = 15_000) {
-            val label = activityNavLabel()
-            label == englishNearby() || label == spanishNearby()
+            probeLabelVisible() &&
+                run {
+                    val label = activityNavLabel()
+                    label == englishNearby() || label == spanishNearby()
+                }
         }
         assertEquals(AppLanguage.SYSTEM, AppLanguagePreferences.current(appContext))
     }
@@ -125,13 +129,23 @@ class MainActivityRuntimeLocaleTest {
 
     private fun assertProbeLabel(expected: String) {
         composeRule.waitUntil(timeoutMillis = 15_000) {
-            activityNavLabel() == expected
+            activityNavLabel() == expected && probeLabelVisible()
         }
         composeRule
             .onNodeWithTag(LocaleProbeActivity.TAG_NAV_LABEL)
             .assertIsDisplayed()
             .assertTextEquals(expected)
     }
+
+    private fun probeLabelVisible(): Boolean =
+        try {
+            composeRule
+                .onAllNodesWithTag(LocaleProbeActivity.TAG_NAV_LABEL)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
 
     private fun activityNavLabel(): String =
         try {

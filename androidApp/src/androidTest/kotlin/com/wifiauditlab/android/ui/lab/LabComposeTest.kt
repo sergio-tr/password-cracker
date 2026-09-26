@@ -330,14 +330,21 @@ class LabComposeTest {
             .performScrollTo()
             .performClick()
 
-        // Clear both limit fields so config becomes invalid.
-        composeTestRule.onNodeWithText(vm.state.value.config.maxAttempts!!.toString()).performScrollTo().performTextClearance()
-        composeTestRule.onNodeWithText(vm.state.value.config.maxDurationSeconds!!.toString()).performScrollTo().performTextClearance()
+        // Clear both caps without relying on ambiguous numeric text nodes (duration "45"
+        // can collide with other EditableText after length/limit fields grew).
+        vm.updateConfig(
+            vm.state.value.config.copy(
+                maxAttempts = null,
+                maxDurationSeconds = null,
+                runUntilCancelled = false,
+            ),
+        )
         composeTestRule.waitForIdle()
 
         val limitsRequired = activity.getString(R.string.lab_err_limits_required)
         waitForText(limitsRequired)
         scrollToText(limitsRequired)
+        assertTrue(!vm.state.value.canStartSearch)
     }
 
     @Test
