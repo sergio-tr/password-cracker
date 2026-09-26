@@ -357,7 +357,13 @@
     <string name="lab_challenge">Challenge</string>
     <string name="lab_strategy">Strategy: %1$s</string>
     <string name="lab_secret_length">Secret length: %1$d</string>
-    <string name="lab_attempt_limit">Attempt limit</string>
+    <string name="lab_length_min">Min length (empty = auto)</string>
+    <string name="lab_length_max">Max length (empty = auto, soft cap %1$d)</string>
+    <string name="lab_length_range_summary">Lengths: %1$d–%2$d</string>
+    <string name="lab_attempt_limit">Attempt limit (empty = none)</string>
+    <string name="lab_duration_limit">Time limit in seconds (empty = none)</string>
+    <string name="lab_run_until_cancelled">Until STOP (no attempt or time caps)</string>
+    <string name="lab_run_until_cancelled_help">Local only. Search continues until found, space exhausted, or STOP.</string>
     <string name="lab_workers">Parallelism: %1$d (1 is the baseline)</string>
     <string name="lab_workers_help">How many simultaneous searches the device runs. 1 is the baseline for comparison.</string>
     <string name="lab_time_limit">Time limit (s)</string>
@@ -379,12 +385,14 @@
     <string name="lab_outcome_limit">LIMIT REACHED</string>
     <string name="lab_outcome_cancelled">CANCELLED</string>
     <string name="lab_outcome_failed">ERROR</string>
-    <string name="lab_err_limits_required">Set at least an attempt limit or a time limit.</string>
+    <string name="lab_err_limits_required">Set an attempt limit, a time limit, or enable Until STOP.</string>
     <string name="lab_err_no_limit">No limit (invalid)</string>
     <string name="lab_limits_attempts">%1$s attempts</string>
     <string name="lab_limits_seconds">%1$s s</string>
     <string name="lab_alphabet_digits">Digits (0-9)</string>
     <string name="lab_alphabet_lowercase">Lowercase (a-z)</string>
+    <string name="lab_alphabet_uppercase">Uppercase (A-Z)</string>
+    <string name="lab_alphabet_letters">Letters (a-z, A-Z)</string>
     <string name="lab_alphabet_lower_alphanumeric">Alphanumeric (a-z, 0-9)</string>
     <string name="lab_alphabet_alphanumeric">Alphanumeric (a-z, A-Z, 0-9)</string>
     <string name="lab_strategy_uniform">Uniform</string>

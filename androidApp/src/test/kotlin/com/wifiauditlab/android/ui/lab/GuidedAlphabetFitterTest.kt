@@ -8,6 +8,19 @@ import org.junit.Test
 
 class GuidedAlphabetFitterTest {
     @Test
+    fun fitForWifiPsk_mixedLettersWithoutDigits() {
+        val fit = GuidedAlphabetFitter.fitForWifiPsk("PassWord")
+        assertEquals(AlphabetChoice.LETTERS, fit?.choice)
+        assertNull(fit?.customAlphabet)
+    }
+
+    @Test
+    fun fitForWifiPsk_uppercaseOnly() {
+        val fit = GuidedAlphabetFitter.fitForWifiPsk("PASSWORD")
+        assertEquals(AlphabetChoice.UPPERCASE, fit?.choice)
+    }
+
+    @Test
     fun fitForWifiPsk_digitsPassword() {
         val fit = GuidedAlphabetFitter.fitForWifiPsk("12345678")
         assertEquals(AlphabetChoice.DIGITS, fit?.choice)

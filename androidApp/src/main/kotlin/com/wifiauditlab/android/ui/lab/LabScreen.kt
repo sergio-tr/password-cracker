@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -893,26 +894,153 @@ private fun ConfigCard(
                     )
                 }
             }
+            val lengthPolicy = config.resolvedLengthPolicy()
+            Text(stringResource(R.string.lab_length_range_summary, lengthPolicy.minLength, lengthPolicy.maxLength))
+            OutlinedTextField(
+                value = config.lengthMin?.toString().orEmpty(),
+                onValueChange = { value ->
+                    if (enabled) {
+                        onChange(
+                            config.copy(
+                                lengthMin = value.trim().toIntOrNull()?.coerceIn(
+                                    LabSearchSpaceDefaults.SYNTHETIC_MIN_LENGTH,
+                                    LabSearchSpaceDefaults.HARD_UI_MAX_LENGTH,
+                                ),
+                            ),
+                        )
+                    }
+                },
+                label = { Text(stringResource(R.string.lab_length_min)) },
+                enabled = enabled,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = config.lengthMax?.toString().orEmpty(),
+                onValueChange = { value ->
+                    if (enabled) {
+                        onChange(
+                            config.copy(
+                                lengthMax = value.trim().toIntOrNull()?.coerceIn(
+                                    LabSearchSpaceDefaults.SYNTHETIC_MIN_LENGTH,
+                                    LabSearchSpaceDefaults.HARD_UI_MAX_LENGTH,
+                                ),
+                            ),
+                        )
+                    }
+                },
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.lab_length_max,
+                            LabSearchSpaceDefaults.SOFT_MAX_LENGTH,
+                        ),
+                    )
+                },
+                enabled = enabled,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.lab_secret_length, config.secretLength))
                 OutlinedButton(
-                    onClick = { if (enabled && config.secretLength > 1) onChange(config.copy(secretLength = config.secretLength - 1)) },
+                    onClick = {
+                        if (enabled && config.secretLength > 1) {
+                            onChange(
+                                config.copy(
+                                    secretLength = config.secretLength - 1,
+                                    lengthMin = null,
+                                    lengthMax = null,
+                                ),
+                            )
+                        }
+                    },
                     modifier = Modifier.padding(start = 8.dp),
                 ) { Text("-") }
                 OutlinedButton(
-                    onClick = { if (enabled && config.secretLength < 12) onChange(config.copy(secretLength = config.secretLength + 1)) },
+                    onClick = {
+                        if (enabled && config.secretLength < LabSearchSpaceDefaults.SOFT_MAX_LENGTH) {
+                            onChange(
+                                config.copy(
+                                    secretLength = config.secretLength + 1,
+                                    lengthMin = null,
+                                    lengthMax = null,
+                                ),
+                            )
+                        }
+                    },
                 ) { Text("+") }
             }
             OutlinedTextField(
                 value = config.maxAttempts?.toString().orEmpty(),
                 onValueChange = { value ->
-                    if (enabled) onChange(config.copy(maxAttempts = value.trim().toLongOrNull()))
+                    if (enabled) {
+                        onChange(
+                            config.copy(
+                                maxAttempts = value.trim().toLongOrNull(),
+                                runUntilCancelled = false,
+                            ),
+                        )
+                    }
                 },
                 label = { Text(stringResource(R.string.lab_attempt_limit)) },
-                enabled = enabled,
+                enabled = enabled && !config.runUntilCancelled,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            OutlinedTextField(
+                value = config.maxDurationSeconds?.toString().orEmpty(),
+                onValueChange = { value ->
+                    if (enabled) {
+                        onChange(
+                            config.copy(
+                                maxDurationSeconds = value.trim().toLongOrNull(),
+                                runUntilCancelled = false,
+                            ),
+                        )
+                    }
+                },
+                label = { Text(stringResource(R.string.lab_duration_limit)) },
+                enabled = enabled && !config.runUntilCancelled,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.lab_run_until_cancelled))
+                    Text(
+                        stringResource(R.string.lab_run_until_cancelled_help),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = config.runUntilCancelled,
+                    onCheckedChange = { checked ->
+                        if (enabled) {
+                            onChange(
+                                if (checked) {
+                                    config.copy(
+                                        runUntilCancelled = true,
+                                        maxAttempts = null,
+                                        maxDurationSeconds = null,
+                                    )
+                                } else {
+                                    config.copy(
+                                        runUntilCancelled = false,
+                                        maxAttempts = 5_000_000,
+                                        maxDurationSeconds = 30,
+                                    )
+                                },
+                            )
+                        }
+                    },
+                    enabled = enabled,
+                )
+            }
             Text(stringResource(R.string.lab_workers, config.workers))
             Text(
                 stringResource(R.string.lab_workers_help),

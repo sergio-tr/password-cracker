@@ -28,6 +28,9 @@ class Alphabet private constructor(val symbols: String) {
         val DIGITS: Alphabet = of("0123456789")
         val LOWERCASE: Alphabet = of("abcdefghijklmnopqrstuvwxyz")
         val UPPERCASE: Alphabet = of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+        /** Mixed-case letters only (a-z + A-Z), no digits. */
+        val LETTERS: Alphabet = of(LOWERCASE.symbols + UPPERCASE.symbols)
         val LOWER_ALPHANUMERIC: Alphabet = of(LOWERCASE.symbols + DIGITS.symbols)
         val ALPHANUMERIC: Alphabet = of(LOWERCASE.symbols + UPPERCASE.symbols + DIGITS.symbols)
 

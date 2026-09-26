@@ -93,7 +93,7 @@ class DefaultSearchFeasibilityAnalyzer : SearchFeasibilityAnalyzer {
                 limits.maxDuration?.let { add("≤ $it") }
                 limits.maxAttempts?.let { add("≤ ${it.toAbbreviatedString()} attempts") }
             }
-        return parts.joinToString(", ")
+        return parts.joinToString(", ").ifEmpty { "until cancelled / space exhausted" }
     }
 
     private companion object {

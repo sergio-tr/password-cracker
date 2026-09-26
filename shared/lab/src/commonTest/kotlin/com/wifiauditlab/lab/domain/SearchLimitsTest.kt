@@ -9,7 +9,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class SearchLimitsTest {
     @Test
-    fun unbounded_search_is_invalid() {
+    fun unbounded_search_is_invalid_by_default() {
         val violations = SearchLimits.validate(maxDuration = null, maxAttempts = null)
         assertTrue(SearchLimits.Violation.UNBOUNDED in violations)
     }
@@ -19,6 +19,25 @@ class SearchLimitsTest {
         assertFailsWith<IllegalArgumentException> {
             SearchLimits.of(maxDuration = null, maxAttempts = null)
         }
+    }
+
+    @Test
+    fun untilCancelled_allows_unbounded_explicitly() {
+        val limits = SearchLimits.untilCancelled()
+        assertEquals(null, limits.maxDuration)
+        assertEquals(null, limits.maxAttempts)
+        assertTrue(limits.runUntilCancelled)
+    }
+
+    @Test
+    fun untilCancelled_validate_has_no_unbounded_violation() {
+        val violations =
+            SearchLimits.validate(
+                maxDuration = null,
+                maxAttempts = null,
+                runUntilCancelled = true,
+            )
+        assertTrue(violations.isEmpty())
     }
 
     @Test
