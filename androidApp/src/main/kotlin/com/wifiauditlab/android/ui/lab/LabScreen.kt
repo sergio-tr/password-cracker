@@ -902,10 +902,11 @@ private fun ConfigCard(
                     if (enabled) {
                         onChange(
                             config.copy(
-                                lengthMin = value.trim().toIntOrNull()?.coerceIn(
-                                    LabSearchSpaceDefaults.SYNTHETIC_MIN_LENGTH,
-                                    LabSearchSpaceDefaults.HARD_UI_MAX_LENGTH,
-                                ),
+                                lengthMin =
+                                    value.trim().toIntOrNull()?.coerceIn(
+                                        LabSearchSpaceDefaults.SYNTHETIC_MIN_LENGTH,
+                                        LabSearchSpaceDefaults.HARD_UI_MAX_LENGTH,
+                                    ),
                             ),
                         )
                     }
@@ -921,10 +922,11 @@ private fun ConfigCard(
                     if (enabled) {
                         onChange(
                             config.copy(
-                                lengthMax = value.trim().toIntOrNull()?.coerceIn(
-                                    LabSearchSpaceDefaults.SYNTHETIC_MIN_LENGTH,
-                                    LabSearchSpaceDefaults.HARD_UI_MAX_LENGTH,
-                                ),
+                                lengthMax =
+                                    value.trim().toIntOrNull()?.coerceIn(
+                                        LabSearchSpaceDefaults.SYNTHETIC_MIN_LENGTH,
+                                        LabSearchSpaceDefaults.HARD_UI_MAX_LENGTH,
+                                    ),
                             ),
                         )
                     }
