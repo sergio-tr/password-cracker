@@ -1,5 +1,6 @@
 package com.wifiauditlab.android.ui.audit
 
+import com.wifiauditlab.android.ui.lab.PrototypeSecurityPreset
 import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultReport
@@ -7,7 +8,9 @@ import com.wifiauditlab.assessment.domain.audit.PasswordStrengthAssessment
 import com.wifiauditlab.assessment.domain.audit.toPasswordAuditInapplicableReason
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
+import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
+import com.wifiauditlab.assessment.domain.wifi.Ssid
 import com.wifiauditlab.assessment.domain.wifi.WifiBand
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
@@ -145,6 +148,29 @@ fun passwordAuditRequestFromNearby(item: NearbyItem): PasswordAuditRequest {
             ),
         savedNetworkId = item.savedNetworkId,
         observation = observation,
+    )
+}
+
+/**
+ * Quick Audit entry from Vault. Uses family → preset profile; no live [WifiObservation]
+ * (connection eligibility is skipped until a Nearby observation is available).
+ */
+fun passwordAuditRequestFromVault(network: SavedWifiNetwork): PasswordAuditRequest {
+    val preset =
+        PrototypeSecurityPreset.forFamily(network.securityFamily)
+            ?: PrototypeSecurityPreset.WPA2_PERSONAL
+    return PasswordAuditRequest(
+        network =
+            PasswordAuditNetworkContext(
+                displayName = network.alias,
+                ssid = Ssid(network.ssid),
+                bssid = network.knownBssids.firstOrNull(),
+                securityProfile = preset.toProfile(),
+                wifiStandard = null,
+                band = null,
+            ),
+        savedNetworkId = network.id,
+        observation = null,
     )
 }
 

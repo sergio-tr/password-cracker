@@ -196,6 +196,7 @@ class LabViewModel(
     private val searchDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val calibration: SearchCalibrationService? = null,
     private val networkContextStore: LabNetworkContextStore? = null,
+    private val passwordSeedStore: LabPasswordSeedStore? = null,
     private val availableProcessors: Int = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
 ) : ViewModel() {
     private val _state = MutableStateFlow(LabUiState())
@@ -273,6 +274,10 @@ class LabViewModel(
 
     private fun applyNetworkContextToPrototype(ctx: LabNetworkContext) {
         val prototype = localNetworkPrototypeFromContext(ctx)
+        val seededPassword =
+            passwordSeedStore?.consume()?.takeIf {
+                it.isNotEmpty() && prototype.securityFamily.supportsSharedPasswordDemo()
+            }
         _state.update {
             it.copy(
                 networkContext = ctx,
@@ -294,7 +299,11 @@ class LabViewModel(
             )
         }
         refreshPrototypeAssessment()
-        recomputePreview()
+        if (seededPassword != null) {
+            onTargetPasswordChanged(seededPassword)
+        } else {
+            recomputePreview()
+        }
     }
 
     fun setMode(mode: LabInteractionMode) {

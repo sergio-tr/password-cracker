@@ -32,9 +32,12 @@ import androidx.navigation.compose.rememberNavController
 import com.wifiauditlab.android.ui.audit.PasswordAuditScreen
 import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
 import com.wifiauditlab.android.ui.audit.passwordAuditRequestFromNearby
+import com.wifiauditlab.android.ui.audit.passwordAuditRequestFromVault
 import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
+import com.wifiauditlab.android.ui.lab.LabPasswordSeedStore
 import com.wifiauditlab.android.ui.lab.LabScreen
 import com.wifiauditlab.android.ui.lab.labNetworkContextFromNearby
+import com.wifiauditlab.android.ui.lab.labNetworkContextFromVault
 import com.wifiauditlab.android.ui.nearby.NearbyScreen
 import com.wifiauditlab.android.ui.onboarding.OnboardingScreen
 import com.wifiauditlab.android.ui.permissions.PermissionCenterScreen
@@ -90,6 +93,7 @@ private fun AppRoot() {
     val onboardingPreferences: OnboardingPreferences = koinInject()
     val analysisTarget: SecurityAnalysisTargetStore = koinInject()
     val labContext: LabNetworkContextStore = koinInject()
+    val labPasswordSeed: LabPasswordSeedStore = koinInject()
     val passwordAuditTarget: PasswordAuditTargetStore = koinInject()
     var showOnboarding by remember { mutableStateOf(!onboardingPreferences.isCompleted()) }
     val navController = rememberNavController()
@@ -158,6 +162,7 @@ private fun AppRoot() {
                         navController.navigate(Routes.SECURITY_ANALYSIS)
                     },
                     onOpenLab = { item, assessmentSummary ->
+                        labPasswordSeed.clear()
                         labContext.set(labNetworkContextFromNearby(item, assessmentSummary))
                         navController.navigate(Destination.Lab.route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -171,7 +176,28 @@ private fun AppRoot() {
                     },
                 )
             }
-            composable(Destination.Vault.route) { VaultScreen() }
+            composable(Destination.Vault.route) {
+                VaultScreen(
+                    onOpenLab = { network, revealedPassword ->
+                        labContext.set(labNetworkContextFromVault(network))
+                        if (!revealedPassword.isNullOrEmpty()) {
+                            labPasswordSeed.set(revealedPassword)
+                        } else {
+                            labPasswordSeed.clear()
+                        }
+                        navController.navigate(Destination.Lab.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onOpenPasswordAudit = { network ->
+                        labPasswordSeed.clear()
+                        passwordAuditTarget.set(passwordAuditRequestFromVault(network))
+                        navController.navigate(Routes.PASSWORD_AUDIT)
+                    },
+                )
+            }
             composable(Destination.Lab.route) { LabScreen() }
             composable(Destination.Settings.route) {
                 SettingsScreen(

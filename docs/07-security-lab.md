@@ -38,6 +38,13 @@ Modos de verificación:
 - **Nearby → Lab (LAB-05):** al abrir Lab desde una red cercana, el prototipo local
   se rellena con SSID/alias/seguridad; el usuario introduce la contraseña conocida.
   CTAs Nearby: «Probar mi contraseña (solo local)» / «Probar en laboratorio (local)».
+- **Vault → Lab / Audit (LAB-06):** desde el detalle de una red guardada, CTA primario
+  «Probar en laboratorio (local)» precarga el prototipo desde alias/SSID/familia
+  (`labNetworkContextFromVault` → preset). Si la contraseña está **revelada** en ese
+  momento, se copia una sola vez al Lab (`LabPasswordSeedStore`, consume-on-apply).
+  CTA secundario «Auditar contraseña (solo local)» cuando hay secreto y la familia
+  admite demo shared-password; usa Vault diferido vía `savedNetworkId` (sin observation
+  live). Sigue siendo **solo local**.
 - **FIX-09 explainability (Partial, manual pending):** en fase Ready, tarjeta con
   perfil PSK auth-aware (`searchPlanSummary` en `LabUiState`), resumen novice y
   etapas expandibles «Cómo busca» (strings ES/EN; sin IDs internos ni contraseña).

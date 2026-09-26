@@ -21,6 +21,7 @@ import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.SavedNetworkListSort
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
+import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
@@ -252,5 +253,46 @@ class VaultComposeTest {
         composeTestRule.onNodeWithText(deleteConfirm, useUnmergedTree = true).performClick()
         composeTestRule.waitUntil(5_000) { repo.networks.value.isEmpty() }
         waitForText(activity.getString(R.string.vault_empty))
+    }
+
+    @Test
+    fun detail_showsLabAndAuditCtas_forPersonalWithSecret() {
+        val repo = FakeSavedNetworkRepository()
+        val vault = FakeSecretVault()
+        seed(repo, vault, "LabEntry", "LAB_ENTRY_SSID", withSecret = true)
+
+        var openedLab: SavedWifiNetwork? = null
+        var openedAudit: SavedWifiNetwork? = null
+        val vm = vaultViewModel(repo, vault)
+        composeTestRule.setContent {
+            WifiAuditLabTheme {
+                VaultScreen(
+                    viewModel = vm,
+                    onOpenLab = { network, _ -> openedLab = network },
+                    onOpenPasswordAudit = { network -> openedAudit = network },
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+        waitForText("LabEntry")
+        composeTestRule.onNodeWithText("LabEntry").performClick()
+        waitForText(activity.getString(R.string.vault_password_section))
+
+        val openLab = activity.getString(R.string.vault_open_lab)
+        composeTestRule.onNodeWithText(openLab).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(openLab).performClick()
+        composeTestRule.waitForIdle()
+        assertTrue(openedLab?.alias == "LabEntry")
+
+        // Re-open detail for audit CTA (sheet dismissed after lab click may keep detail)
+        if (vm.detail.value == null) {
+            composeTestRule.onNodeWithText("LabEntry").performClick()
+            waitForText(activity.getString(R.string.vault_password_section))
+        }
+        val openAudit = activity.getString(R.string.vault_open_audit)
+        composeTestRule.onNodeWithText(openAudit).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(openAudit).performClick()
+        composeTestRule.waitForIdle()
+        assertTrue(openedAudit?.alias == "LabEntry")
     }
 }
