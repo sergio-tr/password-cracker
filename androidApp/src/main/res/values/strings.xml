@@ -479,6 +479,10 @@
     <string name="vault_sec_passpoint">Passpoint</string>
     <string name="vault_sec_dpp">DPP</string>
     <string name="vault_sec_unknown">Desconocida</string>
+    <string name="vault_cd_open_lab">Probar en laboratorio</string>
+    <string name="vault_open_lab">Probar en laboratorio (local)</string>
+    <string name="vault_open_audit">Auditar contraseña (solo local)</string>
+    <string name="vault_lab_seed_password_hint">Si la contraseña está visible, se copiará al laboratorio una sola vez (solo local).</string>
 
     <!-- Nearby -->
     <string name="nearby_title">Redes cercanas</string>

@@ -4,6 +4,8 @@ import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.security.SecurityRating
+import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
+import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.Bssid
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.assessment.domain.wifi.Ssid
@@ -175,6 +177,7 @@ class LabViewModelTest {
         estimator: SearchPerformanceEstimator = FixedThroughputEstimator(),
         planner: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
         networkContextStore: LabNetworkContextStore? = null,
+        passwordSeedStore: LabPasswordSeedStore? = null,
     ) = LabViewModel(
         engine,
         optimizer,
@@ -184,6 +187,7 @@ class LabViewModelTest {
         planner = planner,
         searchDispatcher = dispatcher,
         networkContextStore = networkContextStore,
+        passwordSeedStore = passwordSeedStore,
     )
 
     private fun LabViewModel.preparePrototype(
@@ -246,6 +250,43 @@ class LabViewModelTest {
             assertEquals(LabSecretMode.LocalPrototype, vm.state.value.secretMode)
             assertEquals("", vm.state.value.targetPassword)
             assertEquals(GuidedFocusTarget.Password, vm.state.value.guidedFocusTarget)
+        }
+
+    @Test
+    fun refreshNetworkContext_appliesOneShotPasswordSeedFromVault() =
+        runTest(dispatcher) {
+            val store = LabNetworkContextStore()
+            store.set(
+                labNetworkContextFromVault(
+                    SavedWifiNetwork(
+                        id = SavedNetworkId("v1"),
+                        alias = "VaultCasa",
+                        ssid = "VAULT_SSID",
+                        securityFamily = SecurityFamily.WPA2_PERSONAL,
+                        knownBssids = emptySet(),
+                        locationLabel = null,
+                        geoLocation = null,
+                        secretId = null,
+                        notes = null,
+                        createdAtEpochMillis = 0L,
+                        lastSeenAtEpochMillis = null,
+                    ),
+                ),
+            )
+            val seedStore = LabPasswordSeedStore()
+            seedStore.set(PSK_DEMO_PASSWORD)
+            val vm =
+                viewModel(
+                    ScriptedEngine(emptyList()),
+                    networkContextStore = store,
+                    passwordSeedStore = seedStore,
+                )
+            advanceUntilIdle()
+            assertEquals("VaultCasa", vm.state.value.prototype.displayName)
+            assertEquals("VAULT_SSID", vm.state.value.prototype.ssid)
+            assertEquals(PSK_DEMO_PASSWORD, vm.state.value.targetPassword)
+            assertNull(seedStore.consume())
+            assertTrue(vm.state.value.prototypeSeededFromNetwork)
         }
 
     @Test

@@ -29,6 +29,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). **LAB search-space:** letras Aa, rango min/max (tope suave 16), límites flexibles + hasta DETENER. |
 | Lab desde red cercana | **Partial** (UX-02 + FIX-03/04 + LAB-05): CTA local + contexto; prototipo **precargado** desde Nearby (SSID/seguridad); password manual; CI green; manual pendiente usuario. |
+| Lab / Audit desde Vault | **Partial** (LAB-06): CTA Lab primario (+ Audit si hay secreto PSK/WEP); contexto desde familia Vault; seed one-shot de contraseña **solo si está revelada**; sin auth a AP. |
 | Modo guiado del Lab | **Partial** (FIX-04 + FIX-07/08/12): bucle Crear y probar → Iniciar → resultado; familia → perfil PSK/WEP auth-aware; Advanced LocalPrototype usa el mismo planner; PSK ≥ 8; OPEN/Enterprise sin CTA PSK; regresión en JVM + Compose; manual pendiente usuario. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
 | Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |

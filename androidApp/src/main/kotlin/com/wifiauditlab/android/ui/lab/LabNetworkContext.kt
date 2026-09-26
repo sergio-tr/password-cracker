@@ -2,6 +2,7 @@ package com.wifiauditlab.android.ui.lab
 
 import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.android.ui.security.familyLabelRes
+import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.assessment.domain.wifi.WifiBand
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
@@ -60,6 +61,22 @@ fun labNetworkContextFromNearby(
         wifiStandard = observation.standard.takeUnless { it == WifiStandard.UNKNOWN },
         band = observation.channel.band.takeUnless { it == WifiBand.UNKNOWN },
         assessmentSummary = assessmentSummary,
+    )
+}
+
+/** Lab context from a Vault saved network (family → preset profile; no live observation). */
+fun labNetworkContextFromVault(network: SavedWifiNetwork): LabNetworkContext {
+    val preset =
+        PrototypeSecurityPreset.forFamily(network.securityFamily)
+            ?: PrototypeSecurityPreset.WPA2_PERSONAL
+    return LabNetworkContext(
+        displayName = network.alias,
+        ssidLabel = network.ssid,
+        securityFamily = network.securityFamily,
+        securityProfile = preset.toProfile(),
+        wifiStandard = null,
+        band = null,
+        assessmentSummary = null,
     )
 }
 

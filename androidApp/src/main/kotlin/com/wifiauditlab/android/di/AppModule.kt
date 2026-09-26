@@ -11,6 +11,7 @@ import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
 import com.wifiauditlab.android.ui.audit.PasswordAuditViewModel
 import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
+import com.wifiauditlab.android.ui.lab.LabPasswordSeedStore
 import com.wifiauditlab.android.ui.lab.LabViewModel
 import com.wifiauditlab.android.ui.nearby.NearbyViewModel
 import com.wifiauditlab.android.ui.onboarding.OnboardingViewModel
@@ -109,6 +110,7 @@ val appModule =
         single<OnboardingPreferences> { SharedPreferencesOnboardingPreferences(androidContext()) }
         single { SecurityAnalysisTargetStore() }
         single { LabNetworkContextStore() }
+        single { LabPasswordSeedStore() }
         single { PasswordAuditTargetStore() }
         single<AutomaticPasswordAuditPlanner> { DefaultAutomaticPasswordAuditPlanner() }
         single<SecretStrengthAnalyzer> { HeuristicSecretStrengthAnalyzer() }
@@ -188,6 +190,7 @@ val appModule =
                 planner = get(),
                 calibration = get(),
                 networkContextStore = get(),
+                passwordSeedStore = get(),
             )
         }
         viewModel { OnboardingViewModel(get()) }
