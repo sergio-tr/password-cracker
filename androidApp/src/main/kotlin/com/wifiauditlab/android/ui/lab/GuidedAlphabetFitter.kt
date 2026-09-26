@@ -56,6 +56,12 @@ object GuidedAlphabetFitter {
         if (password.all { Alphabet.LOWERCASE.symbols.contains(it) }) {
             return FitResult(AlphabetChoice.LOWERCASE)
         }
+        if (password.all { Alphabet.UPPERCASE.symbols.contains(it) }) {
+            return FitResult(AlphabetChoice.UPPERCASE)
+        }
+        if (password.all { Alphabet.LETTERS.symbols.contains(it) }) {
+            return FitResult(AlphabetChoice.LETTERS)
+        }
         if (password.all { Alphabet.LOWER_ALPHANUMERIC.symbols.contains(it) }) {
             return FitResult(AlphabetChoice.LOWER_ALPHANUMERIC)
         }
@@ -72,6 +78,12 @@ object GuidedAlphabetFitter {
         }
         if (password.all { Alphabet.LOWERCASE.symbols.contains(it) }) {
             return FitResult(AlphabetChoice.LOWERCASE)
+        }
+        if (password.all { Alphabet.UPPERCASE.symbols.contains(it) }) {
+            return FitResult(AlphabetChoice.UPPERCASE)
+        }
+        if (password.all { Alphabet.LETTERS.symbols.contains(it) }) {
+            return FitResult(AlphabetChoice.LETTERS)
         }
         if (password.all { Alphabet.LOWER_ALPHANUMERIC.symbols.contains(it) }) {
             return FitResult(AlphabetChoice.LOWER_ALPHANUMERIC)

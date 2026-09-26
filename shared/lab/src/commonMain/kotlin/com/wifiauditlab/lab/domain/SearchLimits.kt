@@ -4,8 +4,11 @@ import com.wifiauditlab.core.math.CombinationCount
 import kotlin.time.Duration
 
 /**
- * Hard bounds that every search must respect. A search with neither a duration
- * nor an attempt cap is rejected: unbounded runs can never be started by accident.
+ * Hard bounds that every search must respect.
+ *
+ * By default a search with neither a duration nor an attempt cap is rejected so
+ * unbounded runs cannot start by accident. Explicit [untilCancelled] opts into
+ * running until Found, candidate-space exhaustion, or cooperative STOP.
  *
  * The primary constructor enforces this invariant; [validate] lets the UI show a
  * reason before attempting construction.
@@ -15,9 +18,11 @@ data class SearchLimits(
     val maxAttempts: CombinationCount?,
     val progressInterval: Duration,
     val batchSize: Int,
+    val runUntilCancelled: Boolean = false,
 ) {
     init {
-        val violations = validate(maxDuration, maxAttempts, progressInterval, batchSize)
+        val violations =
+            validate(maxDuration, maxAttempts, progressInterval, batchSize, runUntilCancelled)
         require(violations.isEmpty()) { "invalid SearchLimits: " + violations.joinToString { it.message } }
     }
 
@@ -38,9 +43,12 @@ data class SearchLimits(
             maxAttempts: CombinationCount? = null,
             progressInterval: Duration = DEFAULT_PROGRESS_INTERVAL,
             batchSize: Int = DEFAULT_BATCH_SIZE,
+            runUntilCancelled: Boolean = false,
         ): List<Violation> =
             buildList {
-                if (maxDuration == null && maxAttempts == null) add(Violation.UNBOUNDED)
+                if (!runUntilCancelled && maxDuration == null && maxAttempts == null) {
+                    add(Violation.UNBOUNDED)
+                }
                 if (maxDuration != null && maxDuration <= Duration.ZERO) add(Violation.NON_POSITIVE_DURATION)
                 if (maxAttempts != null && maxAttempts.isZero) add(Violation.NON_POSITIVE_ATTEMPTS)
                 if (progressInterval <= Duration.ZERO) add(Violation.NON_POSITIVE_PROGRESS_INTERVAL)
@@ -54,5 +62,21 @@ data class SearchLimits(
             progressInterval: Duration = DEFAULT_PROGRESS_INTERVAL,
             batchSize: Int = DEFAULT_BATCH_SIZE,
         ): SearchLimits = SearchLimits(maxDuration, maxAttempts, progressInterval, batchSize)
+
+        /**
+         * Explicit unbounded run: no attempt/duration cap. Stops on Found, space
+         * exhaustion, or cooperative cancellation only.
+         */
+        fun untilCancelled(
+            progressInterval: Duration = DEFAULT_PROGRESS_INTERVAL,
+            batchSize: Int = DEFAULT_BATCH_SIZE,
+        ): SearchLimits =
+            SearchLimits(
+                maxDuration = null,
+                maxAttempts = null,
+                progressInterval = progressInterval,
+                batchSize = batchSize,
+                runUntilCancelled = true,
+            )
     }
 }

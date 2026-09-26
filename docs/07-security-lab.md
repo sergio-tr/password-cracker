@@ -30,6 +30,11 @@ Modos de verificación:
   reconstruir todo el experimento. La UI separa explícitamente **evaluación de
   configuración de red** y **resistencia de contraseña** (resultado de búsqueda); no
   implica que WPA3 haga la misma contraseña menos predecible para un humano.
+- **Lab Advanced search-space (LAB):** chips de alfabeto incluyen mayúsculas y
+  **Letras (a-z, A-Z)** sin dígitos; rango de longitud min/max opcional (tope suave 16,
+  UI hard 24); límites de intentos y/o duración independientes, o **Hasta DETENER**
+  (`SearchLimits.untilCancelled`). Sigue siendo **solo local** (known-password o
+  RandomHidden sintético) — nunca autentica contra el AP.
 - **FIX-09 explainability (Partial, manual pending):** en fase Ready, tarjeta con
   perfil PSK auth-aware (`searchPlanSummary` en `LabUiState`), resumen novice y
   etapas expandibles «Cómo busca» (strings ES/EN; sin IDs internos ni contraseña).

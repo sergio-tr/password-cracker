@@ -360,7 +360,13 @@
     <string name="lab_challenge">Reto</string>
     <string name="lab_strategy">Estrategia: %1$s</string>
     <string name="lab_secret_length">Longitud del secreto: %1$d</string>
-    <string name="lab_attempt_limit">Límite de intentos</string>
+    <string name="lab_length_min">Longitud mínima (vacío = auto)</string>
+    <string name="lab_length_max">Longitud máxima (vacío = auto, tope %1$d)</string>
+    <string name="lab_length_range_summary">Longitudes: %1$d–%2$d</string>
+    <string name="lab_attempt_limit">Límite de intentos (vacío = sin tope)</string>
+    <string name="lab_duration_limit">Límite de tiempo en segundos (vacío = sin tope)</string>
+    <string name="lab_run_until_cancelled">Hasta DETENER (sin límites de intentos ni tiempo)</string>
+    <string name="lab_run_until_cancelled_help">Solo local. La búsqueda continúa hasta encontrar, agotar el espacio o pulsar DETENER.</string>
     <string name="lab_workers">Paralelismo: %1$d (1 es la referencia)</string>
     <string name="lab_workers_help">Cuántas búsquedas simultáneas ejecuta el dispositivo. 1 es la referencia para comparar.</string>
     <string name="lab_time_limit">Límite de tiempo (s)</string>
@@ -382,12 +388,14 @@
     <string name="lab_outcome_limit">LÍMITE ALCANZADO</string>
     <string name="lab_outcome_cancelled">CANCELADO</string>
     <string name="lab_outcome_failed">ERROR</string>
-    <string name="lab_err_limits_required">Configura al menos un límite de intentos o de tiempo.</string>
+    <string name="lab_err_limits_required">Configura un límite de intentos, de tiempo, o marca «Hasta DETENER».</string>
     <string name="lab_err_no_limit">Sin límite (inválido)</string>
     <string name="lab_limits_attempts">%1$s intentos</string>
     <string name="lab_limits_seconds">%1$s s</string>
     <string name="lab_alphabet_digits">Dígitos (0-9)</string>
     <string name="lab_alphabet_lowercase">Minúsculas (a-z)</string>
+    <string name="lab_alphabet_uppercase">Mayúsculas (A-Z)</string>
+    <string name="lab_alphabet_letters">Letras (a-z, A-Z)</string>
     <string name="lab_alphabet_lower_alphanumeric">Alfanumérico (a-z, 0-9)</string>
     <string name="lab_alphabet_alphanumeric">Alfanumérico (a-z, A-Z, 0-9)</string>
     <string name="lab_strategy_uniform">Uniforme</string>

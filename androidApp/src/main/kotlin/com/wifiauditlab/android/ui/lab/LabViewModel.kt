@@ -63,6 +63,8 @@ enum class AlphabetChoice(
 ) {
     DIGITS(R.string.lab_alphabet_digits, Alphabet.DIGITS),
     LOWERCASE(R.string.lab_alphabet_lowercase, Alphabet.LOWERCASE),
+    UPPERCASE(R.string.lab_alphabet_uppercase, Alphabet.UPPERCASE),
+    LETTERS(R.string.lab_alphabet_letters, Alphabet.LETTERS),
     LOWER_ALPHANUMERIC(R.string.lab_alphabet_lower_alphanumeric, Alphabet.LOWER_ALPHANUMERIC),
     ALPHANUMERIC(R.string.lab_alphabet_alphanumeric, Alphabet.ALPHANUMERIC),
 }
@@ -82,16 +84,51 @@ data class LabConfig(
     val alphabet: AlphabetChoice = AlphabetChoice.DIGITS,
     val customAlphabet: Alphabet? = null,
     val strategy: StrategyChoice = StrategyChoice.LENGTH,
+    /** Exact length when [lengthMin] and [lengthMax] are both null (legacy single-size mode). */
     val secretLength: Int = 4,
+    /**
+     * Inclusive lower bound. Null = auto (protocol minimum when [lengthMax] is set,
+     * otherwise falls back to [secretLength] for single-size mode).
+     */
+    val lengthMin: Int? = null,
+    /**
+     * Inclusive upper bound. Null = auto ([LabSearchSpaceDefaults.SOFT_MAX_LENGTH] when
+     * [lengthMin] is set, otherwise [secretLength] for single-size mode).
+     */
+    val lengthMax: Int? = null,
     val maxAttempts: Long? = 5_000_000,
     val maxDurationSeconds: Long? = 30,
+    /** When true, both attempt and duration caps may be null — run until STOP / Found / space end. */
+    val runUntilCancelled: Boolean = false,
     val workers: Int = 1,
     val seed: Long? = 1,
 ) {
     fun resolvedAlphabet(): Alphabet = customAlphabet ?: alphabet.alphabet
 
     val hasActiveLimits: Boolean
-        get() = maxAttempts != null || maxDurationSeconds != null
+        get() = runUntilCancelled || maxAttempts != null || maxDurationSeconds != null
+
+    /**
+     * Resolves the candidate length range for synthetic / RandomHidden searches.
+     * Auth-aware LocalPrototype still uses the progressive planner; this policy
+     * clips display and RandomHidden spaces.
+     */
+    fun resolvedLengthPolicy(
+        protocolMin: Int = LabSearchSpaceDefaults.SYNTHETIC_MIN_LENGTH,
+        softMax: Int = LabSearchSpaceDefaults.SOFT_MAX_LENGTH,
+    ): LengthPolicy {
+        val uiMax = softMax.coerceAtMost(LabSearchSpaceDefaults.HARD_UI_MAX_LENGTH)
+        val (rawMin, rawMax) =
+            when {
+                lengthMin == null && lengthMax == null -> secretLength to secretLength
+                lengthMin == null && lengthMax != null -> protocolMin to lengthMax
+                lengthMin != null && lengthMax == null -> lengthMin to softMax
+                else -> lengthMin!! to lengthMax!!
+            }
+        val min = rawMin.coerceAtLeast(protocolMin).coerceAtMost(uiMax)
+        val max = rawMax.coerceAtLeast(min).coerceAtMost(uiMax)
+        return LengthPolicy(min, max)
+    }
 }
 
 data class LabUiState(
@@ -122,7 +159,7 @@ data class LabUiState(
     val searchStagesExpanded: Boolean = false,
 ) {
     val effectiveSecretLength: Int
-        get() = config.secretLength
+        get() = config.resolvedLengthPolicy().maxLength
 
     val isGuidedPrototypeFlow: Boolean
         get() = mode == LabInteractionMode.Guided && secretMode == LabSecretMode.LocalPrototype
@@ -470,7 +507,13 @@ class LabViewModel(
         val progressive =
             runCatching {
                 progressiveSyntheticBuilder.build(
-                    maxAttempts = snapshot.config.maxAttempts?.let { CombinationCount.of(it) },
+                    maxAttempts =
+                        snapshot.config.maxAttempts?.let { CombinationCount.of(it) }
+                            ?: if (snapshot.config.runUntilCancelled) {
+                                CombinationCount.of(LabSearchSpaceDefaults.UNBOUNDED_STAGE_CAPACITY)
+                            } else {
+                                null
+                            },
                     maxDuration = snapshot.config.maxDurationSeconds?.seconds,
                     calibratedThroughput = calibratedThroughput,
                 )
@@ -486,11 +529,19 @@ class LabViewModel(
             }
             return
         }
+        val previewLimits =
+            if (snapshot.config.runUntilCancelled &&
+                snapshot.config.maxAttempts == null &&
+                snapshot.config.maxDurationSeconds == null
+            ) {
+                SearchLimits.untilCancelled()
+            } else {
+                progressive.searchLimits
+            }
         _state.update {
             it.copy(
                 estimatedCombinations = progressive.searchPlan.searchSpace,
-                feasibility =
-                    analyzer.analyze(progressive.searchPlan, progressive.searchLimits, estimator),
+                feasibility = analyzer.analyze(progressive.searchPlan, previewLimits, estimator),
                 searchPlanSummary = null,
                 configErrorRes = validateForStart(snapshot.config, snapshot),
             )
@@ -582,11 +633,26 @@ class LabViewModel(
             if (usesSyntheticProgressive(snapshot)) {
                 val progressive =
                     progressiveSyntheticBuilder.build(
-                        maxAttempts = snapshot.config.maxAttempts?.let { CombinationCount.of(it) },
+                        maxAttempts =
+                            snapshot.config.maxAttempts?.let { CombinationCount.of(it) }
+                                ?: if (snapshot.config.runUntilCancelled) {
+                                    CombinationCount.of(LabSearchSpaceDefaults.UNBOUNDED_STAGE_CAPACITY)
+                                } else {
+                                    null
+                                },
                         maxDuration = snapshot.config.maxDurationSeconds?.seconds,
                         calibratedThroughput = calibratedThroughput,
                     )
-                progressive.searchPlan to progressive.searchLimits
+                val engineLimits =
+                    if (snapshot.config.runUntilCancelled &&
+                        snapshot.config.maxAttempts == null &&
+                        snapshot.config.maxDurationSeconds == null
+                    ) {
+                        SearchLimits.untilCancelled()
+                    } else {
+                        progressive.searchLimits
+                    }
+                progressive.searchPlan to engineLimits
             } else {
                 optimizer.optimize(challenge, snapshot.config.strategy.id) to buildLimits(snapshot.config)
             }
@@ -618,7 +684,16 @@ class LabViewModel(
                         seed = auditPlan.searchPlan.seed,
                     )
                 applyEngineSelection(auditPlan)
-                Triple(ch, auditPlan.searchPlan, auditPlan.searchLimits)
+                val engineLimits =
+                    if (snapshot.config.runUntilCancelled &&
+                        snapshot.config.maxAttempts == null &&
+                        snapshot.config.maxDurationSeconds == null
+                    ) {
+                        SearchLimits.untilCancelled()
+                    } else {
+                        auditPlan.searchLimits
+                    }
+                Triple(ch, auditPlan.searchPlan, engineLimits)
             } else {
                 // OPEN / Enterprise LocalPrototype: no shared-password search space.
                 val blindPolicy = blindPolicyFromConfig(snapshot.config, snapshot)
@@ -739,7 +814,7 @@ class LabViewModel(
     private fun buildSyntheticPreviewChallenge(state: LabUiState): LabChallenge =
         LabChallenge.withHiddenSecret(
             alphabet = state.config.resolvedAlphabet(),
-            lengthPolicy = LengthPolicy.exactly(state.config.secretLength),
+            lengthPolicy = state.config.resolvedLengthPolicy(),
             seed = state.config.seed,
         )
 
@@ -762,7 +837,7 @@ class LabViewModel(
         }
         return LabSecretPolicy(
             alphabet = config.resolvedAlphabet(),
-            length = LengthPolicy(1, config.secretLength),
+            length = config.resolvedLengthPolicy(),
         )
     }
 
@@ -779,11 +854,18 @@ class LabViewModel(
         state.secretMode == LabSecretMode.RandomHidden &&
             state.mode == LabInteractionMode.Guided
 
-    private fun prototypeBudget(config: LabConfig): PasswordAuditBudget =
-        PasswordAuditBudget(
+    private fun prototypeBudget(config: LabConfig): PasswordAuditBudget {
+        if (config.runUntilCancelled && config.maxAttempts == null && config.maxDurationSeconds == null) {
+            // Stage weights need a finite capacity; the engine run uses [SearchLimits.untilCancelled].
+            return PasswordAuditBudget(
+                maxAttempts = CombinationCount.of(LabSearchSpaceDefaults.UNBOUNDED_STAGE_CAPACITY),
+            )
+        }
+        return PasswordAuditBudget(
             maxDuration = config.maxDurationSeconds?.seconds,
             maxAttempts = config.maxAttempts?.let { CombinationCount.of(it) },
         )
+    }
 
     private fun applyEngineSelection(plan: PasswordAuditPlan) {
         val aware = engine as? WorkerAwareLabSearchEngine ?: return
@@ -873,9 +955,13 @@ class LabViewModel(
         )
     }
 
-    private fun buildLimits(config: LabConfig): SearchLimits =
-        SearchLimits.of(
+    private fun buildLimits(config: LabConfig): SearchLimits {
+        if (config.runUntilCancelled && config.maxAttempts == null && config.maxDurationSeconds == null) {
+            return SearchLimits.untilCancelled()
+        }
+        return SearchLimits.of(
             maxDuration = config.maxDurationSeconds?.seconds,
             maxAttempts = config.maxAttempts?.let { CombinationCount.of(it) },
         )
+    }
 }
