@@ -63,6 +63,25 @@ fun labNetworkContextFromNearby(
     )
 }
 
+/** Builds a Lab [LocalNetworkPrototype] from Nearby context (identity + security only). */
+fun localNetworkPrototypeFromContext(context: LabNetworkContext): LocalNetworkPrototype {
+    val matched = PrototypeSecurityPreset.matching(context.securityProfile)
+    return LocalNetworkPrototype(
+        displayName = context.displayName,
+        ssid = context.ssidLabel.trim().removeSurrounding("\""),
+        securityProfile =
+            matched?.toProfile(context.securityProfile.managementFrameProtection)
+                ?: context.securityProfile,
+        band = context.band,
+        standard = context.wifiStandard,
+    )
+}
+
+/** Stable key so Lab only re-seeds when the Nearby selection changes. */
+fun LabNetworkContext.seedKey(): String =
+    listOf(ssidLabel, securityFamily.name, displayName, securityProfile.rawCapabilities.orEmpty())
+        .joinToString("|")
+
 fun standardLabel(standard: WifiStandard): String =
     when (standard) {
         WifiStandard.LEGACY -> "Legacy"

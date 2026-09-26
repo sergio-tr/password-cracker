@@ -54,7 +54,7 @@
     <string name="audit_evidence_measured">Medido</string>
     <string name="audit_evidence_estimated">Estimado</string>
     <string name="audit_evidence_modelled">Modelado</string>
-    <string name="audit_cta_nearby">Auditar contraseña</string>
+    <string name="audit_cta_nearby">Probar mi contraseña (solo local)</string>
     <string name="audit_metric_attempts">Intentos</string>
     <string name="audit_metric_time">Tiempo</string>
     <string name="audit_metric_speed">Velocidad</string>
@@ -265,7 +265,9 @@
     <string name="lab_cd_network_context">Contexto de red del laboratorio</string>
     <string name="lab_heading">Laboratorio</string>
     <string name="lab_simulation_local">Simulación local</string>
-    <string name="lab_simulation_local_body">El experimento utiliza la configuración de esta red como contexto, pero no realiza intentos de conexión contra ella.</string>
+    <string name="lab_simulation_local_body">Usa la configuración de esta red como contexto. La búsqueda de contraseña es solo en este dispositivo: no se autentica ni envía candidatos al router.</string>
+    <string name="lab_network_seeded_hint">Prototipo rellenado con SSID y seguridad de la red. Introduce la contraseña que conoces para medirla en local.</string>
+    <string name="lab_apply_network_to_prototype">Usar esta red como prototipo</string>
     <string name="lab_cd_guided_mode">Modo guiado del laboratorio</string>
     <string name="lab_guided_auto_explanation">La aplicación elige automáticamente la estrategia y límites adecuados para una demostración sintética.</string>
     <string name="lab_estimation">Estimación: %1$s</string>
@@ -505,7 +507,7 @@
     <string name="nearby_ambiguous_match">Coincidencia ambigua</string>
     <string name="nearby_not_saved">No guardada</string>
     <string name="nearby_cd_open_lab">Probar en laboratorio</string>
-    <string name="nearby_open_lab">Probar en laboratorio</string>
+    <string name="nearby_open_lab">Probar en laboratorio (local)</string>
     <string name="nearby_analyze_security">Analizar seguridad</string>
     <string name="nearby_hide_advanced">Ocultar datos avanzados</string>
     <string name="nearby_show_advanced">Mostrar datos avanzados</string>
