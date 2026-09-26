@@ -62,6 +62,27 @@ class LabNetworkContextTest {
     }
 
     @Test
+    fun prototypeFromContext_copiesSsidFamilyAndBand() {
+        val context =
+            labNetworkContextFromNearby(
+                NearbyItem(
+                    observation = observation(ssid = "LabNet", family = SecurityFamily.WPA2_PERSONAL),
+                    alias = "Casa",
+                    savedNetworkId = null,
+                    isKnown = false,
+                    ambiguous = false,
+                ),
+            )
+        val prototype = localNetworkPrototypeFromContext(context)
+        assertEquals("Casa", prototype.displayName)
+        assertEquals("LabNet", prototype.ssid)
+        assertEquals(SecurityFamily.WPA2_PERSONAL, prototype.securityFamily)
+        assertEquals(WifiBand.GHZ_2_4, prototype.band)
+        assertEquals(WifiStandard.WIFI_5, prototype.standard)
+        assertTrue(context.seedKey().contains("LabNet"))
+    }
+
+    @Test
     fun store_setAndClear() {
         val store = LabNetworkContextStore()
         assertNull(store.current)

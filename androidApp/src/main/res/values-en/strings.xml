@@ -53,7 +53,7 @@
     <string name="audit_evidence_measured">Measured</string>
     <string name="audit_evidence_estimated">Estimated</string>
     <string name="audit_evidence_modelled">Modelled</string>
-    <string name="audit_cta_nearby">Audit password</string>
+    <string name="audit_cta_nearby">Test my password (local only)</string>
     <string name="audit_metric_attempts">Attempts</string>
     <string name="audit_metric_time">Time</string>
     <string name="audit_metric_speed">Speed</string>
@@ -262,7 +262,9 @@
     <string name="lab_cd_network_context">Lab network context</string>
     <string name="lab_heading">Lab</string>
     <string name="lab_simulation_local">Local simulation</string>
-    <string name="lab_simulation_local_body">The experiment uses this network\'s configuration as context, but does not attempt to connect to it.</string>
+    <string name="lab_simulation_local_body">Uses this network\'s configuration as context. Password search stays on this device only — it never authenticates or sends candidates to the router.</string>
+    <string name="lab_network_seeded_hint">Prototype filled with this network\'s SSID and security. Enter the password you know to measure it locally.</string>
+    <string name="lab_apply_network_to_prototype">Use this network as prototype</string>
     <string name="lab_cd_guided_mode">Lab guided mode</string>
     <string name="lab_guided_auto_explanation">The app automatically picks a strategy and suitable limits for a synthetic demo.</string>
     <string name="lab_estimation">Estimate: %1$s</string>
@@ -500,7 +502,7 @@
     <string name="nearby_ambiguous_match">Ambiguous match</string>
     <string name="nearby_not_saved">Not saved</string>
     <string name="nearby_cd_open_lab">Try in lab</string>
-    <string name="nearby_open_lab">Try in lab</string>
+    <string name="nearby_open_lab">Try in lab (local)</string>
     <string name="nearby_analyze_security">Analyze security</string>
     <string name="nearby_hide_advanced">Hide advanced data</string>
     <string name="nearby_show_advanced">Show advanced data</string>

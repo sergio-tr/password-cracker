@@ -35,6 +35,9 @@ Modos de verificación:
   UI hard 24); límites de intentos y/o duración independientes, o **Hasta DETENER**
   (`SearchLimits.untilCancelled`). Sigue siendo **solo local** (known-password o
   RandomHidden sintético) — nunca autentica contra el AP.
+- **Nearby → Lab (LAB-05):** al abrir Lab desde una red cercana, el prototipo local
+  se rellena con SSID/alias/seguridad; el usuario introduce la contraseña conocida.
+  CTAs Nearby: «Probar mi contraseña (solo local)» / «Probar en laboratorio (local)».
 - **FIX-09 explainability (Partial, manual pending):** en fase Ready, tarjeta con
   perfil PSK auth-aware (`searchPlanSummary` en `LabUiState`), resumen novice y
   etapas expandibles «Cómo busca» (strings ES/EN; sin IDs internos ni contraseña).

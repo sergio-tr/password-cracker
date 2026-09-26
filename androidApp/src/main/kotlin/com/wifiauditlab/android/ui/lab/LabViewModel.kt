@@ -157,6 +157,8 @@ data class LabUiState(
     /** Blind automatic search plan summary (profile + stages); no password material. */
     val searchPlanSummary: SearchPlanUiSummary? = null,
     val searchStagesExpanded: Boolean = false,
+    /** True when prototype fields were filled from [networkContext] (Nearby → Lab). */
+    val prototypeSeededFromNetwork: Boolean = false,
 ) {
     val effectiveSecretLength: Int
         get() = config.resolvedLengthPolicy().maxLength
@@ -205,16 +207,18 @@ class LabViewModel(
     private var calibratedThroughput: Double? = null
     private var cachedPrototypePlan: PasswordAuditPlan? = null
     private var lastGuidedPassword: String = ""
+    private var appliedNetworkContextKey: String? = null
 
     init {
-        refreshNetworkContext()
         applyGuidedDefaults(calibratedAttemptsPerSecond = null)
-        refreshPrototypeAssessment()
+        refreshNetworkContext()
         val service = calibration
         if (service != null) {
             viewModelScope.launch(searchDispatcher) {
                 calibratedThroughput = service.lastRecord()?.measuredAttemptsPerSecond
-                if (_state.value.mode == LabInteractionMode.Guided) {
+                if (_state.value.mode == LabInteractionMode.Guided &&
+                    !_state.value.prototypeSeededFromNetwork
+                ) {
                     applyGuidedDefaults(calibratedAttemptsPerSecond = calibratedThroughput)
                 } else {
                     recomputePreview()
@@ -227,9 +231,20 @@ class LabViewModel(
                     )
                 estimator.refine(record.measuredAttemptsPerSecond)
                 calibratedThroughput = record.measuredAttemptsPerSecond
-                if (_state.value.mode == LabInteractionMode.Guided) {
+                if (_state.value.mode == LabInteractionMode.Guided &&
+                    !_state.value.prototypeSeededFromNetwork
+                ) {
                     applyGuidedDefaults(calibratedAttemptsPerSecond = record.measuredAttemptsPerSecond)
                 } else {
+                    // Keep Nearby-seeded prototype; only refresh worker/budget defaults.
+                    _state.update {
+                        it.copy(
+                            config =
+                                GuidedLabDefaults.recommendedConfig(
+                                    calibratedAttemptsPerSecond = record.measuredAttemptsPerSecond,
+                                ),
+                        )
+                    }
                     recomputePreview()
                 }
             }
@@ -238,7 +253,48 @@ class LabViewModel(
 
     /** Re-read the process-scoped store when Lab becomes visible (tab restore). */
     fun refreshNetworkContext() {
-        _state.update { it.copy(networkContext = networkContextStore?.current) }
+        val ctx = networkContextStore?.current
+        _state.update { it.copy(networkContext = ctx) }
+        if (ctx != null) {
+            val key = ctx.seedKey()
+            if (key != appliedNetworkContextKey) {
+                appliedNetworkContextKey = key
+                applyNetworkContextToPrototype(ctx)
+            }
+        }
+    }
+
+    /** Re-apply Nearby identity/security into the local prototype (password stays empty). */
+    fun applyNetworkContextToPrototype() {
+        val ctx = _state.value.networkContext ?: networkContextStore?.current ?: return
+        appliedNetworkContextKey = ctx.seedKey()
+        applyNetworkContextToPrototype(ctx)
+    }
+
+    private fun applyNetworkContextToPrototype(ctx: LabNetworkContext) {
+        val prototype = localNetworkPrototypeFromContext(ctx)
+        _state.update {
+            it.copy(
+                networkContext = ctx,
+                secretMode = LabSecretMode.LocalPrototype,
+                mode = LabInteractionMode.Guided,
+                prototype = prototype,
+                prototypeSeededFromNetwork = true,
+                targetPassword = "",
+                passwordVisible = false,
+                guidedPhase = GuidedPrototypePhase.Configure,
+                guidedFocusTarget =
+                    if (prototype.securityFamily.supportsSharedPasswordDemo()) {
+                        GuidedFocusTarget.Password
+                    } else {
+                        GuidedFocusTarget.Security
+                    },
+                resultNetworkAssessment = null,
+                configErrorRes = null,
+            )
+        }
+        refreshPrototypeAssessment()
+        recomputePreview()
     }
 
     fun setMode(mode: LabInteractionMode) {
@@ -278,6 +334,7 @@ class LabViewModel(
         _state.update {
             it.copy(
                 prototype = prototype,
+                prototypeSeededFromNetwork = false,
                 guidedPhase =
                     if (it.isGuidedPrototypeFlow && it.guidedPhase != GuidedPrototypePhase.PostResult) {
                         GuidedPrototypePhase.Configure

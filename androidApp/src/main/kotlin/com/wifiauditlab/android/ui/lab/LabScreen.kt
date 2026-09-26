@@ -113,7 +113,13 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Spacer(Modifier.height(4.dp))
-            state.networkContext?.let { NetworkContextBanner(it) }
+            state.networkContext?.let {
+                NetworkContextBanner(
+                    context = it,
+                    seeded = state.prototypeSeededFromNetwork,
+                    onApplyToPrototype = viewModel::applyNetworkContextToPrototype,
+                )
+            }
             if (state.secretMode == LabSecretMode.LocalPrototype) {
                 LocalPrototypeBanner(state.prototype)
             }
@@ -636,7 +642,11 @@ private fun PrototypeForm(
 }
 
 @Composable
-private fun NetworkContextBanner(context: LabNetworkContext) {
+private fun NetworkContextBanner(
+    context: LabNetworkContext,
+    seeded: Boolean,
+    onApplyToPrototype: () -> Unit,
+) {
     val networkContextCd = stringResource(R.string.lab_cd_network_context)
     Card(
         modifier =
@@ -666,6 +676,16 @@ private fun NetworkContextBanner(context: LabNetworkContext) {
             Spacer(Modifier.height(4.dp))
             Text(stringResource(R.string.lab_simulation_local), fontWeight = FontWeight.SemiBold)
             Text(stringResource(R.string.lab_simulation_local_body))
+            if (seeded) {
+                Text(
+                    stringResource(R.string.lab_network_seeded_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            TextButton(onClick = onApplyToPrototype) {
+                Text(stringResource(R.string.lab_apply_network_to_prototype))
+            }
         }
     }
 }

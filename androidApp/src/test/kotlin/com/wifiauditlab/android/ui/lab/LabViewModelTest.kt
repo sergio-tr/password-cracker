@@ -1,9 +1,17 @@
 package com.wifiauditlab.android.ui.lab
 
+import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.security.SecurityRating
+import com.wifiauditlab.assessment.domain.wifi.Bssid
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
+import com.wifiauditlab.assessment.domain.wifi.Ssid
+import com.wifiauditlab.assessment.domain.wifi.WifiBand
+import com.wifiauditlab.assessment.domain.wifi.WifiChannel
+import com.wifiauditlab.assessment.domain.wifi.WifiObservation
+import com.wifiauditlab.assessment.domain.wifi.WifiSignal
+import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -166,6 +174,7 @@ class LabViewModelTest {
             },
         estimator: SearchPerformanceEstimator = FixedThroughputEstimator(),
         planner: AutomaticPasswordAuditPlanner = DefaultAutomaticPasswordAuditPlanner(),
+        networkContextStore: LabNetworkContextStore? = null,
     ) = LabViewModel(
         engine,
         optimizer,
@@ -174,6 +183,7 @@ class LabViewModelTest {
         assessNetworkSecurity,
         planner = planner,
         searchDispatcher = dispatcher,
+        networkContextStore = networkContextStore,
     )
 
     private fun LabViewModel.preparePrototype(
@@ -200,6 +210,42 @@ class LabViewModelTest {
             assertEquals(StrategyChoice.LENGTH, vm.state.value.config.strategy)
             assertEquals(com.wifiauditlab.android.R.string.lab_err_ssid_required, vm.state.value.configErrorRes)
             assertNotNull(vm.state.value.prototypeAssessment)
+        }
+
+    @Test
+    fun refreshNetworkContext_seedsPrototypeFromNearbyStore() =
+        runTest(dispatcher) {
+            val store = LabNetworkContextStore()
+            store.set(
+                labNetworkContextFromNearby(
+                    NearbyItem(
+                        observation =
+                            WifiObservation(
+                                ssid = Ssid("NearbyNet"),
+                                bssid = Bssid.of("AA:BB:CC:DD:EE:01"),
+                                signal = WifiSignal(-50),
+                                channel = WifiChannel(6, WifiBand.GHZ_2_4, 2437),
+                                standard = WifiStandard.WIFI_5,
+                                securityProfile = PrototypeSecurityPreset.WPA2_PERSONAL.toProfile(),
+                                observedAtEpochMillis = 0L,
+                            ),
+                        alias = "Casa",
+                        savedNetworkId = null,
+                        isKnown = false,
+                        ambiguous = false,
+                    ),
+                    assessmentSummary = "ok",
+                ),
+            )
+            val vm = viewModel(ScriptedEngine(emptyList()), networkContextStore = store)
+            advanceUntilIdle()
+            assertEquals("Casa", vm.state.value.prototype.displayName)
+            assertEquals("NearbyNet", vm.state.value.prototype.ssid)
+            assertEquals(SecurityFamily.WPA2_PERSONAL, vm.state.value.prototype.securityFamily)
+            assertTrue(vm.state.value.prototypeSeededFromNetwork)
+            assertEquals(LabSecretMode.LocalPrototype, vm.state.value.secretMode)
+            assertEquals("", vm.state.value.targetPassword)
+            assertEquals(GuidedFocusTarget.Password, vm.state.value.guidedFocusTarget)
         }
 
     @Test
