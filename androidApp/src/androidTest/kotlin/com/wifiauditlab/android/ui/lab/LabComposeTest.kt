@@ -699,9 +699,12 @@ class LabComposeTest {
         composeTestRule
             .onNodeWithContentDescription(activity.getString(R.string.lab_cd_network_context))
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Casa").assertIsDisplayed()
-        composeTestRule.onNodeWithText("MOVISTAR_XXXX").assertIsDisplayed()
+        // Alias/SSID appear in both the network banner and the seeded prototype fields.
+        assertTrue(composeTestRule.onAllNodesWithText("Casa").fetchSemanticsNodes().size >= 1)
+        assertTrue(composeTestRule.onAllNodesWithText("MOVISTAR_XXXX").fetchSemanticsNodes().size >= 1)
         composeTestRule.onNodeWithText(simulationLocal).assertIsDisplayed()
         waitForText(activity.getString(R.string.lab_simulation_local_body))
+        waitForText(activity.getString(R.string.lab_network_seeded_hint))
+        waitForText(activity.getString(R.string.lab_apply_network_to_prototype))
     }
 }
