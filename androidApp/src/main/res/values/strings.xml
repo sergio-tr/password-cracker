@@ -19,7 +19,7 @@
     <string name="audit_lab_authorized_mark">Marcar esta red como laboratorio / autorizada</string>
     <string name="audit_ap_consent">Consiento una prueba activa solo contra la red a la que estoy conectado ahora (este arranque)</string>
     <string name="audit_ap_capability_available">Sondeo AP disponible en esta plataforma.</string>
-    <string name="audit_ap_capability_platform_limit">Limitación técnica Android: apps normales no pueden sondear passphrases en silencio/lote contra el AP. F1 usará un probe acotado si el dispositivo lo permite.</string>
+    <string name="audit_ap_capability_platform_limit">Limitación técnica Android: apps normales no pueden sondear passphrases en silencio/lote contra el AP. El sondeo activo queda para F2 si hay capability pública demostrada.</string>
     <string name="audit_ap_capability_device">Este dispositivo no soporta la solicitud local-only necesaria.</string>
     <string name="audit_ap_capability_privileged">Requiere build privilegiada / de sistema (no Play).</string>
     <string name="audit_ap_capability_not_implemented">Sondeo AP aún no implementado en este build (fundación ADR-004).</string>
@@ -33,6 +33,16 @@
     <string name="audit_ap_denial_consent">falta consentimiento</string>
     <string name="audit_ap_denial_family">familia no soportada</string>
     <string name="audit_ap_denial_capability">capability de plataforma no disponible</string>
+    <string name="audit_lab_session_phase">Sesión LAB: %1$s</string>
+    <string name="audit_lab_session_idle">inactiva</string>
+    <string name="audit_lab_session_checking">comprobando autorización</string>
+    <string name="audit_lab_session_denied">denegada</string>
+    <string name="audit_lab_session_admitted">admitida</string>
+    <string name="audit_lab_session_running">en ejecución</string>
+    <string name="audit_lab_session_completed">completada</string>
+    <string name="audit_lab_session_cancelled">cancelada</string>
+    <string name="audit_lab_session_failed">fallida</string>
+    <string name="audit_lab_session_termination">Motivo: %1$s</string>
     <string name="audit_err_ap_test_not_admitted">Validación LAB no admitida (gate fail-closed o limitación de plataforma). Usa Auditoría local o revisa Ajustes / conexión / registro / consentimiento. F0 no ejecuta sondeo AP.</string>
     <string name="audit_password_section">Contraseña a evaluar</string>
     <string name="audit_password_help">Introduce la contraseña de esta red o recupérala del Vault. No se usa para priorizar la búsqueda automática.</string>

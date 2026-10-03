@@ -15,6 +15,12 @@ import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGateResult
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkKey
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.LabSessionBudget
+import com.wifiauditlab.assessment.domain.audit.LabSessionTerminationReason
+import com.wifiauditlab.assessment.domain.audit.LabValidationSessionOrchestrator
+import com.wifiauditlab.assessment.domain.audit.LabValidationSessionState
+import com.wifiauditlab.assessment.domain.audit.LabValidationStartOutcome
+import com.wifiauditlab.assessment.domain.audit.LabValidationStartRequest
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultComposer
@@ -54,6 +60,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
@@ -62,9 +71,9 @@ import kotlin.time.Duration.Companion.seconds
  * Quick Audit: password source, automatic plan, and search execution.
  *
  * Default path is [VerificationMode.LOCAL_AUDIT] (encapsulated verifier; no AP).
- * [VerificationMode.LAB_NETWORK_VALIDATION] is fail-closed (ADR-004 / F0): requires
- * labModeEnabled, connected target, lab registry, session consent, and capability.
- * F0 never starts the AP path (capability Unavailable on stock Android).
+ * [VerificationMode.LAB_NETWORK_VALIDATION] goes through [LabValidationSessionOrchestrator]
+ * (ADR-004 / F1): gate, snapshot, budget, monitors, typed result. Stock
+ * [com.wifiauditlab.assessment.domain.audit.AndroidValidationAdapter] stays Unavailable.
  */
 class PasswordAuditViewModel(
     private val targetStore: PasswordAuditTargetStore,
@@ -83,6 +92,7 @@ class PasswordAuditViewModel(
     private val connectionProvider: CurrentWifiConnectionProvider? = null,
     private val labModePreferences: LabModePreferences? = null,
     private val apTestGate: AuthorizedApTestGate = AuthorizedApTestGate(),
+    private val labSessionOrchestrator: LabValidationSessionOrchestrator? = null,
     private val availableProcessors: Int = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
@@ -411,6 +421,10 @@ class PasswordAuditViewModel(
     fun onStartAuditClicked() {
         if (_state.value.isActive) return
         val snapshot = _state.value
+        if (snapshot.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
+            startLabNetworkValidation(snapshot)
+            return
+        }
         if (!snapshot.hasSecretReady) {
             _state.update {
                 it.copy(passwordError = PasswordAuditUiError.MissingPassword)
@@ -428,14 +442,6 @@ class PasswordAuditViewModel(
             _state.update {
                 it.copy(startBlockedReason = PasswordAuditUiError.InvalidConfig)
             }
-            return
-        }
-        if (snapshot.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
-            // F0: never start LAB path; AndroidValidationAdapter is Unavailable + gate fail-closed.
-            _state.update {
-                it.copy(startBlockedReason = PasswordAuditUiError.ApTestNotAdmitted)
-            }
-            viewModelScope.launch(ioDispatcher) { refreshApTestAdmission() }
             return
         }
 
@@ -517,9 +523,156 @@ class PasswordAuditViewModel(
 
     fun stop() {
         if (!_state.value.isActive) return
+        if (_state.value.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION &&
+            labSessionOrchestrator != null
+        ) {
+            _state.update {
+                it.copy(
+                    labValidationPhase = LabValidationUiPhase.Running,
+                    searchState = SearchState.Cancelling,
+                )
+            }
+            labSessionOrchestrator.userCancel()
+            return
+        }
         _state.update { it.copy(searchState = SearchState.Cancelling) }
         cancellation?.cancel()
     }
+
+    private fun startLabNetworkValidation(snapshot: PasswordAuditUiState) {
+        val orchestrator = labSessionOrchestrator
+        val req = request
+        if (orchestrator == null || req == null) {
+            _state.update {
+                it.copy(startBlockedReason = PasswordAuditUiError.ApTestNotAdmitted)
+            }
+            viewModelScope.launch(ioDispatcher) { refreshApTestAdmission() }
+            return
+        }
+        val bssid =
+            req.network.bssid
+                ?: req.observation?.bssid
+                ?: Bssid.of("02:00:00:00:00:00")
+        searchJob =
+            viewModelScope.launch(ioDispatcher) {
+                _state.update {
+                    it.copy(
+                        labValidationPhase = LabValidationUiPhase.Checking,
+                        labSessionId = null,
+                        labTerminationReason = null,
+                        labResultSummary = null,
+                        apTestDenials = emptyList(),
+                        startBlockedReason = null,
+                        searchState = SearchState.Preparing,
+                        outcome = null,
+                        errorMessage = null,
+                        errorDetails = null,
+                        resultReport = null,
+                    )
+                }
+                val outcome =
+                    orchestrator.requestStart(
+                        scope = viewModelScope,
+                        request =
+                            LabValidationStartRequest(
+                                requestedSsid = req.network.ssid,
+                                requestedBssid = bssid,
+                                securityFamily = req.network.securityProfile.family,
+                                userConsentGranted = snapshot.apTestConsentGranted,
+                                budget = LabSessionBudget.standard(),
+                            ),
+                    )
+                when (outcome) {
+                    is LabValidationStartOutcome.Denied -> {
+                        _state.update {
+                            it.copy(
+                                labValidationPhase = LabValidationUiPhase.Denied,
+                                labSessionId = outcome.session?.sessionId,
+                                labTerminationReason = LabSessionTerminationReason.GateDenied,
+                                apTestDenials = outcome.reasons,
+                                apTestConsentGranted = false,
+                                startBlockedReason = PasswordAuditUiError.ApTestNotAdmitted,
+                                searchState = SearchState.Idle,
+                            )
+                        }
+                        refreshApTestAdmission()
+                    }
+                    is LabValidationStartOutcome.RejectedConcurrent -> {
+                        _state.update {
+                            it.copy(
+                                labValidationPhase = LabValidationUiPhase.Failed,
+                                startBlockedReason = PasswordAuditUiError.ApTestNotAdmitted,
+                                searchState = SearchState.Idle,
+                                apTestConsentGranted = false,
+                            )
+                        }
+                    }
+                    is LabValidationStartOutcome.Started -> {
+                        _state.update {
+                            it.copy(
+                                labValidationPhase = LabValidationUiPhase.Admitted,
+                                labSessionId = outcome.session.sessionId,
+                                searchState = SearchState.Preparing,
+                            )
+                        }
+                        orchestrator.session
+                            .mapNotNull { it }
+                            .onEach { session ->
+                                _state.update {
+                                    it.copy(
+                                        labValidationPhase = session.state.toUiPhase(),
+                                        labSessionId = session.sessionId,
+                                        labTerminationReason = session.terminationReason,
+                                        labResultSummary = session.resultSummary,
+                                        searchState = session.state.toSearchState(),
+                                        apTestConsentGranted =
+                                            if (session.state.isTerminal) {
+                                                false
+                                            } else {
+                                                it.apTestConsentGranted
+                                            },
+                                        startBlockedReason =
+                                            if (session.state == LabValidationSessionState.Denied) {
+                                                PasswordAuditUiError.ApTestNotAdmitted
+                                            } else {
+                                                it.startBlockedReason
+                                            },
+                                        apTestDenials =
+                                            session.admissionDenials.ifEmpty { it.apTestDenials },
+                                    )
+                                }
+                            }.first { it.state.isTerminal }
+                    }
+                }
+            }
+    }
+
+    private fun LabValidationSessionState.toUiPhase(): LabValidationUiPhase =
+        when (this) {
+            LabValidationSessionState.Created -> LabValidationUiPhase.Checking
+            LabValidationSessionState.Admitted -> LabValidationUiPhase.Admitted
+            LabValidationSessionState.Running,
+            LabValidationSessionState.Stopping,
+            -> LabValidationUiPhase.Running
+            LabValidationSessionState.Completed -> LabValidationUiPhase.Completed
+            LabValidationSessionState.Cancelled -> LabValidationUiPhase.Cancelled
+            LabValidationSessionState.Denied -> LabValidationUiPhase.Denied
+            LabValidationSessionState.Failed -> LabValidationUiPhase.Failed
+        }
+
+    private fun LabValidationSessionState.toSearchState(): SearchState =
+        when (this) {
+            LabValidationSessionState.Created,
+            LabValidationSessionState.Admitted,
+            -> SearchState.Preparing
+            LabValidationSessionState.Running -> SearchState.Running
+            LabValidationSessionState.Stopping -> SearchState.Cancelling
+            LabValidationSessionState.Completed -> SearchState.Completed
+            LabValidationSessionState.Cancelled -> SearchState.Cancelled
+            LabValidationSessionState.Denied,
+            LabValidationSessionState.Failed,
+            -> SearchState.Failed
+        }
 
     fun toggleErrorDetails() {
         _state.update { it.copy(showErrorDetails = !it.showErrorDetails) }

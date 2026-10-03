@@ -429,10 +429,40 @@ private fun VerificationModeSection(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
+                if (state.labValidationPhase != LabValidationUiPhase.Idle) {
+                    Text(
+                        stringResource(
+                            R.string.audit_lab_session_phase,
+                            labValidationPhaseLabel(state.labValidationPhase),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    state.labTerminationReason?.let { reason ->
+                        Text(
+                            stringResource(R.string.audit_lab_session_termination, reason.name),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun labValidationPhaseLabel(phase: LabValidationUiPhase): String =
+    when (phase) {
+        LabValidationUiPhase.Idle -> stringResource(R.string.audit_lab_session_idle)
+        LabValidationUiPhase.Checking -> stringResource(R.string.audit_lab_session_checking)
+        LabValidationUiPhase.Denied -> stringResource(R.string.audit_lab_session_denied)
+        LabValidationUiPhase.Admitted -> stringResource(R.string.audit_lab_session_admitted)
+        LabValidationUiPhase.Running -> stringResource(R.string.audit_lab_session_running)
+        LabValidationUiPhase.Completed -> stringResource(R.string.audit_lab_session_completed)
+        LabValidationUiPhase.Cancelled -> stringResource(R.string.audit_lab_session_cancelled)
+        LabValidationUiPhase.Failed -> stringResource(R.string.audit_lab_session_failed)
+    }
 
 private fun requestAllowsLabValidation(state: PasswordAuditUiState): Boolean =
     !state.missingTarget && state.allowsAuthorizedApTest && state.labModeEnabled

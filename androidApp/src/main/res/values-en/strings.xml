@@ -18,7 +18,7 @@
     <string name="audit_lab_authorized_mark">Mark this network as lab / authorized</string>
     <string name="audit_ap_consent">I consent to an active test only against the network I am connected to now (this start)</string>
     <string name="audit_ap_capability_available">AP probe available on this platform.</string>
-    <string name="audit_ap_capability_platform_limit">Android platform limit: normal apps cannot silently/batch-probe passphrases against the AP. F1 may add a bounded probe if the device allows it.</string>
+    <string name="audit_ap_capability_platform_limit">Android platform limit: normal apps cannot silently/batch-probe passphrases against the AP. Active probing is Planned F2 when a public capability is demonstrated.</string>
     <string name="audit_ap_capability_device">This device does not support the required local-only request.</string>
     <string name="audit_ap_capability_privileged">Requires a privileged / system build (not Play).</string>
     <string name="audit_ap_capability_not_implemented">AP probe not implemented in this build (ADR-004 foundation).</string>
@@ -32,6 +32,16 @@
     <string name="audit_ap_denial_consent">consent required</string>
     <string name="audit_ap_denial_family">unsupported family</string>
     <string name="audit_ap_denial_capability">platform capability unavailable</string>
+    <string name="audit_lab_session_phase">LAB session: %1$s</string>
+    <string name="audit_lab_session_idle">idle</string>
+    <string name="audit_lab_session_checking">checking authorization</string>
+    <string name="audit_lab_session_denied">denied</string>
+    <string name="audit_lab_session_admitted">admitted</string>
+    <string name="audit_lab_session_running">running</string>
+    <string name="audit_lab_session_completed">completed</string>
+    <string name="audit_lab_session_cancelled">cancelled</string>
+    <string name="audit_lab_session_failed">failed</string>
+    <string name="audit_lab_session_termination">Reason: %1$s</string>
     <string name="audit_err_ap_test_not_admitted">LAB validation not admitted (fail-closed gate or platform limit). Use Local audit or check Settings / connection / registry / consent. F0 does not run an AP probe.</string>
     <string name="audit_password_section">Password to evaluate</string>
     <string name="audit_password_help">Enter this network\'s password or retrieve it from the Vault. It is not used to prioritize the automatic search.</string>

@@ -140,13 +140,16 @@ class AuthorizedApTestGateTest {
                 ApAuthCapability.Unavailable(ApAuthUnavailableReason.PlatformApiLimitation),
                 adapter.capability(),
             )
-            assertIs<ApAuthProbeResult.Unavailable>(
+            assertIs<NetworkValidationResult.Unavailable>(
                 adapter.validateOnce(
-                    ApAuthProbeRequest(
-                        ssid = "LabNet",
-                        bssidHint = null,
-                        family = SecurityFamily.WPA2_PERSONAL,
-                        passphrase = "password1",
+                    AuthorizedValidationContext(
+                        sessionId = "test",
+                        networkSnapshot =
+                            LabNetworkSnapshot(
+                                ssid = "LabNet",
+                                securityFamily = SecurityFamily.WPA2_PERSONAL,
+                            ),
+                        budget = LabSessionBudget.standard(),
                     ),
                 ),
             )

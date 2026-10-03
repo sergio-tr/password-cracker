@@ -47,8 +47,9 @@ Registry: `AuthorizedLabNetworkStore` (alias `LabNetworkRegistry`).
 | `NetworkValidationAdapter` + `AndroidValidationAdapter` = Unavailable | **Implemented** (fail-closed) |
 | UI Audit: selector + denegaciones tipadas | **Implemented** |
 | Arranque LAB bloqueado en F0 | **Implemented** |
-| `AuthorizedApTestSession` / probe Android activo | **Planned F1** |
-| Rate-limit / session log persistido | **Planned F1** |
+| `LabValidationSession` + orchestrator + monitors (F1) | **Implemented** |
+| Probe Android activo (`WifiNetworkSpecifier`) | **Planned F2** — Unavailable on stock Android |
+| Rate-limit / session evidence (in-memory F1) | **Implemented** (persistencia durable = Planned F2) |
 
 ### Interpretación del requisito «sacar contraseña»
 
@@ -414,19 +415,26 @@ Resultados heterogéneos por OEM se documentan; no se «arreglar» inventando AP
 - [x] Tests gate / registry / labMode / redact passphrase
 - [x] Docs plan + ADR + progress actualizados
 
-### F1 — Sesión + adapter Android experimental
+### F1 — Sesión + orquestador (**DONE**)
 
-- [ ] `LabNetworkValidationSession` / `AuthorizedApTestSession`
-- [ ] `AndroidValidationAdapter` con `WifiNetworkSpecifier` acotado (si capability Available)
-- [ ] Monitor conexión → cancelación
-- [ ] Rate-limit + `AuditSessionLog` (sin secretos)
-- [ ] Evidencia dispositivo lab en `test-evidence.md`
+- [x] `LabValidationSession` + lifecycle tipado
+- [x] `LabValidationSessionOrchestrator` (gate → snapshot → adapter → terminal)
+- [x] `LabNetworkSnapshot` inmutable (SSID + SecurityFamily; BSSID opcional)
+- [x] Monitor conexión / Lab Mode / registry → STOP tipado
+- [x] Budget + timeout + `userCancel` + concurrencia = 1
+- [x] `AuthorizedValidationContext` + `NetworkValidationResult`
+- [x] `SimulatedValidationAdapter` determinista; `AndroidValidationAdapter` = **Unavailable**
+- [x] Evidence log sanitizado (sin secretos)
+- [x] Integración ViewModel/UI + tests críticos
+- [ ] Probe Android activo — **Planned F2** (no falsear Available)
 
-### F2 — UX registro lab + Vault hardening
+### F2 — Probe acotado + UX registro lab
 
+- [ ] `AndroidValidationAdapter` con path público demostrado (`WifiNetworkSpecifier` u otro) **solo si** capability Available real
 - [ ] Marcar red lab desde Nearby detalle / Vault (además del checkbox Audit)
 - [ ] Auditoría backupRules / allowBackup
 - [ ] Walkthrough dual-mode completo
+- [ ] Evidencia dispositivo lab en `test-evidence.md`
 
 ### F3 — Opcional privilegiado (fuera de Play)
 
@@ -479,11 +487,16 @@ flowchart TB
   Gate --> Registry
   Gate --> Conn
   Gate -->|Admitted| Session
-  Session --> AndroidAdapter
-  Session --> SimAdapter
+  Session --> Orchestrator[LabValidationSessionOrchestrator]
+  Orchestrator --> AndroidAdapter
+  Orchestrator --> SimAdapter
   AuditUI --> VaultAdapter
   Settings --> Gate
 ```
+
+**Implemented F1:** sesión, orquestador, monitors, budget/timeout/cancel, evidence, UI.
+**Planned F2:** validación activa real contra AP.
+**Unavailable on stock Android:** `AndroidValidationAdapter` (PlatformApiLimitation).
 
 ---
 

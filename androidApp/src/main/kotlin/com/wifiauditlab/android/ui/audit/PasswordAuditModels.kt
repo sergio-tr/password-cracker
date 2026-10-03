@@ -5,6 +5,7 @@ import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.assessment.domain.audit.ApAuthCapability
 import com.wifiauditlab.assessment.domain.audit.ApAuthUnavailableReason
 import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestDenial
+import com.wifiauditlab.assessment.domain.audit.LabSessionTerminationReason
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultReport
 import com.wifiauditlab.assessment.domain.audit.PasswordStrengthAssessment
@@ -45,6 +46,18 @@ enum class PasswordAuditScreenPhase {
     Ready,
     Invalid,
     Starting,
+}
+
+/** UI projection of LAB_NETWORK_VALIDATION session lifecycle (orchestrator owns security). */
+enum class LabValidationUiPhase {
+    Idle,
+    Checking,
+    Denied,
+    Admitted,
+    Running,
+    Completed,
+    Cancelled,
+    Failed,
 }
 
 /**
@@ -105,6 +118,10 @@ data class PasswordAuditUiState(
     val apAuthCapability: ApAuthCapability =
         ApAuthCapability.Unavailable(ApAuthUnavailableReason.NotImplemented),
     val apTestDenials: List<AuthorizedApTestDenial> = emptyList(),
+    val labValidationPhase: LabValidationUiPhase = LabValidationUiPhase.Idle,
+    val labSessionId: String? = null,
+    val labTerminationReason: LabSessionTerminationReason? = null,
+    val labResultSummary: String? = null,
     val preset: PasswordAuditBudgetPreset = PasswordAuditBudgetPreset.Standard,
     val advancedExpanded: Boolean = false,
     val planDetailsExpanded: Boolean = false,
@@ -136,7 +153,10 @@ data class PasswordAuditUiState(
         get() =
             searchState == SearchState.Preparing ||
                 searchState == SearchState.Running ||
-                searchState == SearchState.Cancelling
+                searchState == SearchState.Cancelling ||
+                labValidationPhase == LabValidationUiPhase.Checking ||
+                labValidationPhase == LabValidationUiPhase.Admitted ||
+                labValidationPhase == LabValidationUiPhase.Running
 
     val hasSecretReady: Boolean
         get() =

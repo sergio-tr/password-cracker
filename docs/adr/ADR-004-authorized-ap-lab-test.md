@@ -1,6 +1,6 @@
 # ADR-004 · LOCAL_AUDIT vs LAB_NETWORK_VALIDATION (laboratorio autorizado)
 
-- Estado: Accepted — **F0 DONE** (2026-10-03)
+- Estado: Accepted — **F0 DONE · F1 DONE** (2026-10-03)
 - Fecha: 2026-10-03
 - Relacionado: [ADR-003](./ADR-003-real-wifi-vs-synthetic-lab.md),
   [ADR-connected-known-password-audit](./ADR-connected-known-password-audit.md),
@@ -31,7 +31,7 @@ Las restricciones de Android se registran como **limitaciones técnicas**.
 | Modo | Verificación | Objetivo permitido | Entrada |
 | --- | --- | --- | --- |
 | `LOCAL_AUDIT` | `EncapsulatedPasswordVerifier` en memoria | Contexto de red (SSID/familia); sin hablar con el AP | Cercanas (conectada) o Vault (credencial) |
-| `LAB_NETWORK_VALIDATION` | Sondeo / autenticación real vía APIs de plataforma (**F1+**; F0 = Unavailable) | **Solo** la conexión Wi‑Fi **actual** | **Solo** Cercanas → badge Conectado → Auditar |
+| `LAB_NETWORK_VALIDATION` | Orquestador de sesión (**F1 DONE**); sondeo AP real = **Planned F2** (`AndroidValidationAdapter` = Unavailable en stock) | **Solo** la conexión Wi‑Fi **actual** | **Solo** Cercanas → badge Conectado → Auditar |
 
 Reglas fail-closed para `LAB_NETWORK_VALIDATION` (gate `AuthorizedApTestGate`):
 
@@ -61,9 +61,9 @@ androidApp           → adaptadores WifiManager / ConnectivityManager
 - `LOCAL_AUDIT` sigue usando el `LabSearchEngine` de alto throughput con
   verificador encapsulado.
 - `LAB_NETWORK_VALIDATION` **no** reutiliza ese bucle a miles/millones de intentos/s
-  contra el AP. Usa un **orquestador aparte** (`AuthorizedApTestSession`, **F1**) con
-  presupuestos muy bajos, porque las APIs públicas de Android no soportan
-  verificación silenciosa y masiva de passphrases.
+  contra el AP. Usa un **orquestador aparte** (`LabValidationSessionOrchestrator`,
+  **F1 DONE**) con presupuestos muy bajos, porque las APIs públicas de Android no
+  soportan verificación silenciosa y masiva de passphrases.
 
 Romper ADR-003 (lab → assessment / WifiManager) queda **prohibido**.
 
@@ -140,15 +140,17 @@ técnica, no como requisito abandonado por «ser ofensivo».
 ```text
 labModeEnabled + gate fail-closed
   → consentimiento de sesión
-  → AuthorizedApTestSession (F1: presupuesto bajo, rate-limit, STOP)
-       → NetworkValidationAdapter.validateOnce(candidate)
+  → LabValidationSessionOrchestrator (F1: presupuesto, timeout, STOP, monitors)
+       → NetworkValidationAdapter.validateOnce(AuthorizedValidationContext)
 ```
 
 No se enchufa el adapter como `CandidateVerifier` del motor paralelo V2.
 
-**F0 (Implemented):** `AndroidValidationAdapter` reporta
-`ApAuthCapability.Unavailable(PlatformApiLimitation)`; la UI muestra el modo y
-los motivos de denegación; **INICIAR** en modo LAB no ejecuta sondeo.
+**F0 (Implemented):** foundation gate/registry/UI; adapter Unavailable.
+**F1 (Implemented):** sesión tipada, orquestador, snapshot, monitors (red / Lab Mode /
+registry), budget, timeout, cancel, concurrencia=1, evidence sanitizada, UI phases.
+`AndroidValidationAdapter` sigue **Unavailable** (no se declara Available sin path
+público demostrado). Sondeo activo = **Planned F2**.
 
 ## Modelo de autorización (app)
 
@@ -168,8 +170,8 @@ Vault:
 | Fase | Entrega | Estado |
 | --- | --- | --- |
 | **F0** | ADR + `VerificationMode` + `labModeEnabled` + gate + registry + `NetworkValidationAdapter` Unavailable + UI selector/consent/denials + tests + docs | **DONE** |
-| **F1** | Orquestador `AuthorizedApTestSession` + probe experimental `WifiNetworkSpecifier` acotado; STOP si cambia la conexión | Planned |
-| **F2** | Marcado lab en Nearby/Vault; evidencia; hardening backup Vault | Planned |
+| **F1** | `LabValidationSession` + orchestrator + snapshot + monitors + budget/timeout/cancel + evidence + UI + tests; Android adapter sigue Unavailable | **DONE** |
+| **F2** | Probe AP acotado si capability pública demostrada; marcado lab Nearby/Vault; hardening backup | Planned |
 | **F3 (opcional, builds privilegio)** | Adaptador `READ_WIFI_CREDENTIAL` / imagen sistema — nunca en variante Play | Planned |
 
 ## Consecuencias

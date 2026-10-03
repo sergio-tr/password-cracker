@@ -25,6 +25,7 @@ import com.wifiauditlab.android.ui.settings.SettingsBenchmarkViewModel
 import com.wifiauditlab.android.ui.settings.SettingsCalibrationViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidCurrentWifiConnectionProvider
+import com.wifiauditlab.android.wifi.AndroidWifiConnectionMonitor
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 import com.wifiauditlab.android.wifi.AndroidWifiScanner
@@ -49,10 +50,13 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.AndroidValidationAdapter
+import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGate
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
 import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.InMemoryLabSessionEvidenceLog
+import com.wifiauditlab.assessment.domain.audit.LabValidationSessionOrchestrator
 import com.wifiauditlab.assessment.domain.audit.NetworkValidationAdapter
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PlatformApAuthCapabilityProvider
@@ -68,6 +72,7 @@ import com.wifiauditlab.assessment.port.LabModePreferences
 import com.wifiauditlab.assessment.port.OnboardingPreferences
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
+import com.wifiauditlab.assessment.port.WifiConnectionMonitor
 import com.wifiauditlab.assessment.port.WifiScanner
 import com.wifiauditlab.lab.domain.BenchmarkRepository
 import com.wifiauditlab.lab.domain.CalibrationRepository
@@ -125,6 +130,21 @@ val appModule =
         single<PlatformApAuthCapabilityProvider> {
             val adapter: NetworkValidationAdapter = get()
             PlatformApAuthCapabilityProvider { adapter.capability() }
+        }
+        single<WifiConnectionMonitor> {
+            AndroidWifiConnectionMonitor(androidContext(), get())
+        }
+        single { AuthorizedApTestGate() }
+        single {
+            LabValidationSessionOrchestrator(
+                gate = get(),
+                connectionProvider = get(),
+                connectionMonitor = get(),
+                labModePreferences = get(),
+                registry = get(),
+                adapter = get(),
+                evidenceLog = InMemoryLabSessionEvidenceLog(),
+            )
         }
         single<AutomaticPasswordAuditPlanner> { DefaultAutomaticPasswordAuditPlanner() }
         single<SecretStrengthAnalyzer> { HeuristicSecretStrengthAnalyzer() }
@@ -226,6 +246,8 @@ val appModule =
                 apCapabilityProvider = get(),
                 connectionProvider = get(),
                 labModePreferences = get(),
+                apTestGate = get(),
+                labSessionOrchestrator = get(),
             )
         }
         viewModel { SettingsCalibrationViewModel(get(), get()) }
