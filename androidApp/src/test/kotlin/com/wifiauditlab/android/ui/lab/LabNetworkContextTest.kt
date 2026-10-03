@@ -3,6 +3,8 @@ package com.wifiauditlab.android.ui.lab
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.nearby.NearbyItem
 import com.wifiauditlab.android.ui.security.familyLabelRes
+import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
+import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.Bssid
 import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
@@ -100,5 +102,42 @@ class LabNetworkContextTest {
         assertEquals("Home", store.current?.displayName)
         store.clear()
         assertNull(store.current)
+    }
+
+    @Test
+    fun fromVault_mapsAliasSsidAndFamilyPreset() {
+        val network =
+            SavedWifiNetwork(
+                id = SavedNetworkId("vault-1"),
+                alias = "Casa Vault",
+                ssid = "HOME_SSID",
+                securityFamily = SecurityFamily.WPA3_PERSONAL,
+                knownBssids = emptySet(),
+                locationLabel = null,
+                geoLocation = null,
+                secretId = null,
+                notes = null,
+                createdAtEpochMillis = 0L,
+                lastSeenAtEpochMillis = null,
+            )
+        val context = labNetworkContextFromVault(network)
+        assertEquals("Casa Vault", context.displayName)
+        assertEquals("HOME_SSID", context.ssidLabel)
+        assertEquals(SecurityFamily.WPA3_PERSONAL, context.securityFamily)
+        assertEquals(SecurityFamily.WPA3_PERSONAL, context.securityProfile.family)
+        assertNull(context.wifiStandard)
+        assertNull(context.band)
+        val prototype = localNetworkPrototypeFromContext(context)
+        assertEquals("Casa Vault", prototype.displayName)
+        assertEquals("HOME_SSID", prototype.ssid)
+        assertEquals(SecurityFamily.WPA3_PERSONAL, prototype.securityFamily)
+    }
+
+    @Test
+    fun passwordSeedStore_consumesOnce() {
+        val seed = LabPasswordSeedStore()
+        seed.set("secret-pass")
+        assertEquals("secret-pass", seed.consume())
+        assertNull(seed.consume())
     }
 }

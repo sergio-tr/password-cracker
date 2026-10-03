@@ -12,7 +12,7 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Cercanas (Nearby), Guardadas (Vault), Laboratorio (modo guiado prototipo local + Avanzado + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red), **Auditar contraseña** (Quick Audit). |
+| Implementadas | Cercanas (Nearby), Guardadas (Vault + CTAs Lab/Audit LAB-06), Laboratorio (modo guiado prototipo local + Avanzado + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red), **Auditar contraseña** (Quick Audit). |
 | Deferred | Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
 
 ## Principios aplicados

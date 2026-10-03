@@ -96,6 +96,21 @@ enum class PrototypeSecurityPreset(
                     preset.keyManagements == profile.keyManagements &&
                     preset.transition == profile.isTransitionMode
             }
+
+        /** Best-effort preset from a persisted Vault [SecurityFamily] (no full profile). */
+        fun forFamily(family: SecurityFamily): PrototypeSecurityPreset? =
+            when (family) {
+                SecurityFamily.OPEN -> OPEN
+                SecurityFamily.WEP -> WEP_LEGACY
+                SecurityFamily.WPA_PERSONAL,
+                SecurityFamily.WPA2_PERSONAL,
+                -> WPA2_PERSONAL
+                SecurityFamily.WPA3_PERSONAL -> WPA3_PERSONAL
+                SecurityFamily.WPA2_WPA3_PERSONAL -> WPA2_WPA3_TRANSITION
+                SecurityFamily.WPA2_ENTERPRISE -> ENTERPRISE_WPA2
+                SecurityFamily.WPA3_ENTERPRISE -> ENTERPRISE_WPA3
+                else -> null
+            }
     }
 }
 

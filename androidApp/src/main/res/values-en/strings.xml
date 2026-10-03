@@ -475,6 +475,10 @@
     <string name="vault_sec_passpoint">Passpoint</string>
     <string name="vault_sec_dpp">DPP</string>
     <string name="vault_sec_unknown">Unknown</string>
+    <string name="vault_cd_open_lab">Try in lab</string>
+    <string name="vault_open_lab">Try in lab (local)</string>
+    <string name="vault_open_audit">Audit password (local only)</string>
+    <string name="vault_lab_seed_password_hint">If the password is visible, it is copied to the lab once (local only).</string>
 
     <string name="nearby_title">Nearby networks</string>
     <string name="nearby_refresh">Refresh</string>

@@ -20,8 +20,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.WifiLock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -33,6 +35,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
+import com.wifiauditlab.android.ui.lab.supportsSharedPasswordDemo
 import com.wifiauditlab.assessment.application.SavedNetworkListSort
 import com.wifiauditlab.assessment.application.SavedNetworkSecretFilter
 import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
@@ -70,7 +74,11 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VaultScreen(viewModel: VaultViewModel = koinViewModel()) {
+fun VaultScreen(
+    viewModel: VaultViewModel = koinViewModel(),
+    onOpenLab: (SavedWifiNetwork, String?) -> Unit = { _, _ -> },
+    onOpenPasswordAudit: (SavedWifiNetwork) -> Unit = {},
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val detail by viewModel.detail.collectAsStateWithLifecycle()
     var showAdd by remember { mutableStateOf(false) }
@@ -128,6 +136,12 @@ fun VaultScreen(viewModel: VaultViewModel = koinViewModel()) {
             detail = current,
             viewModel = viewModel,
             onDismiss = viewModel::dismissDetail,
+            onOpenLab = {
+                onOpenLab(current.network, current.revealedSecret)
+            },
+            onOpenPasswordAudit = {
+                onOpenPasswordAudit(current.network)
+            },
         )
     }
 }
@@ -208,10 +222,15 @@ private fun NetworkDetailSheet(
     detail: VaultDetailState,
     viewModel: VaultViewModel,
     onDismiss: () -> Unit,
+    onOpenLab: () -> Unit,
+    onOpenPasswordAudit: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val clipboard = LocalClipboardManager.current
     val network = detail.network
+    val openLabCd = stringResource(R.string.vault_cd_open_lab)
+    val showAuditCta =
+        network.hasSecret && network.securityFamily.supportsSharedPasswordDemo()
 
     var editAlias by remember { mutableStateOf(false) }
     var editLocation by remember { mutableStateOf(false) }
@@ -248,6 +267,44 @@ private fun NetworkDetailSheet(
                 onReplace = { editSecret = true },
                 onRemove = { confirmRemoveSecret = true },
             )
+
+            HorizontalDivider()
+
+            Button(
+                onClick = onOpenLab,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = openLabCd },
+            ) {
+                Icon(
+                    Icons.Filled.Science,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.vault_open_lab))
+            }
+            if (network.securityFamily.supportsSharedPasswordDemo()) {
+                Text(
+                    stringResource(R.string.vault_lab_seed_password_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            if (showAuditCta) {
+                OutlinedButton(
+                    onClick = onOpenPasswordAudit,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        Icons.Filled.WifiLock,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.vault_open_audit))
+                }
+            }
 
             HorizontalDivider()
 
