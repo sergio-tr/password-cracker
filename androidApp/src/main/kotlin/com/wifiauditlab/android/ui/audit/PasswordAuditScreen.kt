@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +58,11 @@ import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.plan.SearchPlanExplainabilitySection
 import com.wifiauditlab.android.ui.plan.toSearchPlanUiSummary
 import com.wifiauditlab.android.ui.security.familyLabelRes
+import com.wifiauditlab.assessment.domain.audit.ApAuthCapability
+import com.wifiauditlab.assessment.domain.audit.ApAuthUnavailableReason
+import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestDenial
 import com.wifiauditlab.assessment.domain.audit.PasswordSearchOutcomeKind
+import com.wifiauditlab.assessment.domain.audit.VerificationMode
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.SearchOutcome
 import com.wifiauditlab.lab.domain.SearchState
@@ -73,6 +78,7 @@ fun PasswordAuditScreen(
     onBack: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.refreshLabModePreference() }
     val startLabel = stringResource(R.string.audit_start)
     val stopLabel = stringResource(R.string.audit_stop)
     val stoppingLabel = stringResource(R.string.audit_stopping)
@@ -188,6 +194,7 @@ fun PasswordAuditScreen(
                     }
                     if (!state.isActive) {
                         PasswordSection(state, viewModel)
+                        VerificationModeSection(state, viewModel)
                         ModeSection(state, viewModel)
                         DurationSection(state, viewModel)
                         if (state.mode == PasswordAuditInteractionMode.Advanced ||
@@ -356,6 +363,111 @@ private fun ManualPasswordFields(
         },
     )
 }
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun VerificationModeSection(
+    state: PasswordAuditUiState,
+    viewModel: PasswordAuditViewModel,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(stringResource(R.string.audit_verification_mode), fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.audit_verification_mode_help),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = state.verificationMode == VerificationMode.LOCAL_AUDIT,
+                    onClick = { viewModel.selectVerificationMode(VerificationMode.LOCAL_AUDIT) },
+                    label = { Text(stringResource(R.string.audit_verification_local)) },
+                )
+                FilterChip(
+                    selected = state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION,
+                    onClick = { viewModel.selectVerificationMode(VerificationMode.LAB_NETWORK_VALIDATION) },
+                    enabled = requestAllowsLabValidation(state),
+                    label = { Text(stringResource(R.string.audit_verification_ap)) },
+                )
+            }
+            if (!state.labModeEnabled && state.allowsAuthorizedApTest) {
+                Text(
+                    stringResource(R.string.audit_lab_mode_disabled_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = state.labAuthorizedForTarget,
+                        onCheckedChange = viewModel::setLabAuthorizedForTarget,
+                    )
+                    Text(stringResource(R.string.audit_lab_authorized_mark))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = state.apTestConsentGranted,
+                        onCheckedChange = viewModel::setApTestConsent,
+                    )
+                    Text(stringResource(R.string.audit_ap_consent))
+                }
+                Text(
+                    apCapabilityMessage(state.apAuthCapability),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (state.apTestDenials.isNotEmpty()) {
+                    val denialText =
+                        state.apTestDenials.map { denialLabel(it) }.joinToString()
+                    Text(
+                        stringResource(R.string.audit_ap_denials, denialText),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun requestAllowsLabValidation(state: PasswordAuditUiState): Boolean =
+    !state.missingTarget && state.allowsAuthorizedApTest && state.labModeEnabled
+
+@Composable
+private fun apCapabilityMessage(capability: ApAuthCapability): String =
+    when (capability) {
+        ApAuthCapability.Available -> stringResource(R.string.audit_ap_capability_available)
+        is ApAuthCapability.Unavailable ->
+            when (capability.reason) {
+                ApAuthUnavailableReason.PlatformApiLimitation ->
+                    stringResource(R.string.audit_ap_capability_platform_limit)
+                ApAuthUnavailableReason.DeviceUnsupported ->
+                    stringResource(R.string.audit_ap_capability_device)
+                ApAuthUnavailableReason.RequiresPrivilegedBuild ->
+                    stringResource(R.string.audit_ap_capability_privileged)
+                ApAuthUnavailableReason.NotImplemented ->
+                    stringResource(R.string.audit_ap_capability_not_implemented)
+            }
+    }
+
+@Composable
+private fun denialLabel(denial: AuthorizedApTestDenial): String =
+    when (denial) {
+        AuthorizedApTestDenial.ModeNotLabValidation -> stringResource(R.string.audit_ap_denial_mode)
+        AuthorizedApTestDenial.LabModeDisabled -> stringResource(R.string.audit_ap_denial_lab_mode)
+        AuthorizedApTestDenial.NotCurrentlyConnected -> stringResource(R.string.audit_ap_denial_not_connected)
+        AuthorizedApTestDenial.TargetMismatch -> stringResource(R.string.audit_ap_denial_target)
+        AuthorizedApTestDenial.InsufficientConnectionInfo -> stringResource(R.string.audit_ap_denial_info)
+        AuthorizedApTestDenial.NotLabAuthorized -> stringResource(R.string.audit_ap_denial_not_authorized)
+        AuthorizedApTestDenial.ConsentRequired -> stringResource(R.string.audit_ap_denial_consent)
+        AuthorizedApTestDenial.UnsupportedFamily -> stringResource(R.string.audit_ap_denial_family)
+        AuthorizedApTestDenial.PlatformCapabilityUnavailable ->
+            stringResource(R.string.audit_ap_denial_capability)
+    }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

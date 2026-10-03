@@ -7,16 +7,28 @@ import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.GetSavedNetwork
 import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
+import com.wifiauditlab.assessment.domain.audit.ApAuthCapability
+import com.wifiauditlab.assessment.domain.audit.ApAuthUnavailableReason
+import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGate
+import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGateRequest
+import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGateResult
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkKey
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultComposer
+import com.wifiauditlab.assessment.domain.audit.PlatformApAuthCapabilityProvider
 import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.VerificationMode
 import com.wifiauditlab.assessment.domain.audit.supportsSharedPasswordAudit
 import com.wifiauditlab.assessment.domain.audit.unsupportedAuditReason
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
+import com.wifiauditlab.assessment.domain.wifi.Bssid
+import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
+import com.wifiauditlab.assessment.port.LabModePreferences
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
@@ -47,10 +59,12 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Quick Audit: password source, automatic plan, and **local** search execution.
- * Never authenticates candidates against a router/AP.
- * Vault plaintext is revealed only at start (not held in the UI field by default).
- * Strength analysis never feeds the planner.
+ * Quick Audit: password source, automatic plan, and search execution.
+ *
+ * Default path is [VerificationMode.LOCAL_AUDIT] (encapsulated verifier; no AP).
+ * [VerificationMode.LAB_NETWORK_VALIDATION] is fail-closed (ADR-004 / F0): requires
+ * labModeEnabled, connected target, lab registry, session consent, and capability.
+ * F0 never starts the AP path (capability Unavailable on stock Android).
  */
 class PasswordAuditViewModel(
     private val targetStore: PasswordAuditTargetStore,
@@ -64,6 +78,11 @@ class PasswordAuditViewModel(
     private val engine: LabSearchEngine,
     private val calibration: SearchCalibrationService? = null,
     private val strengthAnalyzer: SecretStrengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
+    private val authorizedLabStore: AuthorizedLabNetworkStore? = null,
+    private val apCapabilityProvider: PlatformApAuthCapabilityProvider? = null,
+    private val connectionProvider: CurrentWifiConnectionProvider? = null,
+    private val labModePreferences: LabModePreferences? = null,
+    private val apTestGate: AuthorizedApTestGate = AuthorizedApTestGate(),
     private val availableProcessors: Int = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
@@ -98,6 +117,8 @@ class PasswordAuditViewModel(
                 savedNetworkId = current.savedNetworkId,
                 loadingPlan = true,
                 saveToVault = false,
+                allowsAuthorizedApTest = current.allowsAuthorizedApTest,
+                labModeEnabled = labModePreferences?.isLabModeEnabled() == true,
                 mode = PasswordAuditInteractionMode.Automatic,
                 preset = PasswordAuditBudgetPreset.Standard,
             )
@@ -115,6 +136,7 @@ class PasswordAuditViewModel(
                         } else {
                             PasswordAuditSecretSource.Manual
                         },
+                    labModeEnabled = labModePreferences?.isLabModeEnabled() == true,
                 )
             }
             calibratedThroughput = calibration?.lastRecord()?.measuredAttemptsPerSecond
@@ -123,7 +145,119 @@ class PasswordAuditViewModel(
                     runCatching { assess(current.network.securityProfile) }.getOrNull()
                 }
             _state.update { it.copy(networkAssessment = networkAssessmentCache) }
+            refreshApTestAdmission()
             rebuildPlan()
+        }
+    }
+
+    fun selectVerificationMode(mode: VerificationMode) {
+        if (_state.value.isActive) return
+        val req = request
+        val labModeOn = labModePreferences?.isLabModeEnabled() == true
+        if (mode == VerificationMode.LAB_NETWORK_VALIDATION &&
+            (req?.allowsAuthorizedApTest != true || !labModeOn)
+        ) {
+            return
+        }
+        _state.update {
+            it.copy(
+                verificationMode = mode,
+                startBlockedReason = null,
+                labModeEnabled = labModeOn,
+                apTestConsentGranted =
+                    if (mode == VerificationMode.LOCAL_AUDIT) false else it.apTestConsentGranted,
+            )
+        }
+        viewModelScope.launch(ioDispatcher) { refreshApTestAdmission() }
+    }
+
+    /** Re-read Settings preference (e.g. user toggled lab mode then returned). */
+    fun refreshLabModePreference() {
+        val enabled = labModePreferences?.isLabModeEnabled() == true
+        _state.update {
+            it.copy(
+                labModeEnabled = enabled,
+                verificationMode =
+                    if (!enabled && it.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
+                        VerificationMode.LOCAL_AUDIT
+                    } else {
+                        it.verificationMode
+                    },
+                apTestConsentGranted =
+                    if (!enabled) false else it.apTestConsentGranted,
+            )
+        }
+        viewModelScope.launch(ioDispatcher) { refreshApTestAdmission() }
+    }
+
+    fun setApTestConsent(granted: Boolean) {
+        if (_state.value.isActive) return
+        _state.update { it.copy(apTestConsentGranted = granted, startBlockedReason = null) }
+        viewModelScope.launch(ioDispatcher) { refreshApTestAdmission() }
+    }
+
+    fun setLabAuthorizedForTarget(authorized: Boolean) {
+        if (_state.value.isActive) return
+        val req = request ?: return
+        val store = authorizedLabStore ?: return
+        val key =
+            AuthorizedLabNetworkKey.of(
+                req.network.ssid.value,
+                req.network.securityProfile.family,
+            )
+        viewModelScope.launch(ioDispatcher) {
+            store.setAuthorized(key, authorized)
+            refreshApTestAdmission()
+        }
+    }
+
+    private suspend fun refreshApTestAdmission() {
+        val req = request ?: return
+        val capability =
+            apCapabilityProvider?.capability()
+                ?: ApAuthCapability.Unavailable(ApAuthUnavailableReason.NotImplemented)
+        val labModeEnabled = labModePreferences?.isLabModeEnabled() == true
+        val key =
+            AuthorizedLabNetworkKey.of(
+                req.network.ssid.value,
+                req.network.securityProfile.family,
+            )
+        val labAuthorized = authorizedLabStore?.isAuthorized(key) == true
+        val denials =
+            if (_state.value.verificationMode != VerificationMode.LAB_NETWORK_VALIDATION) {
+                emptyList()
+            } else {
+                val bssid =
+                    req.network.bssid
+                        ?: req.observation?.bssid
+                        ?: Bssid.of("02:00:00:00:00:00")
+                when (
+                    val gateResult =
+                        apTestGate.evaluate(
+                            AuthorizedApTestGateRequest(
+                                mode = VerificationMode.LAB_NETWORK_VALIDATION,
+                                labModeEnabled = labModeEnabled,
+                                requestedSsid = req.network.ssid,
+                                requestedBssid = bssid,
+                                securityFamily = req.network.securityProfile.family,
+                                connection = connectionProvider?.currentConnection(),
+                                labAuthorized = labAuthorized,
+                                userConsentGranted = _state.value.apTestConsentGranted,
+                                capability = capability,
+                            ),
+                        )
+                ) {
+                    AuthorizedApTestGateResult.Admitted -> emptyList()
+                    is AuthorizedApTestGateResult.Denied -> gateResult.reasons
+                }
+            }
+        _state.update {
+            it.copy(
+                labModeEnabled = labModeEnabled,
+                apAuthCapability = capability,
+                labAuthorizedForTarget = labAuthorized,
+                apTestDenials = denials,
+            )
         }
     }
 
@@ -294,6 +428,14 @@ class PasswordAuditViewModel(
             _state.update {
                 it.copy(startBlockedReason = PasswordAuditUiError.InvalidConfig)
             }
+            return
+        }
+        if (snapshot.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
+            // F0: never start LAB path; AndroidValidationAdapter is Unavailable + gate fail-closed.
+            _state.update {
+                it.copy(startBlockedReason = PasswordAuditUiError.ApTestNotAdmitted)
+            }
+            viewModelScope.launch(ioDispatcher) { refreshApTestAdmission() }
             return
         }
 

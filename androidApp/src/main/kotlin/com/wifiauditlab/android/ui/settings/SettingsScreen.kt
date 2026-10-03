@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,10 +21,15 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -34,7 +40,9 @@ import com.wifiauditlab.android.R
 import com.wifiauditlab.android.i18n.AppLanguage
 import com.wifiauditlab.android.i18n.AppLanguagePreferences
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
+import com.wifiauditlab.assessment.port.LabModePreferences
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -45,6 +53,8 @@ fun SettingsScreen(
     benchmarkViewModel: SettingsBenchmarkViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
+    val labModePreferences: LabModePreferences = koinInject()
+    var labModeEnabled by remember { mutableStateOf(labModePreferences.isLabModeEnabled()) }
     val currentLanguage = AppLanguagePreferences.current(context)
     val yesLabel = stringResource(R.string.settings_yes)
     val noLabel = stringResource(R.string.settings_no)
@@ -60,6 +70,29 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.settings_lab_mode), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_lab_mode_help))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            stringResource(R.string.settings_lab_mode_switch),
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
+                        )
+                        Switch(
+                            checked = labModeEnabled,
+                            onCheckedChange = { enabled ->
+                                labModePreferences.setLabModeEnabled(enabled)
+                                labModeEnabled = enabled
+                            },
+                        )
+                    }
+                }
+            }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.settings_language), fontWeight = FontWeight.SemiBold)

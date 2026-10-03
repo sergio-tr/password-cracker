@@ -6,7 +6,10 @@ import com.wifiauditlab.assessment.domain.wifi.Ssid
 
 /**
  * Snapshot of the device's active Wi-Fi association.
- * Used only as context for known-password audits — never to drive AP authentication attempts.
+ *
+ * Used as context for [VerificationMode.LOCAL_AUDIT] and as the **only** allowed
+ * target identity for [VerificationMode.LAB_NETWORK_VALIDATION] (ADR-004). Never
+ * accepts an arbitrary scanned SSID as an AP-test target.
  */
 data class CurrentWifiConnection(
     val ssid: Ssid?,

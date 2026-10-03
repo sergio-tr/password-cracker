@@ -42,6 +42,14 @@ En Nearby, la red conectada muestra badge «Conectado» y, si es elegible, CTA
 «Auditar contraseña». La auditoría exige conexión activa a esa red; si se pierde,
 el ViewModel bloquea el inicio.
 
+### Dual-mode (ADR-004 / F0)
+
+| Pieza | Estado |
+| --- | --- |
+| `LOCAL_AUDIT` | Motor local (sin AP) — Implemented |
+| `LAB_NETWORK_VALIDATION` | Gate + UI + `NetworkValidationAdapter` Unavailable — **F0 DONE**; sondeo activo = F1 |
+| Lectura PSK del sistema | **Not available** vía APIs públicas (app normal) → Vault propio |
+
 ## Permisos
 
 - Android 13+: `NEARBY_WIFI_DEVICES` (con `neverForLocation`).
