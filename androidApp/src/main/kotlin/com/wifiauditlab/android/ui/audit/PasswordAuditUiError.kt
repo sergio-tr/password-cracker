@@ -30,6 +30,8 @@ sealed interface PasswordAuditUiError {
 
     data object NoPlan : PasswordAuditUiError
 
+    data object ApTestNotAdmitted : PasswordAuditUiError
+
     data class PlanNotApplicable(
         val reason: PasswordAuditInapplicableReason,
     ) : PasswordAuditUiError
@@ -50,6 +52,7 @@ fun PasswordAuditUiError.message(): String =
         PasswordAuditUiError.AuditFailed -> stringResource(R.string.audit_err_audit_failed)
         PasswordAuditUiError.BudgetRequired -> stringResource(R.string.audit_err_budget_required)
         PasswordAuditUiError.NoPlan -> stringResource(R.string.audit_err_no_plan)
+        PasswordAuditUiError.ApTestNotAdmitted -> stringResource(R.string.audit_err_ap_test_not_admitted)
         is PasswordAuditUiError.PlanNotApplicable -> stringResource(this.reason.labelRes())
     }
 

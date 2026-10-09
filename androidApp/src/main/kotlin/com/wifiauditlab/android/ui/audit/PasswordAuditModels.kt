@@ -2,9 +2,14 @@ package com.wifiauditlab.android.ui.audit
 
 import com.wifiauditlab.android.ui.lab.PrototypeSecurityPreset
 import com.wifiauditlab.android.ui.nearby.NearbyItem
+import com.wifiauditlab.assessment.domain.audit.ApAuthCapability
+import com.wifiauditlab.assessment.domain.audit.ApAuthUnavailableReason
+import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestDenial
+import com.wifiauditlab.assessment.domain.audit.LabSessionTerminationReason
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultReport
 import com.wifiauditlab.assessment.domain.audit.PasswordStrengthAssessment
+import com.wifiauditlab.assessment.domain.audit.VerificationMode
 import com.wifiauditlab.assessment.domain.audit.toPasswordAuditInapplicableReason
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
@@ -43,12 +48,33 @@ enum class PasswordAuditScreenPhase {
     Starting,
 }
 
-/** Payload from Nearby detail → Quick Audit (no password). */
+/** UI projection of LAB_NETWORK_VALIDATION session lifecycle (orchestrator owns security). */
+enum class LabValidationUiPhase {
+    Idle,
+    Checking,
+    Denied,
+    Admitted,
+    Running,
+    Completed,
+    Cancelled,
+    Failed,
+}
+
+/**
+ * Quick Audit payload from Nearby detail → screen (no password).
+ * [observation] non-null enables connection re-check for LOCAL and is required
+ * identity for LAB_NETWORK_VALIDATION (ADR-004).
+ */
 data class PasswordAuditRequest(
     val network: PasswordAuditNetworkContext,
     val savedNetworkId: SavedNetworkId?,
     /** Used to re-check connection eligibility before start. */
     val observation: WifiObservation? = null,
+    /**
+     * When true, UI may offer LAB_NETWORK_VALIDATION. Vault entries set this false:
+     * Vault may supply a secret, never an alternate AP target.
+     */
+    val allowsAuthorizedApTest: Boolean = true,
 )
 
 class PasswordAuditTargetStore {
@@ -82,6 +108,20 @@ data class PasswordAuditUiState(
     val saveToVault: Boolean = false,
     val passwordError: PasswordAuditUiError? = null,
     val mode: PasswordAuditInteractionMode = PasswordAuditInteractionMode.Automatic,
+    /** LOCAL_AUDIT (default) vs LAB_NETWORK_VALIDATION (fail-closed; ADR-004). */
+    val verificationMode: VerificationMode = VerificationMode.LOCAL_AUDIT,
+    /** From Settings; required by gate but does not authorize alone. */
+    val labModeEnabled: Boolean = false,
+    val allowsAuthorizedApTest: Boolean = true,
+    val apTestConsentGranted: Boolean = false,
+    val labAuthorizedForTarget: Boolean = false,
+    val apAuthCapability: ApAuthCapability =
+        ApAuthCapability.Unavailable(ApAuthUnavailableReason.NotImplemented),
+    val apTestDenials: List<AuthorizedApTestDenial> = emptyList(),
+    val labValidationPhase: LabValidationUiPhase = LabValidationUiPhase.Idle,
+    val labSessionId: String? = null,
+    val labTerminationReason: LabSessionTerminationReason? = null,
+    val labResultSummary: String? = null,
     val preset: PasswordAuditBudgetPreset = PasswordAuditBudgetPreset.Standard,
     val advancedExpanded: Boolean = false,
     val planDetailsExpanded: Boolean = false,
@@ -113,7 +153,10 @@ data class PasswordAuditUiState(
         get() =
             searchState == SearchState.Preparing ||
                 searchState == SearchState.Running ||
-                searchState == SearchState.Cancelling
+                searchState == SearchState.Cancelling ||
+                labValidationPhase == LabValidationUiPhase.Checking ||
+                labValidationPhase == LabValidationUiPhase.Admitted ||
+                labValidationPhase == LabValidationUiPhase.Running
 
     val hasSecretReady: Boolean
         get() =
@@ -148,12 +191,14 @@ fun passwordAuditRequestFromNearby(item: NearbyItem): PasswordAuditRequest {
             ),
         savedNetworkId = item.savedNetworkId,
         observation = observation,
+        allowsAuthorizedApTest = true,
     )
 }
 
 /**
- * Quick Audit entry from Vault. Uses family → preset profile; no live [WifiObservation]
- * (connection eligibility is skipped until a Nearby observation is available).
+ * Quick Audit entry from Vault. Uses family → preset profile; no live [WifiObservation].
+ * Always [allowsAuthorizedApTest] = false: Vault may supply a credential, but must not
+ * launch LAB_NETWORK_VALIDATION against a non-current SSID (ADR-004 / product option 1).
  */
 fun passwordAuditRequestFromVault(network: SavedWifiNetwork): PasswordAuditRequest {
     val preset =
@@ -171,6 +216,7 @@ fun passwordAuditRequestFromVault(network: SavedWifiNetwork): PasswordAuditReque
             ),
         savedNetworkId = network.id,
         observation = null,
+        allowsAuthorizedApTest = false,
     )
 }
 

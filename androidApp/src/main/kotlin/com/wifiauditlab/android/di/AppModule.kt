@@ -5,8 +5,10 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wifiauditlab.android.platform.AndroidCalibrationEnvironmentProvider
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.platform.KeystoreSecretVault
+import com.wifiauditlab.android.platform.SharedPreferencesAuthorizedLabNetworkStore
 import com.wifiauditlab.android.platform.SharedPreferencesBenchmarkRepository
 import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
+import com.wifiauditlab.android.platform.SharedPreferencesLabModePreferences
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
 import com.wifiauditlab.android.ui.audit.PasswordAuditViewModel
@@ -23,6 +25,9 @@ import com.wifiauditlab.android.ui.settings.SettingsBenchmarkViewModel
 import com.wifiauditlab.android.ui.settings.SettingsCalibrationViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidCurrentWifiConnectionProvider
+import com.wifiauditlab.android.wifi.AndroidNetworkValidationAdapter
+import com.wifiauditlab.android.wifi.AndroidNetworkValidationCapabilityEvaluator
+import com.wifiauditlab.android.wifi.AndroidWifiConnectionMonitor
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 import com.wifiauditlab.android.wifi.AndroidWifiScanner
@@ -46,10 +51,16 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
+import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGate
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
 import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.InMemoryLabSessionEvidenceLog
+import com.wifiauditlab.assessment.domain.audit.LabValidationSessionOrchestrator
+import com.wifiauditlab.assessment.domain.audit.NetworkValidationAdapter
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.PlatformApAuthCapabilityProvider
 import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.classifier.WifiSecurityClassifier
 import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMatcher
@@ -58,9 +69,11 @@ import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.match.KnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
+import com.wifiauditlab.assessment.port.LabModePreferences
 import com.wifiauditlab.assessment.port.OnboardingPreferences
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
+import com.wifiauditlab.assessment.port.WifiConnectionMonitor
 import com.wifiauditlab.assessment.port.WifiScanner
 import com.wifiauditlab.lab.domain.BenchmarkRepository
 import com.wifiauditlab.lab.domain.CalibrationRepository
@@ -108,10 +121,44 @@ val appModule =
         }
         single<SecretVault> { KeystoreSecretVault(androidContext()) }
         single<OnboardingPreferences> { SharedPreferencesOnboardingPreferences(androidContext()) }
+        single<LabModePreferences> { SharedPreferencesLabModePreferences(androidContext()) }
         single { SecurityAnalysisTargetStore() }
         single { LabNetworkContextStore() }
         single { LabPasswordSeedStore() }
         single { PasswordAuditTargetStore() }
+        single<AuthorizedLabNetworkStore> { SharedPreferencesAuthorizedLabNetworkStore(androidContext()) }
+        single {
+            AndroidNetworkValidationCapabilityEvaluator(
+                androidContext(),
+                get(),
+            )
+        }
+        single<NetworkValidationAdapter> {
+            AndroidNetworkValidationAdapter(
+                context = androidContext(),
+                permissions = get(),
+                capabilityEvaluator = get(),
+            )
+        }
+        single<PlatformApAuthCapabilityProvider> {
+            val adapter: NetworkValidationAdapter = get()
+            PlatformApAuthCapabilityProvider { adapter.capability() }
+        }
+        single<WifiConnectionMonitor> {
+            AndroidWifiConnectionMonitor(androidContext(), get())
+        }
+        single { AuthorizedApTestGate() }
+        single {
+            LabValidationSessionOrchestrator(
+                gate = get(),
+                connectionProvider = get(),
+                connectionMonitor = get(),
+                labModePreferences = get(),
+                registry = get(),
+                adapter = get(),
+                evidenceLog = InMemoryLabSessionEvidenceLog(),
+            )
+        }
         single<AutomaticPasswordAuditPlanner> { DefaultAutomaticPasswordAuditPlanner() }
         single<SecretStrengthAnalyzer> { HeuristicSecretStrengthAnalyzer() }
         single<SqlDriver> { AndroidSqliteDriver(VaultDatabase.Schema, androidContext(), "vault.db") }
@@ -208,6 +255,12 @@ val appModule =
                 engine = get(),
                 calibration = get(),
                 strengthAnalyzer = get(),
+                authorizedLabStore = get(),
+                apCapabilityProvider = get(),
+                connectionProvider = get(),
+                labModePreferences = get(),
+                apTestGate = get(),
+                labSessionOrchestrator = get(),
             )
         }
         viewModel { SettingsCalibrationViewModel(get(), get()) }
