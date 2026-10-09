@@ -118,6 +118,9 @@ class MainActivityRuntimeLocaleTest {
             AppLanguagePreferences.current(appContext) == language
         }
         composeRule.waitForIdle()
+        // API 35 may recreate asynchronously after setApplicationLocales; wait for hierarchy.
+        composeRule.waitUntil(timeoutMillis = 15_000) { probeLabelVisible() }
+        composeRule.waitForIdle()
     }
 
     private fun recreateActivityAndWait() {
@@ -125,16 +128,24 @@ class MainActivityRuntimeLocaleTest {
             composeRule.activity.recreate()
         }
         composeRule.waitForIdle()
+        composeRule.waitUntil(timeoutMillis = 15_000) { probeLabelVisible() }
+        composeRule.waitForIdle()
     }
 
     private fun assertProbeLabel(expected: String) {
         composeRule.waitUntil(timeoutMillis = 15_000) {
-            activityNavLabel() == expected && probeLabelVisible()
+            try {
+                if (!probeLabelVisible()) return@waitUntil false
+                if (activityNavLabel() != expected) return@waitUntil false
+                composeRule
+                    .onNodeWithTag(LocaleProbeActivity.TAG_NAV_LABEL)
+                    .assertIsDisplayed()
+                    .assertTextEquals(expected)
+                true
+            } catch (_: Throwable) {
+                false
+            }
         }
-        composeRule
-            .onNodeWithTag(LocaleProbeActivity.TAG_NAV_LABEL)
-            .assertIsDisplayed()
-            .assertTextEquals(expected)
     }
 
     private fun probeLabelVisible(): Boolean =
