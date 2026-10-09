@@ -59,6 +59,7 @@ el ViewModel bloquea el inicio.
 | Evidence durable (F3) | `SharedPreferencesLabSessionEvidenceLog` sanitizado + retención acotada |
 | Backup (F3) | `allowBackup=false` + exclusiones explícitas (`backup_rules` / `data_extraction_rules`) |
 | Validación física Wi‑Fi | **Physical validated** solo tras checklist F3 en dispositivo real |
+| UX consolidation (F4) | LOCAL recomendado; LAB bajo avanzado/Lab Mode; tarjeta comparativa |
 
 ## Permisos
 

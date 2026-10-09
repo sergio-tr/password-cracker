@@ -38,6 +38,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
 | Dual-mode LOCAL / LAB_NETWORK_VALIDATION (F0–F2) | **Implemented** + **Automated tested**: F0 gate/registry; F1 sesión/orquestador; F2 un probe local-only. **Available** solo API 34+ + STA concurrency + permisos; si no → Unavailable tipado. **Physical validated**: pendiente checklist F3. |
 | LAB product integration (F3) | **Implemented** (Code): registro Nearby/Vault, capability UX, sesión/STOP, evidence durable sanitizada, backup rules. **Automated tested**: JVM + instrumentación evidence. **Physical validated**: checklist en `docs/14` / `test-evidence` (no marcar PASS sin dispositivo). |
+| Audit mode UX consolidation (F4) | **Implemented**: LOCAL recomendado + tarjeta comparativa + LAB bajo opciones avanzadas / Lab Mode. |
 | Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
 | STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
 | Resultados de auditoría | **Implemented** (PR6): `WifiPasswordAuditResult`; config Wi‑Fi vs contraseña separados; recomendaciones; guía «Cómo mejorarla». |
