@@ -1,6 +1,6 @@
 # ADR-004 · LOCAL_AUDIT vs LAB_NETWORK_VALIDATION (laboratorio autorizado)
 
-- Estado: Accepted — **F0 DONE · F1 DONE · F2 DONE (capability condicionada)** (2026-10-03)
+- Estado: Accepted — **F0–F2 DONE · F3 product integration Implemented (Physical pending)** (2026-10-09)
 - Fecha: 2026-10-03
 - Relacionado: [ADR-003](./ADR-003-real-wifi-vs-synthetic-lab.md),
   [ADR-connected-known-password-audit](./ADR-connected-known-password-audit.md),
@@ -175,8 +175,9 @@ Vault:
 | **F0** | ADR + `VerificationMode` + `labModeEnabled` + gate + registry + `NetworkValidationAdapter` Unavailable + UI selector/consent/denials + tests + docs | **DONE** |
 | **F1** | `LabValidationSession` + orchestrator + snapshot + monitors + budget/timeout/cancel + evidence + UI + tests | **DONE** |
 | **F2** | Un probe local-only (`WifiNetworkSpecifier`) + failure reasons API 34+; capability condicionada; credencial explícita | **DONE** |
-| **F3** | Marcado lab Nearby/Vault; hardening backup; walkthrough / evidencia dispositivo | Planned |
-| **F3 (opcional, builds privilegio)** | Adaptador `READ_WIFI_CREDENTIAL` / imagen sistema — nunca en variante Play | Planned |
+| **F3** | Registro lab Nearby/Vault; capability UX; sesión/STOP; evidence durable; backup rules; tests; checklist físico | **Implemented** + **Automated tested**; **Physical validated** pendiente |
+| **F4** | UX consolidation LOCAL vs LAB (tarjeta comparativa) | Planned (tras F3 CI) |
+| **F5 (opcional, builds privilegio)** | Adaptador `READ_WIFI_CREDENTIAL` / imagen sistema — nunca en variante Play | Planned |
 
 ## Consecuencias
 

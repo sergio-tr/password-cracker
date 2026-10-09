@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wifiauditlab.android.R
+import com.wifiauditlab.android.support.FakeLabModePreferences
 import com.wifiauditlab.android.support.FakeSavedNetworkRepository
 import com.wifiauditlab.android.support.FakeSecretVault
 import com.wifiauditlab.android.support.vaultViewModel
@@ -41,8 +42,14 @@ class VaultComposeTest {
     private fun setVault(
         repo: FakeSavedNetworkRepository = FakeSavedNetworkRepository(),
         vault: FakeSecretVault = FakeSecretVault(),
+        labModeEnabled: Boolean = false,
     ): VaultViewModel {
-        val vm = vaultViewModel(repo, vault)
+        val vm =
+            vaultViewModel(
+                repo = repo,
+                vault = vault,
+                labModePreferences = FakeLabModePreferences(labModeEnabled),
+            )
         composeTestRule.setContent {
             WifiAuditLabTheme {
                 VaultScreen(viewModel = vm)
@@ -294,5 +301,51 @@ class VaultComposeTest {
         composeTestRule.onNodeWithText(openAudit).performClick()
         composeTestRule.waitForIdle()
         assertTrue(openedAudit?.alias == "LabEntry")
+    }
+
+    @Test
+    fun labModeOn_showsRegisterAsLabNetwork_andTogglesStatus() {
+        val repo = FakeSavedNetworkRepository()
+        val vault = FakeSecretVault()
+        seed(repo, vault, "LabNet", "LAB_SSID", withSecret = true)
+
+        setVault(repo, vault, labModeEnabled = true)
+        waitForText("LabNet")
+        composeTestRule.onNodeWithText("LabNet").performClick()
+        waitForText(activity.getString(R.string.vault_lab_section))
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_lab_status_not_registered))
+            .assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.vault_cd_register_lab))
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.vault_lab_status_registered))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_lab_status_registered))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun labModeOff_hidesLabRegistryActions() {
+        val repo = FakeSavedNetworkRepository()
+        val vault = FakeSecretVault()
+        seed(repo, vault, "NoLab", "NO_LAB_SSID", withSecret = true)
+
+        setVault(repo, vault, labModeEnabled = false)
+        waitForText("NoLab")
+        composeTestRule.onNodeWithText("NoLab").performClick()
+        waitForText(activity.getString(R.string.vault_password_section))
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.vault_lab_section))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 }

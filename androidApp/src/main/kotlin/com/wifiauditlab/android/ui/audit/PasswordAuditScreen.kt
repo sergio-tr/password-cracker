@@ -61,6 +61,7 @@ import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.audit.ApAuthCapability
 import com.wifiauditlab.assessment.domain.audit.ApAuthUnavailableReason
 import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestDenial
+import com.wifiauditlab.assessment.domain.audit.LabSessionTerminationReason
 import com.wifiauditlab.assessment.domain.audit.PasswordSearchOutcomeKind
 import com.wifiauditlab.assessment.domain.audit.VerificationMode
 import com.wifiauditlab.core.math.CombinationCount
@@ -401,6 +402,11 @@ private fun VerificationModeSection(
                 )
             }
             if (state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
+                Text(
+                    stringResource(R.string.audit_verification_lab_help),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = state.labAuthorizedForTarget,
@@ -440,7 +446,10 @@ private fun VerificationModeSection(
                     )
                     state.labTerminationReason?.let { reason ->
                         Text(
-                            stringResource(R.string.audit_lab_session_termination, reason.name),
+                            stringResource(
+                                R.string.audit_lab_session_termination,
+                                labTerminationReasonLabel(reason),
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -459,9 +468,43 @@ private fun labValidationPhaseLabel(phase: LabValidationUiPhase): String =
         LabValidationUiPhase.Denied -> stringResource(R.string.audit_lab_session_denied)
         LabValidationUiPhase.Admitted -> stringResource(R.string.audit_lab_session_admitted)
         LabValidationUiPhase.Running -> stringResource(R.string.audit_lab_session_running)
+        LabValidationUiPhase.Stopping -> stringResource(R.string.audit_lab_session_stopping)
         LabValidationUiPhase.Completed -> stringResource(R.string.audit_lab_session_completed)
         LabValidationUiPhase.Cancelled -> stringResource(R.string.audit_lab_session_cancelled)
         LabValidationUiPhase.Failed -> stringResource(R.string.audit_lab_session_failed)
+    }
+
+@Composable
+private fun labTerminationReasonLabel(reason: LabSessionTerminationReason): String =
+    when (reason) {
+        LabSessionTerminationReason.Completed ->
+            stringResource(R.string.audit_lab_term_completed)
+        LabSessionTerminationReason.UserCancelled ->
+            stringResource(R.string.audit_lab_term_user_cancelled)
+        LabSessionTerminationReason.NetworkChanged ->
+            stringResource(R.string.audit_lab_term_network_changed)
+        LabSessionTerminationReason.NetworkLost ->
+            stringResource(R.string.audit_lab_term_network_lost)
+        LabSessionTerminationReason.LabModeDisabled ->
+            stringResource(R.string.audit_lab_term_lab_mode_disabled)
+        LabSessionTerminationReason.NetworkAuthorizationRevoked ->
+            stringResource(R.string.audit_lab_term_registry_revoked)
+        LabSessionTerminationReason.BudgetExhausted ->
+            stringResource(R.string.audit_lab_term_budget)
+        LabSessionTerminationReason.Timeout ->
+            stringResource(R.string.audit_lab_term_timeout)
+        LabSessionTerminationReason.CapabilityUnavailable ->
+            stringResource(R.string.audit_lab_term_capability)
+        LabSessionTerminationReason.GateDenied ->
+            stringResource(R.string.audit_lab_term_gate_denied)
+        LabSessionTerminationReason.AdapterUnavailable ->
+            stringResource(R.string.audit_lab_term_adapter_unavailable)
+        LabSessionTerminationReason.AdapterRejected ->
+            stringResource(R.string.audit_lab_term_adapter_rejected)
+        LabSessionTerminationReason.AdapterError ->
+            stringResource(R.string.audit_lab_term_adapter_error)
+        LabSessionTerminationReason.ConcurrentSessionRejected ->
+            stringResource(R.string.audit_lab_term_concurrent)
     }
 
 private fun requestAllowsLabValidation(state: PasswordAuditUiState): Boolean =
@@ -485,6 +528,10 @@ private fun apCapabilityMessage(capability: ApAuthCapability): String =
                     stringResource(R.string.audit_ap_capability_requires_api34)
                 ApAuthUnavailableReason.RequiresStaConcurrency ->
                     stringResource(R.string.audit_ap_capability_requires_sta_concurrency)
+                ApAuthUnavailableReason.PermissionMissing ->
+                    stringResource(R.string.audit_ap_capability_permission_missing)
+                ApAuthUnavailableReason.UnsupportedSecurityFamily ->
+                    stringResource(R.string.audit_ap_capability_unsupported_family)
             }
     }
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  allowBackup=false is the primary control. These rules document explicit exclusions
+  if backup/extraction were ever re-enabled: never restore lab registry, lab mode,
+  session evidence, or vault ciphertext material.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="authorized_lab_networks.xml" />
+    <exclude domain="sharedpref" path="lab_mode_preferences.xml" />
+    <exclude domain="sharedpref" path="lab_session_evidence.xml" />
+    <exclude domain="sharedpref" path="secret_vault.xml" />
+    <exclude domain="database" path="vault.db" />
+</full-backup-content>

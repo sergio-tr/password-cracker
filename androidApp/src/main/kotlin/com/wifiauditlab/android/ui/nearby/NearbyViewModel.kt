@@ -8,8 +8,11 @@ import com.wifiauditlab.assessment.application.ObserveNearbyNetworks
 import com.wifiauditlab.assessment.application.RecordNearbySightings
 import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
 import com.wifiauditlab.assessment.application.SaveNearbyNetwork
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkKey
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.supportsLabNetworkValidation
 import com.wifiauditlab.assessment.domain.connection.CurrentWifiConnection
 import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
@@ -18,6 +21,7 @@ import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
+import com.wifiauditlab.assessment.port.LabModePreferences
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
 import com.wifiauditlab.assessment.port.WifiScanState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +58,10 @@ data class NearbyDetailState(
     val assessment: SecurityAssessment? = null,
     val saved: Boolean = false,
     val auditEligibility: PasswordAuditEligibility? = null,
+    val labModeEnabled: Boolean = false,
+    val labRegistered: Boolean = false,
+    /** Lab Mode on + connected Exact/Probable + family supports LAB validation. */
+    val canRegisterAsLab: Boolean = false,
 )
 
 private fun NearbyNetwork.toItem(connectionMatch: NetworkConnectionMatch?): NearbyItem =
@@ -80,6 +88,8 @@ class NearbyViewModel(
     private val connectionProvider: CurrentWifiConnectionProvider,
     private val eligibilityChecker: PasswordAuditEligibilityChecker,
     private val connectionMatcher: NetworkConnectionMatcher = DefaultNetworkConnectionMatcher(),
+    private val labModePreferences: LabModePreferences? = null,
+    private val labNetworkRegistry: AuthorizedLabNetworkStore? = null,
 ) : ViewModel() {
     private val latestConnection = MutableStateFlow<CurrentWifiConnection?>(null)
 
@@ -115,14 +125,32 @@ class NearbyViewModel(
     }
 
     fun select(item: NearbyItem) {
-        _detail.value = NearbyDetailState(item)
+        val labMode = labModePreferences?.isLabModeEnabled() == true
+        val family = item.observation.securityProfile.family
+        val canRegister =
+            labMode &&
+                item.isCurrentlyConnected &&
+                family.supportsLabNetworkValidation()
+        _detail.value =
+            NearbyDetailState(
+                item = item,
+                labModeEnabled = labMode,
+                canRegisterAsLab = canRegister,
+            )
         viewModelScope.launch {
             val assessment = assessSecurity(item.observation)
             val eligibility = eligibilityChecker.check(item.observation)
+            val registered =
+                labNetworkRegistry?.isAuthorized(
+                    AuthorizedLabNetworkKey.of(item.observation.ssid.value, family),
+                ) == true
             _detail.value =
                 _detail.value?.takeIf { it.item == item }?.copy(
                     assessment = assessment,
                     auditEligibility = eligibility,
+                    labRegistered = registered,
+                    labModeEnabled = labMode,
+                    canRegisterAsLab = canRegister,
                 )
         }
     }
@@ -140,6 +168,26 @@ class NearbyViewModel(
                 existingId = current.item.savedNetworkId,
             )
             _detail.value = _detail.value?.takeIf { it.item == current.item }?.copy(saved = true)
+        }
+    }
+
+    /**
+     * Registers / unregisters the **currently connected** selected network as a lab identity.
+     * Does not start a validation session and does not accept arbitrary scan targets.
+     */
+    fun setLabRegistered(registered: Boolean) {
+        val current = _detail.value ?: return
+        if (!current.canRegisterAsLab && registered) return
+        if (!current.labModeEnabled) return
+        val registry = labNetworkRegistry ?: return
+        val obs = current.item.observation
+        viewModelScope.launch {
+            registry.setAuthorized(
+                AuthorizedLabNetworkKey.of(obs.ssid.value, obs.securityProfile.family),
+                registered,
+            )
+            _detail.value =
+                _detail.value?.takeIf { it.item == current.item }?.copy(labRegistered = registered)
         }
     }
 

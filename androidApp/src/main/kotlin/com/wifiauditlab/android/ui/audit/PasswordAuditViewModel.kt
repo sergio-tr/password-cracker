@@ -529,7 +529,7 @@ class PasswordAuditViewModel(
         ) {
             _state.update {
                 it.copy(
-                    labValidationPhase = LabValidationUiPhase.Running,
+                    labValidationPhase = LabValidationUiPhase.Stopping,
                     searchState = SearchState.Cancelling,
                 )
             }
@@ -667,9 +667,8 @@ class PasswordAuditViewModel(
         when (this) {
             LabValidationSessionState.Created -> LabValidationUiPhase.Checking
             LabValidationSessionState.Admitted -> LabValidationUiPhase.Admitted
-            LabValidationSessionState.Running,
-            LabValidationSessionState.Stopping,
-            -> LabValidationUiPhase.Running
+            LabValidationSessionState.Running -> LabValidationUiPhase.Running
+            LabValidationSessionState.Stopping -> LabValidationUiPhase.Stopping
             LabValidationSessionState.Completed -> LabValidationUiPhase.Completed
             LabValidationSessionState.Cancelled -> LabValidationUiPhase.Cancelled
             LabValidationSessionState.Denied -> LabValidationUiPhase.Denied

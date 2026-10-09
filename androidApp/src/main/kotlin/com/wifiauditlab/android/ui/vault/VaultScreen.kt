@@ -270,6 +270,55 @@ private fun NetworkDetailSheet(
 
             HorizontalDivider()
 
+            if (detail.labModeEnabled && detail.canUseAsLabNetwork) {
+                val registerLabCd = stringResource(R.string.vault_cd_register_lab)
+                val unregisterLabCd = stringResource(R.string.vault_cd_unregister_lab)
+                Text(stringResource(R.string.vault_lab_section), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.vault_lab_alias, network.alias))
+                Text(stringResource(R.string.vault_lab_ssid, network.ssid))
+                Text(stringResource(R.string.vault_lab_security, securityLabel(network.securityFamily)))
+                Text(
+                    if (detail.labRegistered) {
+                        stringResource(R.string.vault_lab_status_registered)
+                    } else {
+                        stringResource(R.string.vault_lab_status_not_registered)
+                    },
+                    fontWeight = FontWeight.SemiBold,
+                    color =
+                        if (detail.labRegistered) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
+                Text(
+                    stringResource(R.string.vault_lab_register_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                if (detail.labRegistered) {
+                    OutlinedButton(
+                        onClick = { viewModel.setLabRegistered(false) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = unregisterLabCd },
+                    ) {
+                        Text(stringResource(R.string.vault_unregister_lab))
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { viewModel.setLabRegistered(true) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = registerLabCd },
+                    ) {
+                        Text(stringResource(R.string.vault_register_lab))
+                    }
+                }
+                HorizontalDivider()
+            }
+
             Button(
                 onClick = onOpenLab,
                 modifier =

@@ -154,6 +154,7 @@ fun NearbyScreen(
                 context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
             },
             onRequestPermissions = { launcher.launch(permissions) },
+            onSetLabRegistered = viewModel::setLabRegistered,
         )
     }
 }
@@ -236,6 +237,7 @@ private fun NetworkDetailSheet(
     onOpenPasswordAudit: () -> Unit,
     onOpenWifiSettings: () -> Unit,
     onRequestPermissions: () -> Unit,
+    onSetLabRegistered: (Boolean) -> Unit,
 ) {
     val observation = detail.item.observation
     var alias by remember(detail.item) {
@@ -244,6 +246,8 @@ private fun NetworkDetailSheet(
     var showAdvanced by remember(detail.item) { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val openLabCd = stringResource(R.string.nearby_cd_open_lab)
+    val registerLabCd = stringResource(R.string.nearby_cd_register_lab)
+    val unregisterLabCd = stringResource(R.string.nearby_cd_unregister_lab)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -274,6 +278,44 @@ private fun NetworkDetailSheet(
                 },
                 fontWeight = FontWeight.SemiBold,
             )
+
+            if (detail.labModeEnabled && (detail.canRegisterAsLab || detail.labRegistered)) {
+                Spacer(Modifier.height(8.dp))
+                if (detail.labRegistered) {
+                    Text(
+                        stringResource(R.string.nearby_lab_network_badge),
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        stringResource(R.string.nearby_lab_register_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    OutlinedButton(
+                        onClick = { onSetLabRegistered(false) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = unregisterLabCd },
+                    ) {
+                        Text(stringResource(R.string.nearby_unregister_lab))
+                    }
+                } else if (detail.canRegisterAsLab) {
+                    Text(
+                        stringResource(R.string.nearby_lab_register_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    OutlinedButton(
+                        onClick = { onSetLabRegistered(true) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = registerLabCd },
+                    ) {
+                        Text(stringResource(R.string.nearby_register_lab))
+                    }
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
             PasswordAuditSection(

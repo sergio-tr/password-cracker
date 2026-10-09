@@ -9,6 +9,7 @@ import com.wifiauditlab.android.platform.SharedPreferencesAuthorizedLabNetworkSt
 import com.wifiauditlab.android.platform.SharedPreferencesBenchmarkRepository
 import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
 import com.wifiauditlab.android.platform.SharedPreferencesLabModePreferences
+import com.wifiauditlab.android.platform.SharedPreferencesLabSessionEvidenceLog
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
 import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
 import com.wifiauditlab.android.ui.audit.PasswordAuditViewModel
@@ -56,7 +57,7 @@ import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
 import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
-import com.wifiauditlab.assessment.domain.audit.InMemoryLabSessionEvidenceLog
+import com.wifiauditlab.assessment.domain.audit.LabSessionEvidenceLog
 import com.wifiauditlab.assessment.domain.audit.LabValidationSessionOrchestrator
 import com.wifiauditlab.assessment.domain.audit.NetworkValidationAdapter
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
@@ -127,6 +128,7 @@ val appModule =
         single { LabPasswordSeedStore() }
         single { PasswordAuditTargetStore() }
         single<AuthorizedLabNetworkStore> { SharedPreferencesAuthorizedLabNetworkStore(androidContext()) }
+        single<LabSessionEvidenceLog> { SharedPreferencesLabSessionEvidenceLog(androidContext()) }
         single {
             AndroidNetworkValidationCapabilityEvaluator(
                 androidContext(),
@@ -156,7 +158,7 @@ val appModule =
                 labModePreferences = get(),
                 registry = get(),
                 adapter = get(),
-                evidenceLog = InMemoryLabSessionEvidenceLog(),
+                evidenceLog = get(),
             )
         }
         single<AutomaticPasswordAuditPlanner> { DefaultAutomaticPasswordAuditPlanner() }
@@ -223,9 +225,35 @@ val appModule =
         factory { RefreshNearbyNetworks(get()) }
 
         // ViewModels
-        viewModel { NearbyViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
         viewModel {
-            VaultViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+            NearbyViewModel(
+                observeNearby = get(),
+                refreshNearby = get(),
+                assessSecurity = get(),
+                saveNearbyNetwork = get(),
+                recordNearbySightings = get(),
+                connectionProvider = get(),
+                eligibilityChecker = get(),
+                connectionMatcher = get(),
+                labModePreferences = get(),
+                labNetworkRegistry = get(),
+            )
+        }
+        viewModel {
+            VaultViewModel(
+                observeSaved = get(),
+                querySaved = get(),
+                createSavedNetwork = get(),
+                deleteSavedNetwork = get(),
+                updateAlias = get(),
+                updateLocation = get(),
+                updateNotes = get(),
+                updateSecret = get(),
+                removeSecret = get(),
+                revealSecretUseCase = get(),
+                labModePreferences = get(),
+                labNetworkRegistry = get(),
+            )
         }
         viewModel {
             LabViewModel(

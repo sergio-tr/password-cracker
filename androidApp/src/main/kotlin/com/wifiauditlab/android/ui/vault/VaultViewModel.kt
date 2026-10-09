@@ -14,12 +14,16 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkKey
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
+import com.wifiauditlab.assessment.domain.audit.supportsLabNetworkValidation
 import com.wifiauditlab.assessment.domain.vault.LocationLabel
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
+import com.wifiauditlab.assessment.port.LabModePreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +47,10 @@ data class VaultUiState(
 data class VaultDetailState(
     val network: SavedWifiNetwork,
     val revealedSecret: String? = null,
+    val labModeEnabled: Boolean = false,
+    val labRegistered: Boolean = false,
+    /** Family supports LAB network validation (SSID+family identity). */
+    val canUseAsLabNetwork: Boolean = false,
 )
 
 /**
@@ -61,12 +69,16 @@ class VaultViewModel(
     private val updateSecret: UpdateSavedNetworkSecret,
     private val removeSecret: RemoveSavedNetworkSecret,
     private val revealSecretUseCase: RevealSavedNetworkSecret,
+    private val labModePreferences: LabModePreferences? = null,
+    private val labNetworkRegistry: AuthorizedLabNetworkStore? = null,
 ) : ViewModel() {
     private val query = MutableStateFlow("")
     private val sort = MutableStateFlow(SavedNetworkListSort.AliasAsc)
     private val filter = MutableStateFlow(SavedNetworkSecretFilter.All)
     private val selectedId = MutableStateFlow<SavedNetworkId?>(null)
     private val revealed = MutableStateFlow<Pair<SavedNetworkId, String>?>(null)
+    private val labModeEnabled = MutableStateFlow(false)
+    private val labRegistered = MutableStateFlow(false)
 
     private val networks = observeSaved()
 
@@ -82,11 +94,14 @@ class VaultViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VaultUiState())
 
     val detail: StateFlow<VaultDetailState?> =
-        combine(networks, selectedId, revealed) { all, id, reveal ->
+        combine(networks, selectedId, revealed, labModeEnabled, labRegistered) { all, id, reveal, labMode, registered ->
             val network = id?.let { sel -> all.firstOrNull { it.id == sel } } ?: return@combine null
             VaultDetailState(
                 network = network,
                 revealedSecret = reveal?.takeIf { it.first == network.id }?.second,
+                labModeEnabled = labMode,
+                labRegistered = registered,
+                canUseAsLabNetwork = network.securityFamily.supportsLabNetworkValidation(),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -105,11 +120,43 @@ class VaultViewModel(
     fun select(network: SavedWifiNetwork) {
         revealed.value = null
         selectedId.value = network.id
+        labModeEnabled.value = labModePreferences?.isLabModeEnabled() == true
+        labRegistered.value = false
+        viewModelScope.launch {
+            val registered =
+                labNetworkRegistry?.isAuthorized(
+                    AuthorizedLabNetworkKey.of(network.ssid, network.securityFamily),
+                ) == true
+            if (selectedId.value == network.id) {
+                labRegistered.value = registered
+            }
+        }
     }
 
     fun dismissDetail() {
         revealed.value = null
         selectedId.value = null
+        labRegistered.value = false
+    }
+
+    /**
+     * Marks / clears this saved network identity in the lab registry.
+     * Does **not** grant session consent or start validation.
+     */
+    fun setLabRegistered(registered: Boolean) {
+        val network = detail.value?.network ?: return
+        if (labModePreferences?.isLabModeEnabled() != true) return
+        if (!network.securityFamily.supportsLabNetworkValidation() && registered) return
+        val registry = labNetworkRegistry ?: return
+        viewModelScope.launch {
+            registry.setAuthorized(
+                AuthorizedLabNetworkKey.of(network.ssid, network.securityFamily),
+                registered,
+            )
+            if (selectedId.value == network.id) {
+                labRegistered.value = registered
+            }
+        }
     }
 
     fun create(
