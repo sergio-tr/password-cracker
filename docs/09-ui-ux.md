@@ -34,13 +34,12 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 - **Quick Audit**: navegación con `ArrowBack` (`Icons.AutoMirrored.Filled.ArrowBack`,
   contentDescription localizado); modo Automático por defecto; duración 30 s / 1 min /
   5 min; Vault con reveal diferido; `saveToVault` OFF; icono `PlayArrow` en INICIAR.
-- **Dual-mode Audit (F3)**:
-  - Recomendado: **Auditar contraseña localmente** (`LOCAL_AUDIT`).
-  - Avanzado (Lab Mode): **Validación en red de laboratorio** — texto de producto
-    (sin nombres internos de adapter/gate); capability con causas útiles;
-    ciclo de sesión en lenguaje de producto; `DETENER` → orquestador.
-  - Nearby (Lab Mode + conectada): Registrar / Quitar red de laboratorio.
-  - Vault (Lab Mode): Usar como red de laboratorio (registro ≠ consentimiento de sesión).
+- **Dual-mode Audit (F3 + F4 UX)**:
+  - Experiencia principal: **Auditar contraseña localmente** (recomendada).
+  - Tarjeta comparativa LOCAL vs LAB (operaciones distintas, no equivalentes).
+  - Avanzado / Lab Mode (OFF por defecto): **Validar en red de laboratorio**.
+  - Capability, sesión y `DETENER` en lenguaje de producto (F3).
+  - Nearby/Vault: registro lab visible (F3).
 - **Idioma (FIX-01, Partial)**: selector en Ajustes (Sistema / Español / English) vía AppCompat
   per-app language + recreate; strings migrados a `values`/`values-en` (Lab, Nearby, Vault,
   Onboarding, Permissions, Security, Settings). FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green.

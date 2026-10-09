@@ -148,3 +148,12 @@ Requisitos mínimos del dispositivo: Android API 34+; Wi?Fi; permisos; STA local-
 | Sin STA concurrency ? RequiresStaConcurrency (no forzar) | ? | |
 
 Leyenda de estado producto: **Implemented** · **Automated tested** · **Physical validated** · **Unavailable on this device/platform**.
+
+## F4 ? UX consolidation LOCAL vs LAB (2026-10-09)
+
+| Check | Estado |
+| --- | --- |
+| Experiencia principal = Auditar contraseña localmente | **Implemented** |
+| Tarjeta comparativa LOCAL vs LAB (operaciones distintas) | **Implemented** |
+| LAB bajo opciones avanzadas / Lab Mode (OFF por defecto) | **Implemented** |
+| Physical validated | N/A (solo UX); checklist F3 sigue pendiente |

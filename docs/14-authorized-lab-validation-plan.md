@@ -463,6 +463,13 @@ sin marcar PASS automático:
 5. **Cambio de red / Lab Mode OFF / registry revoke** — STOP tipado.
 6. **Unsupported device** — RequiresStaConcurrency; no forzar.
 
+### F4 — UX consolidation (**Implemented**)
+
+- [x] Experiencia principal: Auditar contraseña localmente
+- [x] Tarjeta comparativa LOCAL vs LAB (operaciones no equivalentes)
+- [x] Validar en red de laboratorio bajo opciones avanzadas / Lab Mode
+- [x] Lab Mode sigue OFF por defecto
+
 ### F5 — Opcional privilegiado (fuera de Play; no bloquea F3/F4)
 
 - [ ] Flavor `privileged` + `PrivilegedCredentialReader` si aplica

@@ -40,6 +40,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -371,36 +374,68 @@ private fun VerificationModeSection(
     state: PasswordAuditUiState,
     viewModel: PasswordAuditViewModel,
 ) {
+    var advancedExpanded by remember {
+        mutableStateOf(state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION)
+    }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(stringResource(R.string.audit_verification_mode), fontWeight = FontWeight.SemiBold)
             Text(
                 stringResource(R.string.audit_verification_mode_help),
                 style = MaterialTheme.typography.bodySmall,
             )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = state.verificationMode == VerificationMode.LOCAL_AUDIT,
-                    onClick = { viewModel.selectVerificationMode(VerificationMode.LOCAL_AUDIT) },
-                    label = { Text(stringResource(R.string.audit_verification_local)) },
-                )
-                FilterChip(
-                    selected = state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION,
-                    onClick = { viewModel.selectVerificationMode(VerificationMode.LAB_NETWORK_VALIDATION) },
-                    enabled = requestAllowsLabValidation(state),
-                    label = { Text(stringResource(R.string.audit_verification_ap)) },
-                )
+
+            FilterChip(
+                selected = state.verificationMode == VerificationMode.LOCAL_AUDIT,
+                onClick = { viewModel.selectVerificationMode(VerificationMode.LOCAL_AUDIT) },
+                label = {
+                    Text(
+                        "${stringResource(R.string.audit_verification_local)} · " +
+                            stringResource(R.string.audit_verification_local_recommended),
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            VerificationModeComparisonCard()
+
+            if (state.allowsAuthorizedApTest) {
+                TextButton(onClick = { advancedExpanded = !advancedExpanded }) {
+                    Text(
+                        if (advancedExpanded) {
+                            stringResource(R.string.audit_advanced_hide)
+                        } else {
+                            stringResource(R.string.audit_verification_advanced)
+                        },
+                    )
+                }
             }
-            if (!state.labModeEnabled && state.allowsAuthorizedApTest) {
-                Text(
-                    stringResource(R.string.audit_lab_mode_disabled_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+
+            if (advancedExpanded && state.allowsAuthorizedApTest) {
+                if (!state.labModeEnabled) {
+                    Text(
+                        stringResource(R.string.audit_lab_mode_disabled_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    FilterChip(
+                        selected =
+                            state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION,
+                        onClick = {
+                            viewModel.selectVerificationMode(
+                                VerificationMode.LAB_NETWORK_VALIDATION,
+                            )
+                        },
+                        enabled = requestAllowsLabValidation(state),
+                        label = { Text(stringResource(R.string.audit_verification_ap)) },
+                    )
+                }
             }
+
             if (state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
                 Text(
                     stringResource(R.string.audit_verification_lab_help),
@@ -457,6 +492,38 @@ private fun VerificationModeSection(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun VerificationModeComparisonCard() {
+    Column(
+        Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            stringResource(R.string.audit_verification_compare_title),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            stringResource(R.string.audit_verification_compare_local_title),
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            stringResource(R.string.audit_verification_compare_local_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            stringResource(R.string.audit_verification_compare_lab_title),
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            stringResource(R.string.audit_verification_compare_lab_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
