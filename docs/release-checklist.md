@@ -28,10 +28,21 @@ Publicar sigue requiriendo revisión humana y el pase manual.
 - Historial compare-runs: deferred.
 - iOS: solo previsto.
 
+## LAB_NETWORK_VALIDATION (F3)
+
+| Comprobación | Estado |
+| --- | --- |
+| `allowBackup=false` + exclusiones lab/vault/evidence | Implemented |
+| Evidence durable sin password/credential | Implemented + instrumented |
+| UI sin términos internos de adapter/gate | Implemented |
+| STOP vía orquestador | Implemented + tests F1 |
+| Validación física API 34+ / STA concurrency | **Physical validated** pendiente (`test-evidence` F3) |
+
 ## Antes de publicar
 
 - [ ] CI verde en la rama de release
 - [ ] Recorrer casos manuales de `docs/test-evidence.md` (incl. walkthrough connected audit) y anotar dispositivo/fecha
+- [ ] Ejecutar checklist físico F3 LAB (capability, gate, validación, cancel, cambio red) sin marcar PASS automático
 - [ ] Confirmar que no hay secretos en fixtures versionados
 - [ ] Revisar `docs/00-progress.md`
 - [ ] Ejecutar checklist MANUAL FIX-01..04 en `docs/test-evidence.md` (idioma, Permisos ArrowBack, Lab guiado, DETENER, banner local-only)

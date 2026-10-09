@@ -55,6 +55,7 @@ enum class LabValidationUiPhase {
     Denied,
     Admitted,
     Running,
+    Stopping,
     Completed,
     Cancelled,
     Failed,
@@ -156,7 +157,8 @@ data class PasswordAuditUiState(
                 searchState == SearchState.Cancelling ||
                 labValidationPhase == LabValidationUiPhase.Checking ||
                 labValidationPhase == LabValidationUiPhase.Admitted ||
-                labValidationPhase == LabValidationUiPhase.Running
+                labValidationPhase == LabValidationUiPhase.Running ||
+                labValidationPhase == LabValidationUiPhase.Stopping
 
     val hasSecretReady: Boolean
         get() =

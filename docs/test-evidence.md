@@ -116,11 +116,35 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 
 ### PHYSICAL / INSTRUMENTED
 
-**NOT EXECUTED** — `adb` no disponible en PATH / sin dispositivo o emulador conectado en esta sesión.
+**NOT EXECUTED** ? sin dispositivo físico conectado en la sesión de implementación F2.
 
-Pendiente manual en dispositivo API 34+ con `isStaConcurrencyForLocalOnlyConnectionsSupported() == true`:
+## F3 ? Product integration + physical checklist (2026-10-09)
 
-1. Lab Mode on + red marcada LAB + consentimiento
-2. Credencial correcta ? `Validated` (posible diálogo de sistema)
-3. Credencial incorrecta ? `AuthenticationRejected` (failure listener)
-4. Cambio de red durante RUNNING ? STOP `NETWORK_CHANGED`
+### AUTOMATED
+
+| Check | Result |
+| --- | --- |
+| Evidence retention JVM (`BoundedInMemoryLabSessionEvidenceLogTest`) | PASS (local suite) |
+| Capability reason mapping JVM | PASS (local suite) |
+| `SharedPreferencesLabSessionEvidenceLogInstrumentedTest` | En CI emulator (determinista; sin AP) |
+| Vault Compose registro lab (Lab Mode on/off) | En CI emulator |
+
+### PHYSICAL CHECKLIST (no marcar PASS automáticamente)
+
+Requisitos mínimos del dispositivo: Android API 34+; Wi?Fi; permisos; STA local-only compatible; red WPA2/WPA3 Personal de laboratorio; credencial conocida.
+
+| Caso | Resultado | Notas (dispositivo / fecha) |
+| --- | --- | --- |
+| Capability: Available o causa concreta (no «Unavailable») | ? | |
+| Gate: Lab Mode OFF ? denegada | ? | |
+| Gate: Lab Mode ON, red no registrada ? denegada | ? | |
+| Gate: registrada sin consentimiento ? no inicia | ? | |
+| Gate: todo válido ? admitir | ? | |
+| Validación autorizada (1 probe, resultado tipado sanitizado) | ? | No mapear fallo genérico a «contraseña incorrecta» |
+| Cancelación: DETENER ? Stopping?Cancelled + cleanup | ? | |
+| Cambio/pérdida de red ? NetworkChanged/NetworkLost + STOP | ? | |
+| Lab Mode OFF durante Running ? cierre inmediato | ? | |
+| Registry revoke durante Running ? cierre | ? | |
+| Sin STA concurrency ? RequiresStaConcurrency (no forzar) | ? | |
+
+Leyenda de estado producto: **Implemented** · **Automated tested** · **Physical validated** · **Unavailable on this device/platform**.

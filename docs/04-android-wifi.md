@@ -42,18 +42,23 @@ En Nearby, la red conectada muestra badge «Conectado» y, si es elegible, CTA
 «Auditar contraseña». La auditoría exige conexión activa a esa red; si se pierde,
 el ViewModel bloquea el inicio.
 
-### Dual-mode (ADR-004 / F0–F2)
+### Dual-mode (ADR-004 / F0–F3)
 
 | Pieza | Estado |
 | --- | --- |
-| `LOCAL_AUDIT` | Motor local (sin AP) — Implemented |
-| `LAB_NETWORK_VALIDATION` sesión | Orquestador + monitors + budget — **F1 DONE** |
-| Probe local-only F2 | `WifiNetworkSpecifier` + `requestNetwork` (sin INTERNET) + failure listener API 34+ |
+| `LOCAL_AUDIT` | Motor local (sin AP) — **Implemented** + **Automated tested** |
+| `LAB_NETWORK_VALIDATION` sesión | Orquestador + monitors + budget — **Implemented** (F1) |
+| Probe local-only F2 | `WifiNetworkSpecifier` + `requestNetwork` (sin INTERNET) + failure listener API 34+ — **Implemented** |
 | Capability Available | API **34+** AND `isStaConcurrencyForLocalOnlyConnectionsSupported` AND permisos AND Wi‑Fi on |
+| Capability UX (F3) | Causas tipadas → strings de producto (`RequiresApi34`, `RequiresStaConcurrency`, `PermissionMissing`, `UnsupportedSecurityFamily`, …). Nunca «Unavailable» genérico. |
 | API 29–33 | `Unavailable(RequiresApi34)` — request posible pero sin failure reasons fiables |
 | Sin STA concurrency | `Unavailable(RequiresStaConcurrency)` — protege F1 NETWORK_CHANGED→STOP |
 | Familias | WPA2 / WPA3 / WPA2+WPA3 Personal (`setWpa2Passphrase` / `setWpa3Passphrase`) |
 | Lectura PSK del sistema | **Not available** vía APIs públicas (app normal) → Vault / manual |
+| Registro lab (F3) | Nearby (solo conectada) + Vault (identidad SSID+familia); Lab Mode requerido; no autoriza sesión |
+| Evidence durable (F3) | `SharedPreferencesLabSessionEvidenceLog` sanitizado + retención acotada |
+| Backup (F3) | `allowBackup=false` + exclusiones explícitas (`backup_rules` / `data_extraction_rules`) |
+| Validación física Wi‑Fi | **Physical validated** solo tras checklist F3 en dispositivo real |
 
 ## Permisos
 

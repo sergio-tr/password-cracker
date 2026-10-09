@@ -49,7 +49,7 @@ Registry: `AuthorizedLabNetworkStore` (alias `LabNetworkRegistry`).
 | Arranque LAB bloqueado en F0 | **Implemented** |
 | `LabValidationSession` + orchestrator + monitors (F1) | **Implemented** |
 | Probe Android activo (`WifiNetworkSpecifier` local-only) | **Implemented F2** (Available solo API 34+ + STA concurrency) |
-| Rate-limit / session evidence (in-memory F1) | **Implemented** (persistencia durable = Planned F3) |
+| Rate-limit / session evidence | **Implemented** F1 in-memory + **F3** durable sanitizado (`SharedPreferencesLabSessionEvidenceLog`, retención acotada) |
 
 ### Interpretación del requisito «sacar contraseña»
 
@@ -438,11 +438,32 @@ Resultados heterogéneos por OEM se documentan; no se «arreglar» inventando AP
 - [x] `LocalOnlyConnectionFailureListener` → motivos tipados (no `WRONG_PASSWORD`)
 - [x] Familias: WPA2 / WPA3 / WPA2+WPA3 Personal
 - [x] Cleanup en todos los terminal paths
-- [ ] Marcar red lab desde Nearby detalle / Vault — **Planned F3**
-- [ ] Auditoría backupRules / allowBackup — **Planned F3**
-- [ ] Walkthrough dual-mode + evidencia dispositivo — **Planned F3**
 
-### F3 — Opcional privilegiado (fuera de Play)
+### F3 — Product integration + hardening (**Implemented** Code+CI; Physical pendiente)
+
+- [x] Registro lab visible desde Nearby (solo red conectada + Lab Mode)
+- [x] Registro lab desde Vault (Lab Mode; no autoriza sesión)
+- [x] Copy de producto (`Validación en red de laboratorio`) sin términos internos
+- [x] Capability UX con causas tipadas (API 34, STA concurrency, permiso, familia…)
+- [x] Ciclo de sesión en UI + `DETENER` → orquestador
+- [x] Evidence durable sanitizada + bounded retention
+- [x] `allowBackup=false` + `backup_rules` / `data_extraction_rules` (lab prefs, evidence, vault)
+- [x] Tests JVM + instrumentación determinista (sin AP real en CI)
+- [ ] Checklist físico en dispositivo API 34+ — **Physical validated** (no marcar PASS aquí)
+
+#### F3 physical validation plan
+
+No convertir CI en dependiente de un AP real. Registrar en `docs/test-evidence.md`
+sin marcar PASS automático:
+
+1. **Capability** — Available o causa concreta.
+2. **Gate** — Lab Mode OFF / no registrada / sin consentimiento / todo válido.
+3. **Validación autorizada** — una sola validación; resultado tipado sanitizado.
+4. **Cancelación** — DETENER → Cancelled + cleanup.
+5. **Cambio de red / Lab Mode OFF / registry revoke** — STOP tipado.
+6. **Unsupported device** — RequiresStaConcurrency; no forzar.
+
+### F5 — Opcional privilegiado (fuera de Play; no bloquea F3/F4)
 
 - [ ] Flavor `privileged` + `PrivilegedCredentialReader` si aplica
 - [ ] Documentar LAB_DEVICE_ONLY / PRIVILEGED_SYSTEM

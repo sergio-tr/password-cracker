@@ -18,7 +18,9 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
+import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.InMemoryAuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
@@ -39,6 +41,7 @@ import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.domain.wifi.WifiSignal
 import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
+import com.wifiauditlab.assessment.port.LabModePreferences
 import com.wifiauditlab.assessment.port.SavedNetworkRepository
 import com.wifiauditlab.assessment.port.SecretVault
 import com.wifiauditlab.assessment.port.WifiScanRequestResult
@@ -47,6 +50,16 @@ import com.wifiauditlab.assessment.port.WifiScanner
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+
+class FakeLabModePreferences(
+    private var enabled: Boolean = false,
+) : LabModePreferences {
+    override fun isLabModeEnabled(): Boolean = enabled
+
+    override fun setLabModeEnabled(enabled: Boolean) {
+        this.enabled = enabled
+    }
+}
 
 class FakeWifiScanner(initial: WifiScanState = WifiScanState.Idle) : WifiScanner {
     val state = MutableStateFlow(initial)
@@ -157,6 +170,8 @@ fun nearbyViewModel(
         },
     eligibilityChecker: PasswordAuditEligibilityChecker =
         DefaultPasswordAuditEligibilityChecker(connectionProvider),
+    labModePreferences: LabModePreferences = FakeLabModePreferences(false),
+    labNetworkRegistry: AuthorizedLabNetworkStore = InMemoryAuthorizedLabNetworkStore(),
 ): NearbyViewModel =
     NearbyViewModel(
         ObserveNearbyNetworks(scanner, repo, DefaultKnownNetworkMatcher()),
@@ -170,11 +185,15 @@ fun nearbyViewModel(
         RecordNearbySightings(RecordSavedNetworkSighting(repo)),
         connectionProvider,
         eligibilityChecker,
+        labModePreferences = labModePreferences,
+        labNetworkRegistry = labNetworkRegistry,
     )
 
 fun vaultViewModel(
     repo: FakeSavedNetworkRepository = FakeSavedNetworkRepository(),
     vault: FakeSecretVault = FakeSecretVault(),
+    labModePreferences: LabModePreferences = FakeLabModePreferences(false),
+    labNetworkRegistry: AuthorizedLabNetworkStore = InMemoryAuthorizedLabNetworkStore(),
 ): VaultViewModel =
     VaultViewModel(
         ObserveSavedNetworks(repo),
@@ -187,4 +206,6 @@ fun vaultViewModel(
         UpdateSavedNetworkSecret(repo, vault),
         RemoveSavedNetworkSecret(repo, vault),
         RevealSavedNetworkSecret(repo, vault),
+        labModePreferences = labModePreferences,
+        labNetworkRegistry = labNetworkRegistry,
     )

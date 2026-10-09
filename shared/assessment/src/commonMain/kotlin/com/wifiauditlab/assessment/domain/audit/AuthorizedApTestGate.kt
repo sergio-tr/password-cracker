@@ -35,6 +35,12 @@ enum class ApAuthUnavailableReason {
 
     /** Local-only probe would displace the primary STA — conflicts with F1 stop-on-change. */
     RequiresStaConcurrency,
+
+    /** Required Wi‑Fi / nearby / location permission missing. */
+    PermissionMissing,
+
+    /** Current network security family has no LAB validation path. */
+    UnsupportedSecurityFamily,
 }
 
 fun interface PlatformApAuthCapabilityProvider {

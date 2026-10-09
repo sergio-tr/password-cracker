@@ -99,13 +99,14 @@ fun AndroidNetworkValidationUnavailableReason.toApAuthReason(): ApAuthUnavailabl
             ApAuthUnavailableReason.RequiresApi34
         AndroidNetworkValidationUnavailableReason.RequiresStaConcurrencyForLocalOnly ->
             ApAuthUnavailableReason.RequiresStaConcurrency
-        AndroidNetworkValidationUnavailableReason.PlatformApiLimitation,
         AndroidNetworkValidationUnavailableReason.MissingWifiStatePermission,
         AndroidNetworkValidationUnavailableReason.MissingNearbyOrLocationPermission,
-        -> ApAuthUnavailableReason.PlatformApiLimitation
+        -> ApAuthUnavailableReason.PermissionMissing
+        AndroidNetworkValidationUnavailableReason.PlatformApiLimitation ->
+            ApAuthUnavailableReason.PlatformApiLimitation
         AndroidNetworkValidationUnavailableReason.DeviceUnsupported,
         AndroidNetworkValidationUnavailableReason.WifiDisabled,
         -> ApAuthUnavailableReason.DeviceUnsupported
         AndroidNetworkValidationUnavailableReason.UnsupportedSecurityFamily ->
-            ApAuthUnavailableReason.NotImplemented
+            ApAuthUnavailableReason.UnsupportedSecurityFamily
     }
