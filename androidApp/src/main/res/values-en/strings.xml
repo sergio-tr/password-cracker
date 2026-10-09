@@ -18,10 +18,12 @@
     <string name="audit_lab_authorized_mark">Mark this network as lab / authorized</string>
     <string name="audit_ap_consent">I consent to an active test only against the network I am connected to now (this start)</string>
     <string name="audit_ap_capability_available">AP probe available on this platform.</string>
-    <string name="audit_ap_capability_platform_limit">Android platform limit: normal apps cannot silently/batch-probe passphrases against the AP. Active probing is Planned F2 when a public capability is demonstrated.</string>
-    <string name="audit_ap_capability_device">This device does not support the required local-only request.</string>
+    <string name="audit_ap_capability_platform_limit">Android platform limit: missing permission or no reliable LAB validation path.</string>
+    <string name="audit_ap_capability_device">This device does not support the required local-only request (Wi‑Fi off or no STA concurrency).</string>
     <string name="audit_ap_capability_privileged">Requires a privileged / system build (not Play).</string>
-    <string name="audit_ap_capability_not_implemented">AP probe not implemented in this build (ADR-004 foundation).</string>
+    <string name="audit_ap_capability_not_implemented">AP probe not available for this family/capability.</string>
+    <string name="audit_ap_capability_requires_api34">Reliable LAB failure reasons require Android 14+ (API 34).</string>
+    <string name="audit_ap_capability_requires_sta_concurrency">Device does not declare local-only STA concurrency; the probe would displace the primary network (F1 STOP).</string>
     <string name="audit_ap_denials">Not admitted: %1$s</string>
     <string name="audit_ap_denial_mode">mode</string>
     <string name="audit_ap_denial_lab_mode">lab mode disabled</string>

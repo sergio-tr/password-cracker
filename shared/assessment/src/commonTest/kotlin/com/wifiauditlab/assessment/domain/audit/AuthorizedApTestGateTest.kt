@@ -151,6 +151,7 @@ class AuthorizedApTestGateTest {
                             ),
                         budget = LabSessionBudget.standard(),
                     ),
+                    ValidationCredential.fromPlaintext("password1"),
                 ),
             )
         }

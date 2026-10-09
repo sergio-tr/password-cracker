@@ -1,6 +1,6 @@
 # ADR-004 · LOCAL_AUDIT vs LAB_NETWORK_VALIDATION (laboratorio autorizado)
 
-- Estado: Accepted — **F0 DONE · F1 DONE** (2026-10-03)
+- Estado: Accepted — **F0 DONE · F1 DONE · F2 DONE (capability condicionada)** (2026-10-03)
 - Fecha: 2026-10-03
 - Relacionado: [ADR-003](./ADR-003-real-wifi-vs-synthetic-lab.md),
   [ADR-connected-known-password-audit](./ADR-connected-known-password-audit.md),
@@ -31,7 +31,7 @@ Las restricciones de Android se registran como **limitaciones técnicas**.
 | Modo | Verificación | Objetivo permitido | Entrada |
 | --- | --- | --- | --- |
 | `LOCAL_AUDIT` | `EncapsulatedPasswordVerifier` en memoria | Contexto de red (SSID/familia); sin hablar con el AP | Cercanas (conectada) o Vault (credencial) |
-| `LAB_NETWORK_VALIDATION` | Orquestador de sesión (**F1 DONE**); sondeo AP real = **Planned F2** (`AndroidValidationAdapter` = Unavailable en stock) | **Solo** la conexión Wi‑Fi **actual** | **Solo** Cercanas → badge Conectado → Auditar |
+| `LAB_NETWORK_VALIDATION` | Orquestador (**F1**) + un probe local-only (**F2**, Available solo API 34+ con STA concurrency) | **Solo** la conexión Wi‑Fi **actual** | **Solo** Cercanas → badge Conectado → Auditar |
 
 Reglas fail-closed para `LAB_NETWORK_VALIDATION` (gate `AuthorizedApTestGate`):
 
@@ -146,11 +146,14 @@ labModeEnabled + gate fail-closed
 
 No se enchufa el adapter como `CandidateVerifier` del motor paralelo V2.
 
-**F0 (Implemented):** foundation gate/registry/UI; adapter Unavailable.
-**F1 (Implemented):** sesión tipada, orquestador, snapshot, monitors (red / Lab Mode /
-registry), budget, timeout, cancel, concurrencia=1, evidence sanitizada, UI phases.
-`AndroidValidationAdapter` sigue **Unavailable** (no se declara Available sin path
-público demostrado). Sondeo activo = **Planned F2**.
+**F0 (Implemented):** foundation gate/registry/UI.
+**F1 (Implemented):** sesión tipada, orquestador, snapshot, monitors, budget/timeout/cancel.
+**F2 (Implemented):** `AndroidNetworkValidationAdapter` — una `WifiNetworkSpecifier`
+local-only + `LocalOnlyConnectionFailureListener` (API 34+). Capability Available
+solo si API≥34, STA concurrency local-only, permisos y Wi‑Fi activo. API 29–33 y
+dispositivos sin concurrency → Unavailable (no se falsea Available). Resultados
+tipados (`AuthenticationRejected`, `AssociationFailed`, …); nunca `WRONG_PASSWORD`
+desde `onUnavailable` genérico.
 
 ## Modelo de autorización (app)
 
@@ -170,8 +173,9 @@ Vault:
 | Fase | Entrega | Estado |
 | --- | --- | --- |
 | **F0** | ADR + `VerificationMode` + `labModeEnabled` + gate + registry + `NetworkValidationAdapter` Unavailable + UI selector/consent/denials + tests + docs | **DONE** |
-| **F1** | `LabValidationSession` + orchestrator + snapshot + monitors + budget/timeout/cancel + evidence + UI + tests; Android adapter sigue Unavailable | **DONE** |
-| **F2** | Probe AP acotado si capability pública demostrada; marcado lab Nearby/Vault; hardening backup | Planned |
+| **F1** | `LabValidationSession` + orchestrator + snapshot + monitors + budget/timeout/cancel + evidence + UI + tests | **DONE** |
+| **F2** | Un probe local-only (`WifiNetworkSpecifier`) + failure reasons API 34+; capability condicionada; credencial explícita | **DONE** |
+| **F3** | Marcado lab Nearby/Vault; hardening backup; walkthrough / evidencia dispositivo | Planned |
 | **F3 (opcional, builds privilegio)** | Adaptador `READ_WIFI_CREDENTIAL` / imagen sistema — nunca en variante Play | Planned |
 
 ## Consecuencias

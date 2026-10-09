@@ -29,6 +29,12 @@ enum class ApAuthUnavailableReason {
 
     /** Capability not wired yet (foundation / F0). */
     NotImplemented,
+
+    /** Definitive auth failure reasons require API 34+ (F2 product policy). */
+    RequiresApi34,
+
+    /** Local-only probe would displace the primary STA — conflicts with F1 stop-on-change. */
+    RequiresStaConcurrency,
 }
 
 fun interface PlatformApAuthCapabilityProvider {
@@ -98,7 +104,7 @@ class AuthorizedApTestGate(
         if (!request.labModeEnabled) {
             denials += AuthorizedApTestDenial.LabModeDisabled
         }
-        if (!request.securityFamily.supportsSharedPasswordAudit()) {
+        if (!request.securityFamily.supportsLabNetworkValidation()) {
             denials += AuthorizedApTestDenial.UnsupportedFamily
         }
         if (!request.labAuthorized) {

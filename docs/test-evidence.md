@@ -92,3 +92,35 @@ Logcat publicado: **sanitizado** (sin secretos / blobs Base64 largos).
 4. Lab Guided: SSID + password + Start without Advanced
 5. DETENER works on prototype run
 6. No AP authentication / local-only banner visible
+
+## F2 — LAB_NETWORK_VALIDATION local-only probe (2026-10-03)
+
+### AUTOMATED
+
+| Check | Result |
+| --- | --- |
+| `:shared:assessment:jvmTest` (incl. failure-reason mapper + orchestrator) | PASS |
+| `:shared:lab:jvmTest` | PASS |
+| `:androidApp:testDebugUnitTest` | PASS |
+| `ktlintCheck` | PASS |
+| `:androidApp:assembleDebug` | PASS |
+
+### Capability demonstrated in code (not claimed Available on all devices)
+
+| Condition | Outcome |
+| --- | --- |
+| API 34+ AND STA concurrency local-only AND Wi-Fi on AND scan/nearby permission | `ApAuthCapability.Available` + `AuthenticationResultCapable` |
+| API 29–33 | `Unavailable(RequiresApi34)` |
+| No STA concurrency | `Unavailable(RequiresStaConcurrency)` — protects F1 NETWORK_CHANGED?STOP |
+| Families | WPA2 / WPA3 / WPA2+WPA3 Personal only |
+
+### PHYSICAL / INSTRUMENTED
+
+**NOT EXECUTED** — `adb` no disponible en PATH / sin dispositivo o emulador conectado en esta sesión.
+
+Pendiente manual en dispositivo API 34+ con `isStaConcurrencyForLocalOnlyConnectionsSupported() == true`:
+
+1. Lab Mode on + red marcada LAB + consentimiento
+2. Credencial correcta ? `Validated` (posible diálogo de sistema)
+3. Credencial incorrecta ? `AuthenticationRejected` (failure listener)
+4. Cambio de red durante RUNNING ? STOP `NETWORK_CHANGED`

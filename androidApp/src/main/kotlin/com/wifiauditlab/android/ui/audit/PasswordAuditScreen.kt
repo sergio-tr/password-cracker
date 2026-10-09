@@ -481,6 +481,10 @@ private fun apCapabilityMessage(capability: ApAuthCapability): String =
                     stringResource(R.string.audit_ap_capability_privileged)
                 ApAuthUnavailableReason.NotImplemented ->
                     stringResource(R.string.audit_ap_capability_not_implemented)
+                ApAuthUnavailableReason.RequiresApi34 ->
+                    stringResource(R.string.audit_ap_capability_requires_api34)
+                ApAuthUnavailableReason.RequiresStaConcurrency ->
+                    stringResource(R.string.audit_ap_capability_requires_sta_concurrency)
             }
     }
 

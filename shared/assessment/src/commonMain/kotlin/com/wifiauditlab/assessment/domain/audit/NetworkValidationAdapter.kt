@@ -1,10 +1,10 @@
 package com.wifiauditlab.assessment.domain.audit
 
 /**
- * Evolved NetworkValidationAdapter contract for F1.
+ * Single authorized network validation probe (platform).
  *
- * Production [AndroidValidationAdapter] remains fail-closed (Unavailable).
- * Active AP probing is Planned F2 — not declared Available without a demonstrated path.
+ * Must never be used as the high-throughput [com.wifiauditlab.lab.domain.engine.CandidateVerifier].
+ * F2 Android path: at most ONE [validateOnce] per session with an explicit [ValidationCredential].
  */
 interface NetworkValidationAdapter {
     suspend fun capability(): ApAuthCapability
@@ -12,17 +12,20 @@ interface NetworkValidationAdapter {
     /**
      * Validates within an already-authorized session context.
      * Implementations must not choose the target — [AuthorizedValidationContext.networkSnapshot]
-     * is authoritative.
+     * is authoritative. [credential] is consumed/cleared by the adapter.
      */
-    suspend fun validateOnce(context: AuthorizedValidationContext): NetworkValidationResult
+    suspend fun validateOnce(
+        context: AuthorizedValidationContext,
+        credential: ValidationCredential,
+    ): NetworkValidationResult
 }
 
 /** ADR-004 name retained as alias of [NetworkValidationAdapter]. */
 typealias PlatformApAuthProbe = NetworkValidationAdapter
 
 /**
- * Legacy request shape retained for documentation / future F2 passphrase binding.
- * Passphrase is redacted in [toString]; F1 adapter path does not use this type.
+ * Legacy request shape retained for documentation / redaction tests.
+ * Passphrase is redacted in [toString].
  */
 data class ApAuthProbeRequest(
     val ssid: String,
@@ -61,22 +64,16 @@ sealed interface SimulatedValidationBehavior {
         val result: NetworkValidationResult,
     ) : SimulatedValidationBehavior
 
-    /**
-     * Suspends until cancelled or [delayMs] elapses (virtual time under test dispatchers).
-     */
     data class DelayThen(
         val delayMs: Long,
         val result: NetworkValidationResult,
     ) : SimulatedValidationBehavior
 
-    /** Suspends forever until the calling coroutine is cancelled. */
     data object HangUntilCancelled : SimulatedValidationBehavior
 }
 
 /**
  * JVM / unit-test adapter. Never talks to a real AP.
- * Default capability is Unavailable so production-like tests stay fail-closed unless
- * a test explicitly constructs [SimulatedValidationAdapter] with Available.
  */
 class SimulatedValidationAdapter(
     private val capabilityValue: ApAuthCapability =
@@ -90,10 +87,20 @@ class SimulatedValidationAdapter(
     var invokeCount: Int = 0
         private set
 
+    @Volatile
+    var lastCredentialPresent: Boolean? = null
+        private set
+
     override suspend fun capability(): ApAuthCapability = capabilityValue
 
-    override suspend fun validateOnce(context: AuthorizedValidationContext): NetworkValidationResult {
+    override suspend fun validateOnce(
+        context: AuthorizedValidationContext,
+        credential: ValidationCredential,
+    ): NetworkValidationResult {
         invokeCount += 1
+        lastCredentialPresent = credential.isPresent()
+        // Consume credential like production (no secret retention).
+        credential.clear()
         return when (val b = behavior) {
             is SimulatedValidationBehavior.Immediate -> b.result
             is SimulatedValidationBehavior.DelayThen -> {
@@ -108,17 +115,21 @@ class SimulatedValidationAdapter(
 }
 
 /**
- * Stock Android / Play build: AP validation path not available (F0/F1).
- * Documents [ApAuthUnavailableReason.PlatformApiLimitation] — no silent/batch AP auth API.
- * Real probe = Planned F2 when a public capability is demonstrated.
+ * Compatibility stub retained for unit tests that assert fail-closed without Android APIs.
+ * Production DI wires [com.wifiauditlab.android.wifi.AndroidNetworkValidationAdapter].
  */
 class AndroidValidationAdapter(
     private val reason: ApAuthUnavailableReason = ApAuthUnavailableReason.PlatformApiLimitation,
 ) : NetworkValidationAdapter {
     override suspend fun capability(): ApAuthCapability = ApAuthCapability.Unavailable(reason)
 
-    override suspend fun validateOnce(context: AuthorizedValidationContext): NetworkValidationResult =
-        NetworkValidationResult.Unavailable(reason)
+    override suspend fun validateOnce(
+        context: AuthorizedValidationContext,
+        credential: ValidationCredential,
+    ): NetworkValidationResult {
+        credential.clear()
+        return NetworkValidationResult.Unavailable(reason)
+    }
 }
 
 /** ADR-004 name retained as alias of [AndroidValidationAdapter]. */

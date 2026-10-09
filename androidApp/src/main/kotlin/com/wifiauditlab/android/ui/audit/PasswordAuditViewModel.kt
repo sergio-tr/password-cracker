@@ -26,6 +26,7 @@ import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditResultComposer
 import com.wifiauditlab.assessment.domain.audit.PlatformApAuthCapabilityProvider
 import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
+import com.wifiauditlab.assessment.domain.audit.ValidationCredential
 import com.wifiauditlab.assessment.domain.audit.VerificationMode
 import com.wifiauditlab.assessment.domain.audit.supportsSharedPasswordAudit
 import com.wifiauditlab.assessment.domain.audit.unsupportedAuditReason
@@ -549,6 +550,12 @@ class PasswordAuditViewModel(
             viewModelScope.launch(ioDispatcher) { refreshApTestAdmission() }
             return
         }
+        if (!snapshot.hasSecretReady) {
+            _state.update {
+                it.copy(passwordError = PasswordAuditUiError.MissingPassword)
+            }
+            return
+        }
         val bssid =
             req.network.bssid
                 ?: req.observation?.bssid
@@ -570,6 +577,14 @@ class PasswordAuditViewModel(
                         resultReport = null,
                     )
                 }
+                val password =
+                    resolvePasswordForStart() ?: run {
+                        _state.update {
+                            it.copy(passwordError = PasswordAuditUiError.PasswordUnavailable)
+                        }
+                        return@launch
+                    }
+                val credential = ValidationCredential.fromPlaintext(password)
                 val outcome =
                     orchestrator.requestStart(
                         scope = viewModelScope,
@@ -580,6 +595,7 @@ class PasswordAuditViewModel(
                                 securityFamily = req.network.securityProfile.family,
                                 userConsentGranted = snapshot.apTestConsentGranted,
                                 budget = LabSessionBudget.standard(),
+                                credential = credential,
                             ),
                     )
                 when (outcome) {

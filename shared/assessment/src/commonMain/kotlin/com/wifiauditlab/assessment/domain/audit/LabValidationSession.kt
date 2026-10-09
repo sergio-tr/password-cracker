@@ -73,17 +73,52 @@ data class AuthorizedValidationContext(
         "AuthorizedValidationContext(sessionId=$sessionId, network=${networkSnapshot.ssid}/${networkSnapshot.securityFamily}, budget=$budget)"
 }
 
-/** Typed adapter outcome for LAB_NETWORK_VALIDATION (F1). */
+/**
+ * Typed adapter outcome for LAB_NETWORK_VALIDATION.
+ *
+ * Do not map [RequestUnavailable] / generic platform failures to "wrong password".
+ * [AuthenticationRejected] is only used when API 34+ failure listener reports authentication.
+ */
 sealed interface NetworkValidationResult {
-    data object Succeeded : NetworkValidationResult
+    /** Local-only network became available for the requested specifier. */
+    data object Validated : NetworkValidationResult
 
-    data object Rejected : NetworkValidationResult
+    /** API 34+: [WifiManager.STATUS_LOCAL_ONLY_CONNECTION_FAILURE_AUTHENTICATION]. */
+    data object AuthenticationRejected : NetworkValidationResult
+
+    /** API 34+: user rejected the system dialog (when the platform reports USER_REJECT). */
+    data object UserRejected : NetworkValidationResult
+
+    data object NetworkNotFound : NetworkValidationResult
+
+    data object AssociationFailed : NetworkValidationResult
+
+    data object IpProvisioningFailed : NetworkValidationResult
+
+    data object NoResponse : NetworkValidationResult
+
+    /** [NetworkCallback.onUnavailable] without a more specific failure reason. */
+    data object RequestUnavailable : NetworkValidationResult
+
+    data object TimedOut : NetworkValidationResult
+
+    data object Cancelled : NetworkValidationResult
+
+    data object Unsupported : NetworkValidationResult
+
+    /**
+     * A real attempt completed without enough evidence for a stronger conclusion
+     * (typical of API 29–33 without failure-reason listener).
+     */
+    data class Inconclusive(
+        val detail: String,
+    ) : NetworkValidationResult {
+        override fun toString(): String = "Inconclusive(detail=$detail)"
+    }
 
     data class Unavailable(
         val reason: ApAuthUnavailableReason,
     ) : NetworkValidationResult
-
-    data object Cancelled : NetworkValidationResult
 
     data class PlatformError(
         val errorCategory: String,
@@ -91,13 +126,28 @@ sealed interface NetworkValidationResult {
         override fun toString(): String = "PlatformError(errorCategory=$errorCategory)"
     }
 
+    /** @deprecated Prefer [Validated]. Kept as alias for F1 call sites. */
+    data object Succeeded : NetworkValidationResult
+
+    /** @deprecated Prefer [AuthenticationRejected] when evidence exists. */
+    data object Rejected : NetworkValidationResult
+
     val category: String
         get() =
             when (this) {
-                Succeeded -> "Succeeded"
-                Rejected -> "Rejected"
-                is Unavailable -> "Unavailable:${reason.name}"
+                Validated, Succeeded -> "Validated"
+                AuthenticationRejected, Rejected -> "AuthenticationRejected"
+                UserRejected -> "UserRejected"
+                NetworkNotFound -> "NetworkNotFound"
+                AssociationFailed -> "AssociationFailed"
+                IpProvisioningFailed -> "IpProvisioningFailed"
+                NoResponse -> "NoResponse"
+                RequestUnavailable -> "RequestUnavailable"
+                TimedOut -> "TimedOut"
                 Cancelled -> "Cancelled"
+                Unsupported -> "Unsupported"
+                is Inconclusive -> "Inconclusive:$detail"
+                is Unavailable -> "Unavailable:${reason.name}"
                 is PlatformError -> "PlatformError:$errorCategory"
             }
 }

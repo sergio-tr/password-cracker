@@ -48,8 +48,8 @@ Registry: `AuthorizedLabNetworkStore` (alias `LabNetworkRegistry`).
 | UI Audit: selector + denegaciones tipadas | **Implemented** |
 | Arranque LAB bloqueado en F0 | **Implemented** |
 | `LabValidationSession` + orchestrator + monitors (F1) | **Implemented** |
-| Probe Android activo (`WifiNetworkSpecifier`) | **Planned F2** — Unavailable on stock Android |
-| Rate-limit / session evidence (in-memory F1) | **Implemented** (persistencia durable = Planned F2) |
+| Probe Android activo (`WifiNetworkSpecifier` local-only) | **Implemented F2** (Available solo API 34+ + STA concurrency) |
+| Rate-limit / session evidence (in-memory F1) | **Implemented** (persistencia durable = Planned F3) |
 
 ### Interpretación del requisito «sacar contraseña»
 
@@ -423,18 +423,24 @@ Resultados heterogéneos por OEM se documentan; no se «arreglar» inventando AP
 - [x] Monitor conexión / Lab Mode / registry → STOP tipado
 - [x] Budget + timeout + `userCancel` + concurrencia = 1
 - [x] `AuthorizedValidationContext` + `NetworkValidationResult`
-- [x] `SimulatedValidationAdapter` determinista; `AndroidValidationAdapter` = **Unavailable**
+- [x] `SimulatedValidationAdapter` determinista
 - [x] Evidence log sanitizado (sin secretos)
 - [x] Integración ViewModel/UI + tests críticos
-- [ ] Probe Android activo — **Planned F2** (no falsear Available)
 
-### F2 — Probe acotado + UX registro lab
+### F2 — Probe local-only único (**DONE** en código; Available condicionado)
 
-- [ ] `AndroidValidationAdapter` con path público demostrado (`WifiNetworkSpecifier` u otro) **solo si** capability Available real
-- [ ] Marcar red lab desde Nearby detalle / Vault (además del checkbox Audit)
-- [ ] Auditoría backupRules / allowBackup
-- [ ] Walkthrough dual-mode completo
-- [ ] Evidencia dispositivo lab en `test-evidence.md`
+- [x] `AndroidNetworkValidationAdapter` — **una** `requestNetwork` local-only
+- [x] Specifier solo desde `AuthorizedValidationContext.networkSnapshot`
+- [x] Credencial explícita (`ValidationCredential`) — no PSK del sistema
+- [x] Capability tipada: API **34+** + STA concurrency + permisos + Wi‑Fi on
+- [x] API 29–33 → `Unavailable(RequiresApi34)` (sin declarar AuthenticationResultCapable)
+- [x] Sin STA concurrency → `Unavailable(RequiresStaConcurrency)` (protege F1 STOP)
+- [x] `LocalOnlyConnectionFailureListener` → motivos tipados (no `WRONG_PASSWORD`)
+- [x] Familias: WPA2 / WPA3 / WPA2+WPA3 Personal
+- [x] Cleanup en todos los terminal paths
+- [ ] Marcar red lab desde Nearby detalle / Vault — **Planned F3**
+- [ ] Auditoría backupRules / allowBackup — **Planned F3**
+- [ ] Walkthrough dual-mode + evidencia dispositivo — **Planned F3**
 
 ### F3 — Opcional privilegiado (fuera de Play)
 
@@ -495,8 +501,9 @@ flowchart TB
 ```
 
 **Implemented F1:** sesión, orquestador, monitors, budget/timeout/cancel, evidence, UI.
-**Planned F2:** validación activa real contra AP.
-**Unavailable on stock Android:** `AndroidValidationAdapter` (PlatformApiLimitation).
+**Implemented F2:** un probe local-only con `WifiNetworkSpecifier` + failure listener API 34+.
+**Available when:** API 34+ AND `isStaConcurrencyForLocalOnlyConnectionsSupported` AND permisos AND Wi‑Fi on AND familia WPA2/WPA3 personal.
+**Unavailable otherwise:** RequiresApi34 / RequiresStaConcurrency / DeviceUnsupported / PlatformApiLimitation.
 
 ---
 

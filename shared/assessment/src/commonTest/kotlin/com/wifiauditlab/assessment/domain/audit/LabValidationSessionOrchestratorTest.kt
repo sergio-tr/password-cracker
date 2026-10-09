@@ -45,7 +45,7 @@ class LabValidationSessionOrchestratorTest {
                 SimulatedValidationAdapter(
                     capabilityValue = ApAuthCapability.Available,
                     behavior =
-                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Succeeded),
+                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Validated),
                 )
             val harness = harness(adapter = adapter)
             val outcome = harness.orchestrator.requestStart(this, harness.startRequest())
@@ -73,7 +73,7 @@ class LabValidationSessionOrchestratorTest {
                 SimulatedValidationAdapter(
                     capabilityValue = ApAuthCapability.Available,
                     behavior =
-                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Succeeded),
+                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Validated),
                 )
             val harness = harness(adapter = adapter)
             val outcome = harness.orchestrator.requestStart(this, harness.startRequest())
@@ -244,7 +244,7 @@ class LabValidationSessionOrchestratorTest {
                     behavior =
                         SimulatedValidationBehavior.DelayThen(
                             delayMs = 60_000,
-                            result = NetworkValidationResult.Succeeded,
+                            result = NetworkValidationResult.Validated,
                         ),
                 )
             val budget =
@@ -292,7 +292,7 @@ class LabValidationSessionOrchestratorTest {
                 SimulatedValidationAdapter(
                     capabilityValue = ApAuthCapability.Available,
                     behavior =
-                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Succeeded),
+                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Validated),
                 )
             val harness = harness(adapter = adapter)
             harness.orchestrator.requestStart(this, harness.startRequest(consent = true))
@@ -325,7 +325,7 @@ class LabValidationSessionOrchestratorTest {
                 SimulatedValidationAdapter(
                     capabilityValue = ApAuthCapability.Available,
                     behavior =
-                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Succeeded),
+                        SimulatedValidationBehavior.Immediate(NetworkValidationResult.Validated),
                 )
             val harness = harness(adapter = adapter)
             harness.orchestrator.requestStart(this, harness.startRequest())
@@ -375,12 +375,14 @@ class LabValidationSessionOrchestratorTest {
         fun startRequest(
             consent: Boolean = true,
             budget: LabSessionBudget = this.budget,
+            passphrase: String = "lab-test-passphrase",
         ) = LabValidationStartRequest(
             requestedSsid = Ssid("LabNet"),
             requestedBssid = Bssid.of("AA:BB:CC:DD:EE:01"),
             securityFamily = SecurityFamily.WPA2_PERSONAL,
             userConsentGranted = consent,
             budget = budget,
+            credential = ValidationCredential.fromPlaintext(passphrase),
         )
     }
 

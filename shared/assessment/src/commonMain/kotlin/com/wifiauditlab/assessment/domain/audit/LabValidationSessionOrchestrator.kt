@@ -26,6 +26,11 @@ data class LabValidationStartRequest(
     val securityFamily: SecurityFamily,
     val userConsentGranted: Boolean,
     val budget: LabSessionBudget = LabSessionBudget.standard(),
+    /**
+     * Explicit user/Vault credential for a single probe. Cleared after use.
+     * Not stored on [LabValidationSession].
+     */
+    val credential: ValidationCredential,
 )
 
 sealed interface LabValidationStartOutcome {
@@ -72,6 +77,10 @@ class LabValidationSessionOrchestrator(
     @Volatile
     private var stopReason: LabSessionTerminationReason? = null
 
+    /** Held only for the active run; never part of session/evidence models. */
+    @Volatile
+    private var pendingCredential: ValidationCredential? = null
+
     fun evidence(): LabSessionEvidenceLog = evidenceLog
 
     private fun peekStopReason(): LabSessionTerminationReason? = stopReason
@@ -100,6 +109,8 @@ class LabValidationSessionOrchestrator(
             stopReason = null
             sessionJob?.cancel()
             sessionJob = null
+            pendingCredential?.clear()
+            pendingCredential = null
 
             val connection = connectionProvider.currentConnection()
             val capability = adapter.capability()
@@ -127,6 +138,7 @@ class LabValidationSessionOrchestrator(
 
             when (gateResult) {
                 is AuthorizedApTestGateResult.Denied -> {
+                    request.credential.clear()
                     val deniedSession =
                         LabValidationSession(
                             sessionId = sessionId,
@@ -180,6 +192,7 @@ class LabValidationSessionOrchestrator(
                                 terminationReason = LabSessionTerminationReason.GateDenied,
                                 resultSummary = "Denied:InsufficientConnectionInfo",
                             )
+                        request.credential.clear()
                         _session.value = deniedSession
                         appendEvidence(deniedSession, "snapshot_failed", null, "InsufficientConnectionInfo")
                         return@withLock LabValidationStartOutcome.Denied(reasons, deniedSession)
@@ -187,6 +200,7 @@ class LabValidationSessionOrchestrator(
 
             // Target must be the current network (gate already matched requested vs connection).
             if (snapshot.ssid != request.requestedSsid.value.trim()) {
+                request.credential.clear()
                 val reasons = listOf(AuthorizedApTestDenial.TargetMismatch)
                 val deniedSession =
                     LabValidationSession(
@@ -207,7 +221,7 @@ class LabValidationSessionOrchestrator(
                 return@withLock LabValidationStartOutcome.Denied(reasons, deniedSession)
             }
 
-            var session =
+            val session =
                 LabValidationSession(
                     sessionId = sessionId,
                     networkSnapshot = snapshot,
@@ -219,6 +233,7 @@ class LabValidationSessionOrchestrator(
                     budget = request.budget,
                 )
             _session.value = session
+            pendingCredential = request.credential
             appendEvidence(session, "admitted", null, null)
 
             sessionJob =
@@ -279,7 +294,16 @@ class LabValidationSessionOrchestrator(
 
     private suspend fun executeAdapter(session: LabValidationSession) {
         if (session.operationsConsumed >= session.budget.maxOperations) {
+            pendingCredential?.clear()
+            pendingCredential = null
             trySetStopReason(LabSessionTerminationReason.BudgetExhausted)
+            return
+        }
+        val credential = pendingCredential
+        pendingCredential = null
+        if (credential == null || !credential.isPresent()) {
+            credential?.clear()
+            trySetStopReason(LabSessionTerminationReason.AdapterError)
             return
         }
         val context =
@@ -294,15 +318,20 @@ class LabValidationSessionOrchestrator(
         val result =
             try {
                 withTimeoutOrNull(session.budget.operationTimeoutMs) {
-                    adapter.validateOnce(context)
+                    adapter.validateOnce(context, credential)
                 }
             } catch (e: CancellationException) {
+                credential.clear()
                 throw e
             } catch (t: Throwable) {
+                credential.clear()
                 val errorCategory = t::class.simpleName ?: "Error"
                 trySetStopReason(LabSessionTerminationReason.AdapterError)
                 NetworkValidationResult.PlatformError(errorCategory)
             }
+
+        // Adapter should have cleared; belt-and-suspenders.
+        credential.clear()
 
         if (peekStopReason() != null) return
 
@@ -311,17 +340,37 @@ class LabValidationSessionOrchestrator(
             return
         }
 
+        applyAdapterResult(updated, result)
+    }
+
+    private fun applyAdapterResult(
+        session: LabValidationSession,
+        result: NetworkValidationResult,
+    ) {
         when (result) {
-            NetworkValidationResult.Succeeded ->
-                completeSuccess(updated, LabSessionTerminationReason.Completed, result.category)
-            NetworkValidationResult.Rejected ->
-                completeSuccess(updated, LabSessionTerminationReason.AdapterRejected, result.category)
+            NetworkValidationResult.Validated,
+            NetworkValidationResult.Succeeded,
+            -> completeSuccess(session, LabSessionTerminationReason.Completed, result.category)
+            NetworkValidationResult.AuthenticationRejected,
+            NetworkValidationResult.Rejected,
+            -> completeSuccess(session, LabSessionTerminationReason.AdapterRejected, result.category)
+            NetworkValidationResult.UserRejected,
+            NetworkValidationResult.NetworkNotFound,
+            NetworkValidationResult.AssociationFailed,
+            NetworkValidationResult.IpProvisioningFailed,
+            NetworkValidationResult.NoResponse,
+            NetworkValidationResult.RequestUnavailable,
+            NetworkValidationResult.Unsupported,
+            is NetworkValidationResult.Inconclusive,
+            -> completeSuccess(session, LabSessionTerminationReason.AdapterError, result.category)
+            NetworkValidationResult.TimedOut ->
+                trySetStopReason(LabSessionTerminationReason.Timeout)
             is NetworkValidationResult.Unavailable ->
-                completeSuccess(updated, LabSessionTerminationReason.AdapterUnavailable, result.category)
+                completeSuccess(session, LabSessionTerminationReason.AdapterUnavailable, result.category)
             NetworkValidationResult.Cancelled ->
                 trySetStopReason(LabSessionTerminationReason.UserCancelled)
             is NetworkValidationResult.PlatformError ->
-                completeSuccess(updated, LabSessionTerminationReason.AdapterError, result.category)
+                completeSuccess(session, LabSessionTerminationReason.AdapterError, result.category)
         }
     }
 
@@ -351,6 +400,8 @@ class LabValidationSessionOrchestrator(
     }
 
     private fun finalizeSession() {
+        pendingCredential?.clear()
+        pendingCredential = null
         val current = _session.value ?: return
         if (current.state.isTerminal) {
             if (current.consentGranted) {

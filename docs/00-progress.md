@@ -36,7 +36,7 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
 | Planner automático de auditoría | **Partial** (FIX-06…12): PSK/WEP auth-aware + explainability (FIX-09); Guided+Advanced LocalPrototype usan planner; Guided RandomHidden → `GenericProgressiveSearchPlanBuilder` (FIX-11); Advanced RandomHidden → optimizer; pesos = heurísticos. Manual UX pending. |
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
-| Dual-mode LOCAL / LAB_NETWORK_VALIDATION (F0+F1) | **Implemented**: F0 gate/registry/UI; F1 `LabValidationSessionOrchestrator` (snapshot, monitors, budget/timeout/cancel, evidence). `AndroidValidationAdapter` = **Unavailable on stock Android**. Probe AP activo = **Planned F2**. |
+| Dual-mode LOCAL / LAB_NETWORK_VALIDATION (F0–F2) | **Implemented**: F0 gate/registry; F1 sesión/orquestador; F2 un probe local-only (`AndroidNetworkValidationAdapter`). **Available** solo API 34+ + STA concurrency + permisos; si no → Unavailable tipado. Sin PSK del sistema ni bucles de candidatos. |
 | Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
 | STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
 | Resultados de auditoría | **Implemented** (PR6): `WifiPasswordAuditResult`; config Wi‑Fi vs contraseña separados; recomendaciones; guía «Cómo mejorarla». |

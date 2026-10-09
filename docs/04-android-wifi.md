@@ -42,15 +42,18 @@ En Nearby, la red conectada muestra badge «Conectado» y, si es elegible, CTA
 «Auditar contraseña». La auditoría exige conexión activa a esa red; si se pierde,
 el ViewModel bloquea el inicio.
 
-### Dual-mode (ADR-004 / F0+F1)
+### Dual-mode (ADR-004 / F0–F2)
 
 | Pieza | Estado |
 | --- | --- |
 | `LOCAL_AUDIT` | Motor local (sin AP) — Implemented |
 | `LAB_NETWORK_VALIDATION` sesión | Orquestador + monitors + budget — **F1 DONE** |
-| `AndroidValidationAdapter` | **Unavailable on stock Android** (PlatformApiLimitation) |
-| Sondeo AP activo | **Planned F2** (no falsear Available) |
-| Lectura PSK del sistema | **Not available** vía APIs públicas (app normal) → Vault propio |
+| Probe local-only F2 | `WifiNetworkSpecifier` + `requestNetwork` (sin INTERNET) + failure listener API 34+ |
+| Capability Available | API **34+** AND `isStaConcurrencyForLocalOnlyConnectionsSupported` AND permisos AND Wi‑Fi on |
+| API 29–33 | `Unavailable(RequiresApi34)` — request posible pero sin failure reasons fiables |
+| Sin STA concurrency | `Unavailable(RequiresStaConcurrency)` — protege F1 NETWORK_CHANGED→STOP |
+| Familias | WPA2 / WPA3 / WPA2+WPA3 Personal (`setWpa2Passphrase` / `setWpa3Passphrase`) |
+| Lectura PSK del sistema | **Not available** vía APIs públicas (app normal) → Vault / manual |
 
 ## Permisos
 

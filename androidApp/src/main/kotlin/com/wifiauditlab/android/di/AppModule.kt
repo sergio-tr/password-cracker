@@ -25,6 +25,8 @@ import com.wifiauditlab.android.ui.settings.SettingsBenchmarkViewModel
 import com.wifiauditlab.android.ui.settings.SettingsCalibrationViewModel
 import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidCurrentWifiConnectionProvider
+import com.wifiauditlab.android.wifi.AndroidNetworkValidationAdapter
+import com.wifiauditlab.android.wifi.AndroidNetworkValidationCapabilityEvaluator
 import com.wifiauditlab.android.wifi.AndroidWifiConnectionMonitor
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
@@ -49,7 +51,6 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
-import com.wifiauditlab.assessment.domain.audit.AndroidValidationAdapter
 import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGate
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
@@ -126,7 +127,19 @@ val appModule =
         single { LabPasswordSeedStore() }
         single { PasswordAuditTargetStore() }
         single<AuthorizedLabNetworkStore> { SharedPreferencesAuthorizedLabNetworkStore(androidContext()) }
-        single<NetworkValidationAdapter> { AndroidValidationAdapter() }
+        single {
+            AndroidNetworkValidationCapabilityEvaluator(
+                androidContext(),
+                get(),
+            )
+        }
+        single<NetworkValidationAdapter> {
+            AndroidNetworkValidationAdapter(
+                context = androidContext(),
+                permissions = get(),
+                capabilityEvaluator = get(),
+            )
+        }
         single<PlatformApAuthCapabilityProvider> {
             val adapter: NetworkValidationAdapter = get()
             PlatformApAuthCapabilityProvider { adapter.capability() }

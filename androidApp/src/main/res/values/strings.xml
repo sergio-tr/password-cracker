@@ -19,10 +19,12 @@
     <string name="audit_lab_authorized_mark">Marcar esta red como laboratorio / autorizada</string>
     <string name="audit_ap_consent">Consiento una prueba activa solo contra la red a la que estoy conectado ahora (este arranque)</string>
     <string name="audit_ap_capability_available">Sondeo AP disponible en esta plataforma.</string>
-    <string name="audit_ap_capability_platform_limit">Limitación técnica Android: apps normales no pueden sondear passphrases en silencio/lote contra el AP. El sondeo activo queda para F2 si hay capability pública demostrada.</string>
-    <string name="audit_ap_capability_device">Este dispositivo no soporta la solicitud local-only necesaria.</string>
+    <string name="audit_ap_capability_platform_limit">Limitación técnica Android: falta permiso o la plataforma no expone un path fiable de validación LAB.</string>
+    <string name="audit_ap_capability_device">Este dispositivo no soporta la solicitud local-only necesaria (Wi‑Fi apagado o sin STA concurrency).</string>
     <string name="audit_ap_capability_privileged">Requiere build privilegiada / de sistema (no Play).</string>
-    <string name="audit_ap_capability_not_implemented">Sondeo AP aún no implementado en este build (fundación ADR-004).</string>
+    <string name="audit_ap_capability_not_implemented">Sondeo AP aún no disponible para esta familia/capability.</string>
+    <string name="audit_ap_capability_requires_api34">Validación LAB con causa de fallo fiable requiere Android 14+ (API 34).</string>
+    <string name="audit_ap_capability_requires_sta_concurrency">Este dispositivo no declara concurrencia STA local-only; el probe desplazaría la red primaria (F1 STOP).</string>
     <string name="audit_ap_denials">No admitido: %1$s</string>
     <string name="audit_ap_denial_mode">modo</string>
     <string name="audit_ap_denial_lab_mode">modo laboratorio desactivado</string>
