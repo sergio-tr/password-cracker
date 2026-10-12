@@ -56,7 +56,7 @@ import com.wifiauditlab.android.ui.audit.label
 import com.wifiauditlab.android.ui.common.NetworkRecognitionIndicator
 import com.wifiauditlab.android.ui.common.NetworkRecognitionStatus
 import com.wifiauditlab.android.ui.security.familyLabelRes
-import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
+import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.security.SecurityRating
 import com.wifiauditlab.assessment.domain.wifi.SignalQuality
@@ -70,7 +70,7 @@ fun NearbyScreen(
     viewModel: NearbyViewModel = koinViewModel(),
     onOpenSecurityAnalysis: (NearbyItem) -> Unit = {},
     onOpenLab: (NearbyItem, String?) -> Unit = { _, _ -> },
-    onOpenPasswordAudit: (NearbyItem) -> Unit = {},
+    onOpenRealPasswordTest: (NearbyItem) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val detail by viewModel.detail.collectAsStateWithLifecycle()
@@ -147,8 +147,8 @@ fun NearbyScreen(
                 onOpenLab(current.item, current.assessment?.headline)
                 viewModel.dismissDetail()
             },
-            onOpenPasswordAudit = {
-                onOpenPasswordAudit(current.item)
+            onOpenRealPasswordTest = {
+                onOpenRealPasswordTest(current.item)
                 viewModel.dismissDetail()
             },
             onOpenWifiSettings = {
@@ -229,7 +229,7 @@ private fun NetworkDetailSheet(
     onSave: (String) -> Unit,
     onOpenSecurityAnalysis: () -> Unit,
     onOpenLab: () -> Unit,
-    onOpenPasswordAudit: () -> Unit,
+    onOpenRealPasswordTest: () -> Unit,
     onOpenWifiSettings: () -> Unit,
     onRequestPermissions: () -> Unit,
     onSetLabRegistered: (Boolean) -> Unit,
@@ -313,9 +313,9 @@ private fun NetworkDetailSheet(
             }
 
             Spacer(Modifier.height(8.dp))
-            PasswordAuditSection(
-                eligibility = detail.auditEligibility,
-                onOpenPasswordAudit = onOpenPasswordAudit,
+            RealPasswordTestSection(
+                eligibility = detail.realPasswordEligibility,
+                onOpenRealPasswordTest = onOpenRealPasswordTest,
                 onOpenWifiSettings = onOpenWifiSettings,
                 onRequestPermissions = onRequestPermissions,
             )
@@ -402,34 +402,59 @@ private fun NetworkDetailSheet(
 }
 
 @Composable
-private fun PasswordAuditSection(
-    eligibility: PasswordAuditEligibility?,
-    onOpenPasswordAudit: () -> Unit,
+private fun RealPasswordTestSection(
+    eligibility: RealNetworkPasswordEligibility?,
+    onOpenRealPasswordTest: () -> Unit,
     onOpenWifiSettings: () -> Unit,
     onRequestPermissions: () -> Unit,
 ) {
-    val auditCta = stringResource(R.string.audit_cta_nearby)
+    val cta = stringResource(R.string.real_test_cta)
     val openWifiSettings = stringResource(R.string.audit_open_wifi_settings)
     when (eligibility) {
         null -> Text(stringResource(R.string.nearby_checking_eligibility))
-        is PasswordAuditEligibility.EligibleConnectedNetwork -> {
-            Text(stringResource(R.string.audit_connected_now), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.audit_available), style = MaterialTheme.typography.bodySmall)
+        is RealNetworkPasswordEligibility.Executable -> {
+            Text(
+                stringResource(
+                    if (eligibility.bssidConfirmed) {
+                        R.string.real_test_connected_exact
+                    } else {
+                        R.string.real_test_connected_ssid
+                    },
+                ),
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(stringResource(R.string.real_test_available), style = MaterialTheme.typography.bodySmall)
             Button(
-                onClick = onOpenPasswordAudit,
+                onClick = onOpenRealPasswordTest,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = auditCta },
+                        .semantics { contentDescription = cta },
             ) {
                 Icon(Icons.Filled.WifiLock, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.size(8.dp))
-                Text(auditCta)
+                Text(cta)
             }
         }
-        PasswordAuditEligibility.NotCurrentlyConnected -> {
-            Text(stringResource(R.string.audit_not_connected_title), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.audit_not_connected_body))
+        is RealNetworkPasswordEligibility.ProbableMatchOnly -> {
+            // Checker maps same-SSID to Executable; keep CTA if this branch appears.
+            Text(stringResource(R.string.real_test_connected_ssid), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.real_test_available), style = MaterialTheme.typography.bodySmall)
+            Button(
+                onClick = onOpenRealPasswordTest,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = cta },
+            ) {
+                Icon(Icons.Filled.WifiLock, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.size(8.dp))
+                Text(cta)
+            }
+        }
+        RealNetworkPasswordEligibility.NotCurrentlyConnected -> {
+            Text(stringResource(R.string.real_test_not_connected), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.real_test_not_connected_body))
             OutlinedButton(
                 onClick = onOpenWifiSettings,
                 modifier =
@@ -438,16 +463,16 @@ private fun PasswordAuditSection(
                         .semantics { contentDescription = openWifiSettings },
             ) { Text(openWifiSettings) }
         }
-        is PasswordAuditEligibility.UnsupportedAuthenticationModel -> {
+        is RealNetworkPasswordEligibility.UnsupportedAuthenticationModel -> {
             Text(eligibility.reason.label())
         }
-        PasswordAuditEligibility.MissingPermissions -> {
+        RealNetworkPasswordEligibility.MissingPermissions -> {
             Text(stringResource(R.string.nearby_missing_permissions))
             OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.nearby_grant_permission))
             }
         }
-        PasswordAuditEligibility.InsufficientInformation -> {
+        RealNetworkPasswordEligibility.InsufficientInformation -> {
             Text(stringResource(R.string.nearby_insufficient_info))
             OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.nearby_review_permissions))

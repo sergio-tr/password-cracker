@@ -12,8 +12,8 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Branding **WiFiSearcher**. Cercanas, Guardadas, Ajustes siempre; **Laboratorio** y CTAs Lab sólo con Lab Mode ON (nav dinámica). Nearby: Connected/Unknown **icon-only** + contentDescription. Onboarding, Permission Center, Análisis de seguridad, Auditar contraseña (local). |
-| Deferred | Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
+| Implementadas | Branding **WiFiSearcher**. Lab OFF: Cercanas, Guardadas, Ajustes + flujo real «Probar contraseña» (`RealNetworkPasswordTestScreen`). Lab ON: añade **Laboratorio** (Synthetic / Prototype / Search Engine V2 / benchmarks / calibration). Nearby: Connected/Unknown **icon-only** + contentDescription. Onboarding, Permission Center, Análisis de seguridad. |
+| Deferred | Implementación Android del adapter real (sigue `NotImplemented`). Lab Result como ruta propia. |
 
 ## Principios aplicados
 
@@ -31,26 +31,20 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
   chip «Secreto aleatorio» opcional; resumen novice + aviso local-only al terminar.
   FIX-03/04 merged, CI green; `ProductRegressionComposeTest` cubre SSID visible sin Avanzado.
   **Manual pending user** — no marcar Implemented.
-- **Quick Audit**: navegación con `ArrowBack` (`Icons.AutoMirrored.Filled.ArrowBack`,
-  contentDescription localizado); modo Automático por defecto; duración 30 s / 1 min /
-  5 min; Vault con reveal diferido; `saveToVault` OFF; icono `PlayArrow` en INICIAR.
-- **Dual-mode Audit (F3 + F4 UX)**:
-  - Experiencia principal: **Auditar contraseña localmente** (recomendada).
-  - Tarjeta comparativa LOCAL vs LAB (operaciones distintas, no equivalentes).
-  - Avanzado / Lab Mode (OFF por defecto): **Validar en red de laboratorio**.
-  - Capability, sesión y `DETENER` en lenguaje de producto (F3).
-  - Nearby/Vault: registro lab visible (F3).
-- **Prueba Wi‑Fi real** (solo flavor `lab`): desde Laboratorio → opciones avanzadas;
-  AP fijo no editable; consentimiento por sesión; resultados tipados; sección
-  «Ver cómo funciona»; `DETENER` + cooldown. No Search Engine.
+- **Real password test** (producto): `ArrowBack`; password + consentimiento; CTA con
+  **mismo SSID** que la conexión actual (BSSID opcional); durante Running, `DETENER`
+  fijo; resultados tipados (`Accepted` / `Inconclusive` / `Cancelled` / …).
+- **Lab Mode OFF/ON**: OFF = producto real; ON = Real + Lab (Search Engine sólo en Lab).
+- **Prueba Wi‑Fi FixedLab** (solo flavor `lab`): desde Laboratorio; AP fijo `LAB_WIFI_*`;
+  no Search Engine; distinto del CTA Nearby real.
 - **Idioma (FIX-01, Partial)**: selector en Ajustes (Sistema / Español / English) vía AppCompat
   per-app language + recreate; strings migrados a `values`/`values-en` (Lab, Nearby, Vault,
   Onboarding, Permissions, Security, Settings). FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green.
   **Manual pending user** — no marcar Implemented.
 - **Navegación (FIX-02, Partial)**:
-  - **Top level** (barra inferior: Cercanas, Guardadas, Laboratorio, Ajustes): sin `ArrowBack`.
-  - **Child** (`permissions`, `security_analysis`, `password_audit`, `real_wifi_probe`): `ArrowBack` +
-    CD `navigate_back` → `popBackStack` (audit limpia el target store). No hay botones
+  - **Top level** (barra inferior: Cercanas, Guardadas, [Laboratorio si Lab ON], Ajustes): sin `ArrowBack`.
+  - **Child** (`permissions`, `security_analysis`, `real_password_test`, `real_wifi_probe`):
+    `ArrowBack` + CD `navigate_back` → `popBackStack` (limpia el target store). No hay botones
     de texto «Atrás».
   - **Copy novice (FIX-02)**: en Lab guiado y Quick Audit (superficies listas, no Avanzado
     colapsado) se evita jerga primaria («Workers», «Target», «Reasonable»); términos técnicos

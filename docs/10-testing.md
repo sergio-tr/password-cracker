@@ -68,9 +68,14 @@ Sin dependencia de APs reales, Internet ni diálogos OEM. Validación Wi‑Fi re
 ## Cobertura JVM / KMP
 
 ViewModels en `androidApp/src/test`, dominio en `shared/*/…Test`. Destacados
-para auditoría: `DefaultPasswordAuditEligibilityCheckerTest`,
-`HeuristicSecretStrengthAnalyzerTest`, `PasswordAuditResultComposerTest`,
-`AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`.
+para producto real: `RealNetworkPasswordExecutionTest` (SSID±BSSID, permisos),
+`RealNetworkPasswordTestViewModelTest` (wiring, mismatch SSID, BSSID opcional),
+`NearbyViewModelTest`. Guía: `docs/15-manual-real-network-implementation.md`.
+Lab (motor local): `AutomaticPasswordAuditPlannerTest`,
+`WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`.
+
+Contrato UI Lab Mode: OFF → Cercanas/Guardadas/Ajustes; ON → + Lab.
+CTA real con mismo SSID; BSSID no obligatorio.
 
 ## Deferred
 

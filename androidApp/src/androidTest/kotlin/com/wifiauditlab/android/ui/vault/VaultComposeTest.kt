@@ -263,13 +263,12 @@ class VaultComposeTest {
     }
 
     @Test
-    fun detail_showsLabAndAuditCtas_forPersonalWithSecret() {
+    fun detail_showsLabCta_whenLabModeOn_andHidesLocalAudit() {
         val repo = FakeSavedNetworkRepository()
         val vault = FakeSecretVault()
         seed(repo, vault, "LabEntry", "LAB_ENTRY_SSID", withSecret = true)
 
         var openedLab: SavedWifiNetwork? = null
-        var openedAudit: SavedWifiNetwork? = null
         val vm =
             vaultViewModel(
                 repo,
@@ -281,7 +280,6 @@ class VaultComposeTest {
                 VaultScreen(
                     viewModel = vm,
                     onOpenLab = { network, _ -> openedLab = network },
-                    onOpenPasswordAudit = { network -> openedAudit = network },
                 )
             }
         }
@@ -296,16 +294,13 @@ class VaultComposeTest {
         composeTestRule.waitForIdle()
         assertTrue(openedLab?.alias == "LabEntry")
 
-        // Re-open detail for audit CTA (sheet dismissed after lab click may keep detail)
-        if (vm.detail.value == null) {
-            composeTestRule.onNodeWithText("LabEntry").performClick()
-            waitForText(activity.getString(R.string.vault_password_section))
-        }
-        val openAudit = activity.getString(R.string.vault_open_audit)
-        composeTestRule.onNodeWithText(openAudit).performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText(openAudit).performClick()
-        composeTestRule.waitForIdle()
-        assertTrue(openedAudit?.alias == "LabEntry")
+        // Local-only audit CTA removed from real/Vault product surface.
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.vault_open_audit))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 
     @Test

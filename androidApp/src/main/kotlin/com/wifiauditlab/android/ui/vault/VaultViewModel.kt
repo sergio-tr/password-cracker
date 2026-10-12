@@ -17,12 +17,15 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkKey
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.supportsLabNetworkValidation
+import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibility
+import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibilityChecker
 import com.wifiauditlab.assessment.domain.vault.LocationLabel
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
+import com.wifiauditlab.assessment.domain.wifi.Ssid
 import com.wifiauditlab.assessment.port.LabModePreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -51,6 +54,8 @@ data class VaultDetailState(
     val labRegistered: Boolean = false,
     /** Family supports LAB network validation (SSID+family identity). */
     val canUseAsLabNetwork: Boolean = false,
+    /** Exact match to current Wi‑Fi → real password probe CTA. */
+    val realPasswordEligibility: RealNetworkPasswordEligibility? = null,
 )
 
 /**
@@ -71,6 +76,7 @@ class VaultViewModel(
     private val revealSecretUseCase: RevealSavedNetworkSecret,
     private val labModePreferences: LabModePreferences? = null,
     private val labNetworkRegistry: AuthorizedLabNetworkStore? = null,
+    private val realPasswordEligibilityChecker: RealNetworkPasswordEligibilityChecker? = null,
 ) : ViewModel() {
     private val query = MutableStateFlow("")
     private val sort = MutableStateFlow(SavedNetworkListSort.AliasAsc)
@@ -79,6 +85,7 @@ class VaultViewModel(
     private val revealed = MutableStateFlow<Pair<SavedNetworkId, String>?>(null)
     private val labModeEnabled = MutableStateFlow(labModePreferences?.isLabModeEnabled() == true)
     private val labRegistered = MutableStateFlow(false)
+    private val realPasswordEligibility = MutableStateFlow<RealNetworkPasswordEligibility?>(null)
 
     private val networks = observeSaved()
 
@@ -112,6 +119,8 @@ class VaultViewModel(
                 labRegistered = registered,
                 canUseAsLabNetwork = network.securityFamily.supportsLabNetworkValidation(),
             )
+        }.combine(realPasswordEligibility) { base, eligibility ->
+            base?.copy(realPasswordEligibility = eligibility)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun setQuery(value: String) {
@@ -131,14 +140,21 @@ class VaultViewModel(
         selectedId.value = network.id
         labModeEnabled.value = labModePreferences?.isLabModeEnabled() == true
         labRegistered.value = false
-        // labModeEnabled also tracks prefs.enabled for runtime toggles.
+        realPasswordEligibility.value = null
         viewModelScope.launch {
             val registered =
                 labNetworkRegistry?.isAuthorized(
                     AuthorizedLabNetworkKey.of(network.ssid, network.securityFamily),
                 ) == true
+            val eligibility =
+                realPasswordEligibilityChecker?.checkSaved(
+                    ssid = Ssid(network.ssid),
+                    knownBssids = network.knownBssids,
+                    securityFamily = network.securityFamily,
+                )
             if (selectedId.value == network.id) {
                 labRegistered.value = registered
+                realPasswordEligibility.value = eligibility
             }
         }
     }
@@ -147,6 +163,7 @@ class VaultViewModel(
         revealed.value = null
         selectedId.value = null
         labRegistered.value = false
+        realPasswordEligibility.value = null
     }
 
     /**

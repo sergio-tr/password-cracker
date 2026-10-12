@@ -46,11 +46,27 @@ de negocio relevante dentro de ViewModels.
 compilación, que `LabSearchEngine` referencie `WifiScanner` o cualquier API de
 red. La frontera no se apoya en disciplina de código sino en el grafo de módulos.
 
-El Search Engine funciona exclusivamente de forma local: puede utilizarse con
-challenges sintéticos o con contraseñas conocidas encapsuladas; nunca envía
-candidatos a redes externas ni autentica contra access points.
+### Dos entornos (contrato de producto)
 
-### Punto de extensión: `CandidateVerifier`
+```text
+REAL ENVIRONMENT (Lab Mode OFF = producto por defecto)
+  Nearby / Vault
+    → RealNetworkPasswordEligibility (Exact BSSID)
+    → RealNetworkPasswordTestScreen
+    → RealNetworkPasswordExecutionPort
+    → AndroidRealNetworkPasswordExecutionAdapter (TODO / NotImplemented)
+
+LAB ENVIRONMENT (Lab Mode ON = Real + Lab)
+  LabScreen
+    → Synthetic Lab / Local Network Prototype
+    → Search Engine V2 → CandidateVerifier (local)
+    → planners / workers / STOP / metrics / calibration / benchmarks
+```
+
+El Search Engine **no** se conecta a `RealNetworkPasswordExecutionPort`.
+Vive sólo bajo Lab y usa `CandidateVerifier` local.
+
+### Punto de extensión Lab: `CandidateVerifier`
 
 ```text
                           CandidateVerifier
@@ -73,28 +89,22 @@ candidatos a redes externas ni autentica contra access points.
 - `UnsupportedNetworkCandidateVerifier` es un placeholder arquitectónico:
   falla cerrado y no contiene implementación de red.
 
-Separado (no es `CandidateVerifier`; vive fuera del Search Engine):
-
-```text
-Single Real Credential Validation (optional Lab / stash)
-      → AuthorizedApTestGate → LabValidationSessionOrchestrator
-      → NetworkValidationAdapter → requestNetwork one-shot
-```
-
 **Lab Mode** (`LabModePreferences` / `LabModeSurfaces`): preferencia global
 (default false) que **oculta** superficies Lab en UI cuando está OFF; **no**
 elimina ni desconecta el código Lab (DI, motor, Guided/Advanced, prototipos,
 calibración, benchmarks). Con Lab Mode ON reaparecen las mismas superficies.
 
-## Known-password audit (componentes)
+## Real password probe + Lab search (componentes)
 
 | Componente | Módulo | Rol |
 | --- | --- | --- |
 | `CurrentWifiConnectionProvider` | assessment + androidApp | Detección de red conectada |
-| `PasswordAuditEligibilityChecker` | assessment | Elegibilidad (PSK personal) |
-| `EncapsulatedPasswordVerifier` | lab | Target aislado; verificación local |
-| `AutomaticPasswordAuditPlanner` | lab | Plan multi-stage ciego al secreto |
-| `PasswordAuditResultComposer` | assessment | `WifiPasswordAuditResult`; config vs resistencia |
+| `RealNetworkPasswordEligibilityChecker` | assessment | Exact → Executable; Probable → informativo |
+| `RealNetworkPasswordExecutionPort` | assessment | Puerto de ejecución real (sin Android types) |
+| `AndroidRealNetworkPasswordExecutionAdapter` | androidApp | Stub tipado `NotImplemented` |
+| `EncapsulatedPasswordVerifier` | lab | Target aislado; verificación local (Lab) |
+| `AutomaticPasswordAuditPlanner` | lab | Plan multi-stage ciego al secreto (Lab) |
+| `PasswordAuditResultComposer` | assessment | Resultados locales Lab |
 | `SecretStrengthAnalyzer` | assessment | Análisis estructural; **no** alimenta al planner |
 
 ## Capacidades de plataforma

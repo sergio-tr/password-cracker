@@ -30,37 +30,32 @@ El **classifier** vive en el núcleo de negocio (`:shared:assessment`), sin tipo
 Android, por lo que es testeable sin emulador y reutilizable en iOS. El mapper
 sólo adapta datos de la plataforma.
 
-## Red conectada y elegibilidad de auditoría
+## Red conectada y prueba real de contraseña
 
 | Clase (androidApp / assessment) | Rol |
 | --- | --- |
 | `AndroidCurrentWifiConnectionProvider` | Adaptador de `CurrentWifiConnectionProvider`; lee SSID/BSSID de la conexión activa. |
-| `DefaultPasswordAuditEligibilityChecker` | Cruza observación + conexión actual; solo WPA/WPA2/WPA3 Personal elegibles. |
-| `NetworkConnectionMatch` | Exact / Probable / Unknown / Ambiguous entre observación y conexión. |
+| `DefaultRealNetworkPasswordEligibilityChecker` | Mismo SSID + familia + permisos → `Executable`; BSSID confirmado = evidencia opcional. |
+| `RealNetworkPasswordExecutionPort` | Puerto application-neutral (sin tipos Android). |
+| `AndroidRealNetworkPasswordExecutionAdapter` | `WifiNetworkSpecifier` + `requestNetwork`; BSSID opcional en el Specifier. |
+| `NetworkConnectionMatch` | Exact / Probable / … (sin cambiar); el checker real mapea Exact **y** Probable a Executable. |
 
-En Nearby, la red conectada muestra badge «Conectado» y, si es elegible, CTA
-«Auditar contraseña». La auditoría exige conexión activa a esa red; si se pierde,
-el ViewModel bloquea el inicio.
+En Nearby/Vault, si el SSID seleccionado coincide con la Wi‑Fi actual,
+CTA «Probar contraseña en esta red» → `RealNetworkPasswordTestScreen`.
+Sin hardcode ni `local.properties`: datos del scan + `CurrentWifiConnectionProvider`.
 
-### Dual-mode (ADR-004 / F0–F3)
+El Search Engine local **no** se lanza desde este flujo (solo Lab Mode).
+
+### Lab dual-mode histórico (ADR-004 / F0–F3) — superficies Lab
 
 | Pieza | Estado |
 | --- | --- |
-| `LOCAL_AUDIT` | Motor local (sin AP) — **Implemented** + **Automated tested** |
-| `LAB_NETWORK_VALIDATION` sesión | Orquestador + monitors + budget — **Implemented** (F1) |
-| Probe local-only F2 | `WifiNetworkSpecifier` + `requestNetwork` (sin INTERNET) + failure listener API 34+ — **Implemented** |
-| Prueba Wi‑Fi real (lab flavor) | Un `validateOnce` con SSID+BSSID exactos (`FixedLabAccessPoint` desde `LAB_WIFI_*`); sin patrones/wildcards; solo `labDebug` — **Implemented** (físico pendiente) |
-| Capability Available | API **34+** AND `isStaConcurrencyForLocalOnlyConnectionsSupported` AND permisos AND Wi‑Fi on |
-| Capability UX (F3) | Causas tipadas → strings de producto (`RequiresApi34`, `RequiresStaConcurrency`, `PermissionMissing`, `UnsupportedSecurityFamily`, …). Nunca «Unavailable» genérico. |
-| API 29–33 | `Unavailable(RequiresApi34)` — request posible pero sin failure reasons fiables |
-| Sin STA concurrency | `Unavailable(RequiresStaConcurrency)` — protege F1 NETWORK_CHANGED→STOP |
-| Familias | WPA2 / WPA3 / WPA2+WPA3 Personal (`setWpa2Passphrase` / `setWpa3Passphrase`) |
-| Lectura PSK del sistema | **Not available** vía APIs públicas (app normal) → Vault / manual |
-| Registro lab (F3) | Nearby (solo conectada) + Vault (identidad SSID+familia); Lab Mode requerido; no autoriza sesión |
-| Evidence durable (F3) | `SharedPreferencesLabSessionEvidenceLog` sanitizado + retención acotada |
-| Backup (F3) | `allowBackup=false` + exclusiones explícitas (`backup_rules` / `data_extraction_rules`) |
-| Validación física Wi‑Fi | **Physical validated** solo tras checklist F3 en dispositivo real |
-| UX consolidation (F4) | LOCAL recomendado; LAB bajo avanzado/Lab Mode; tarjeta comparativa |
+| Search Engine local (`CandidateVerifier`) | Vive bajo Lab; planners/workers/STOP intactos |
+| `LAB_NETWORK_VALIDATION` sesión | Orquestador + monitors + budget — Lab only |
+| Probe local-only F2 | `WifiNetworkSpecifier` + `requestNetwork` — Lab capability path |
+| Prueba Wi‑Fi real (lab flavor / FixedLab) | One-shot `validateOnce` con AP fijo `LAB_WIFI_*` — solo `labDebug`; **no** es el flujo Nearby real |
+| Registro lab (F3) | Nearby/Vault con Lab Mode ON |
+| Evidence / backup (F3) | Sin cambio |
 
 ## Permisos
 
