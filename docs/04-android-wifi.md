@@ -36,15 +36,15 @@ sólo adapta datos de la plataforma.
 | --- | --- |
 | `AndroidCurrentWifiConnectionProvider` | Adaptador de `CurrentWifiConnectionProvider`; lee SSID/BSSID de la conexión activa. |
 | `RealWifiAuditOrchestrator` / Strategy / Planner | Orquestación de auditoría (sin secretos). |
-| `RealWifiAuditBackend` | Frontera application-neutral. |
-| `AndroidRealWifiAuditBackend` | Stub `Unavailable(NotImplemented)` + marker único. **Architecture ready / platform execution backend pending.** |
+| `RealWifiSearchPort` / `RealWifiSearchAdapter` | SE V2 + external CandidateVerifier. |
+| `UnsupportedExternalCandidateVerificationPort` | Placeholder `USER_IMPLEMENTATION_POINT_EXTERNAL_VERIFIER`. |
 | `NetworkConnectionMatch` | Exact / Probable / … (badge Connected); **no** bloquea la auditoría. |
 
 En Nearby/Vault, CTA «Auditar esta red» → `RealWifiAuditScreen` con la red
 seleccionada. Sin hardcode ni `local.properties`.
 
-El Search Engine local **no** se lanza desde este flujo (solo Lab Mode).
-Guías: `docs/15-real-wifi-audit-architecture.md`, `docs/16-real-wifi-backend-manual.md`.
+El Search Engine reutiliza V2; CandidateVerifier apunta a un backend externo (placeholder Unavailable).
+Guías: `docs/15`, `docs/16`, `docs/17`.
 
 ### Lab dual-mode histórico (ADR-004 / F0–F3) — superficies Lab
 

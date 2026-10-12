@@ -6,7 +6,7 @@ import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 
 /**
  * Application request to audit a **user-selected** real Wi‑Fi network.
- * Contains no password / known-secret material.
+ * Contains no password / known-secret material — the secret is unknown to the app.
  */
 data class RealWifiAuditRequest(
     val network: RealNetworkReference,
@@ -40,6 +40,23 @@ sealed interface RealWifiAuditStrategy {
     data object Unsupported : RealWifiAuditStrategy
 }
 
+/** Strategies that need Search Engine V2 + an external CandidateVerifier backend. */
+fun RealWifiAuditStrategy.requiresPasswordSearch(): Boolean =
+    when (this) {
+        RealWifiAuditStrategy.LegacyPersonalKeyAudit,
+        RealWifiAuditStrategy.PersonalPskAudit,
+        RealWifiAuditStrategy.PersonalSaeAudit,
+        RealWifiAuditStrategy.TransitionPersonalAudit,
+        -> true
+        else -> false
+    }
+
+@Deprecated(
+    "Renamed to requiresPasswordSearch — RealWifiAudit does not use a local known secret.",
+    ReplaceWith("requiresPasswordSearch()"),
+)
+fun RealWifiAuditStrategy.requiresLocalPasswordSearch(): Boolean = requiresPasswordSearch()
+
 /**
  * Platform-neutral execution limits for a real Wi‑Fi audit plan.
  * No credential material.
@@ -62,14 +79,37 @@ data class RealWifiAuditPlan(
     val strategyLabel: String,
 )
 
+/**
+ * Stable capability of the RealWifiAudit stack (checked at prepare, before START).
+ * Not an execution outcome — Unavailable here means START must stay disabled.
+ */
+sealed interface RealWifiAuditCapability {
+    data object Available : RealWifiAuditCapability
+
+    data class Unavailable(
+        val reason: RealWifiAuditUnavailableReason,
+    ) : RealWifiAuditCapability
+}
+
 sealed interface RealWifiAuditPhase {
     data object Idle : RealWifiAuditPhase
 
+    /** Resolving strategy / plan / external-verifier capability. */
+    data object CheckingCapability : RealWifiAuditPhase
+
     data object Preparing : RealWifiAuditPhase
 
+    /** Password search (or assessment-only) can start. */
     data object Ready : RealWifiAuditPhase
 
-    data object Running : RealWifiAuditPhase
+    /**
+     * External verifier capability is Unavailable for a password strategy.
+     * Persistent screen state — START stays disabled; not a terminal “error toast”.
+     */
+    data object BackendUnavailable : RealWifiAuditPhase
+
+    /** Search Engine V2 against an external CandidateVerifier backend. */
+    data object Searching : RealWifiAuditPhase
 
     data object Stopping : RealWifiAuditPhase
 
@@ -82,12 +122,36 @@ sealed interface RealWifiAuditPhase {
     ) : RealWifiAuditPhase
 }
 
+/** Diagnostic snapshot — no secrets. */
+data class RealWifiAuditTechnicalDetails(
+    val strategyName: String,
+    val plannerReady: Boolean,
+    val searchEngineReady: Boolean,
+    val externalVerifierLabel: String,
+)
+
+sealed interface RealWifiSearchOutcome {
+    data object Found : RealWifiSearchOutcome
+
+    data object Exhausted : RealWifiSearchOutcome
+
+    data object LimitReached : RealWifiSearchOutcome
+
+    data object Cancelled : RealWifiSearchOutcome
+}
+
 sealed interface RealWifiAuditOutcome {
-    data object Completed : RealWifiAuditOutcome
+    data class Completed(
+        val search: RealWifiSearchOutcome,
+    ) : RealWifiAuditOutcome
 
     data object Cancelled : RealWifiAuditOutcome
 
     data object Unsupported : RealWifiAuditOutcome
+
+    data class AssessmentOnly(
+        val strategy: RealWifiAuditStrategy,
+    ) : RealWifiAuditOutcome
 
     data class Unavailable(
         val reason: RealWifiAuditUnavailableReason,
@@ -100,10 +164,18 @@ sealed interface RealWifiAuditUnavailableReason {
     data object MissingPermissions : RealWifiAuditUnavailableReason
 
     data object CapabilityUnavailable : RealWifiAuditUnavailableReason
+
+    /**
+     * Password-search strategies need an opaque external verification backend.
+     * The application does **not** know the target secret.
+     */
+    data object ExternalVerifierUnavailable : RealWifiAuditUnavailableReason
 }
 
 sealed interface RealWifiAuditFailureReason {
     data object PlatformError : RealWifiAuditFailureReason
+
+    data object SearchFailed : RealWifiAuditFailureReason
 
     data object Unknown : RealWifiAuditFailureReason
 }
@@ -121,29 +193,44 @@ fun interface RealWifiAuditProgressSink {
     fun onProgress(progress: RealWifiAuditProgress)
 }
 
-sealed interface RealWifiAuditBackendResult {
-    data object Completed : RealWifiAuditBackendResult
+/**
+ * Search Engine V2 frontier for RealWifiAudit.
+ *
+ * Candidate verification goes through [ExternalCandidateVerificationPort]
+ * (black-box). Never takes a known secret. Never calls Android Wi‑Fi from Lab.
+ */
+interface RealWifiSearchPort {
+    suspend fun search(
+        plan: RealWifiAuditPlan,
+        progress: RealWifiAuditProgressSink,
+    ): RealWifiSearchExecutionResult
 
-    data object Cancelled : RealWifiAuditBackendResult
+    fun cancel()
+}
 
-    data class Unavailable(
-        val reason: RealWifiAuditUnavailableReason,
-    ) : RealWifiAuditBackendResult
+sealed interface RealWifiSearchExecutionResult {
+    data class Found(
+        val progress: RealWifiAuditProgress,
+    ) : RealWifiSearchExecutionResult
+
+    data class Exhausted(
+        val progress: RealWifiAuditProgress,
+    ) : RealWifiSearchExecutionResult
+
+    data class LimitReached(
+        val progress: RealWifiAuditProgress,
+    ) : RealWifiSearchExecutionResult
+
+    data class Cancelled(
+        val progress: RealWifiAuditProgress,
+    ) : RealWifiSearchExecutionResult
 
     data class Failed(
         val reason: RealWifiAuditFailureReason,
-    ) : RealWifiAuditBackendResult
-}
+        val progress: RealWifiAuditProgress?,
+    ) : RealWifiSearchExecutionResult
 
-/**
- * Platform-neutral backend frontier: orchestration / algorithms vs experimental
- * platform verification. Implementations live outside `:shared:lab`.
- */
-interface RealWifiAuditBackend {
-    suspend fun execute(
-        plan: RealWifiAuditPlan,
-        progress: RealWifiAuditProgressSink,
-    ): RealWifiAuditBackendResult
-
-    fun cancel()
+    data class Unavailable(
+        val reason: RealWifiAuditUnavailableReason,
+    ) : RealWifiSearchExecutionResult
 }

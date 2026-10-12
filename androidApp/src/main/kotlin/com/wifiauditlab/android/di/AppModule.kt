@@ -33,11 +33,11 @@ import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidCurrentWifiConnectionProvider
 import com.wifiauditlab.android.wifi.AndroidNetworkValidationAdapter
 import com.wifiauditlab.android.wifi.AndroidNetworkValidationCapabilityEvaluator
-import com.wifiauditlab.android.wifi.AndroidRealWifiAuditBackend
 import com.wifiauditlab.android.wifi.AndroidWifiConnectionMonitor
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 import com.wifiauditlab.android.wifi.AndroidWifiScanner
+import com.wifiauditlab.android.wifi.RealWifiSearchAdapter
 import com.wifiauditlab.android.wifi.hasConnectionInspectionPermission
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
@@ -77,10 +77,12 @@ import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.match.KnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditPlanner
 import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditStrategyResolver
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditBackend
+import com.wifiauditlab.assessment.domain.realaudit.ExternalCandidateVerificationPort
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditOrchestrator
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditPlanner
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditStrategyResolver
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiSearchPort
+import com.wifiauditlab.assessment.domain.realaudit.UnsupportedExternalCandidateVerificationPort
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 import com.wifiauditlab.assessment.port.LabModePreferences
@@ -135,12 +137,23 @@ val appModule =
         }
         single<RealWifiAuditStrategyResolver> { DefaultRealWifiAuditStrategyResolver() }
         single<RealWifiAuditPlanner> { DefaultRealWifiAuditPlanner() }
-        single<RealWifiAuditBackend> { AndroidRealWifiAuditBackend() }
+        single<ExternalCandidateVerificationPort> {
+            UnsupportedExternalCandidateVerificationPort()
+        }
+        single<RealWifiSearchPort> {
+            RealWifiSearchAdapter(
+                engine = get(),
+                externalVerifier = get(),
+                planner = get(),
+                availableProcessors = Runtime.getRuntime().availableProcessors(),
+            )
+        }
         single {
             RealWifiAuditOrchestrator(
                 strategyResolver = get(),
                 planner = get(),
-                backend = get(),
+                search = get(),
+                externalVerifier = get(),
             )
         }
         single<SecretVault> { KeystoreSecretVault(androidContext()) }

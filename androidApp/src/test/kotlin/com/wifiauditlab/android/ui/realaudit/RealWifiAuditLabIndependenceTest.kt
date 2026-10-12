@@ -4,62 +4,84 @@ import com.wifiauditlab.android.lab.LabModeSurfaces
 import com.wifiauditlab.assessment.domain.real.RealNetworkReference
 import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditPlanner
 import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditStrategyResolver
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditBackend
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditBackendResult
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditOrchestrator
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditOutcome
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditPhase
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditPlan
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditProgressSink
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditStrategy
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiSearchExecutionResult
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiSearchPort
+import com.wifiauditlab.assessment.domain.realaudit.UnsupportedExternalCandidateVerificationPort
 import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.assessment.domain.wifi.Ssid
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
+import com.wifiauditlab.lab.domain.Alphabet
+import com.wifiauditlab.lab.domain.BlackBoxChallengeVerifier
+import com.wifiauditlab.lab.domain.LabChallenge
+import com.wifiauditlab.lab.domain.LabSecretPolicy
+import com.wifiauditlab.lab.domain.LengthPolicy
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Real Wi‑Fi audit must remain available regardless of Lab Mode.
- * Lab surfaces hide/show independently.
+ * Real audit capability gate is independent of Lab Mode.
+ * Lab black-box remains usable regardless of unsupported external verifier.
  */
 class RealWifiAuditLabIndependenceTest {
     @Test
-    fun labOff_hidesLab_but_realAuditStillRuns() =
+    fun labOff_realAudit_backend_unavailable_stable() =
         runTest {
             assertFalse(LabModeSurfaces.showLabTab(false))
-            val outcome = runAuditOnce()
-            assertEquals(RealWifiAuditOutcome.Completed, outcome)
+            val phase = preparePasswordAudit()
+            assertTrue(phase is RealWifiAuditPhase.BackendUnavailable)
         }
 
     @Test
-    fun labOn_showsLab_and_realAuditStillRuns() =
+    fun labOn_realAudit_backend_unavailable_stable() =
         runTest {
             assertTrue(LabModeSurfaces.showLabTab(true))
-            val outcome = runAuditOnce()
-            assertEquals(RealWifiAuditOutcome.Completed, outcome)
+            val phase = preparePasswordAudit()
+            assertTrue(phase is RealWifiAuditPhase.BackendUnavailable)
         }
 
-    private suspend fun runAuditOnce(): RealWifiAuditOutcome {
+    @Test
+    fun lab_black_box_unaffected_by_unsupported_external_port() {
+        val secret = "zz"
+        val verifier = BlackBoxChallengeVerifier.encapsulate(secret)
+        LabChallenge.withBlackBoxVerifier(
+            policy = LabSecretPolicy(Alphabet.LOWERCASE, LengthPolicy.exactly(2)),
+            verifier = verifier,
+            seed = 1L,
+        )
+        assertTrue(verifier.verify(secret))
+        assertFalse(verifier.verify("aa"))
+        assertFalse(verifier.toString().contains(secret))
+        // Unsupported external port is Real-only wiring — Lab does not consult it.
+        val port = UnsupportedExternalCandidateVerificationPort()
+        assertTrue(
+            port.capability() is
+                com.wifiauditlab.assessment.domain.realaudit.ExternalVerifierCapability.Unavailable,
+        )
+    }
+
+    private fun preparePasswordAudit(): RealWifiAuditPhase {
         val orchestrator =
             RealWifiAuditOrchestrator(
                 strategyResolver = DefaultRealWifiAuditStrategyResolver(),
                 planner = DefaultRealWifiAuditPlanner(),
-                backend =
-                    object : RealWifiAuditBackend {
-                        override suspend fun execute(
+                search =
+                    object : RealWifiSearchPort {
+                        override suspend fun search(
                             plan: RealWifiAuditPlan,
                             progress: RealWifiAuditProgressSink,
-                        ): RealWifiAuditBackendResult {
-                            assertEquals(RealWifiAuditStrategy.PersonalPskAudit, plan.strategy)
-                            return RealWifiAuditBackendResult.Completed
-                        }
+                        ): RealWifiSearchExecutionResult =
+                            error("search must not run when backend unavailable")
 
                         override fun cancel() = Unit
                     },
+                externalVerifier = UnsupportedExternalCandidateVerificationPort(),
             )
         orchestrator.prepare(
             RealNetworkReference(
@@ -76,7 +98,6 @@ class RealWifiAuditLabIndependenceTest {
                 rawCapabilities = null,
             ),
         )
-        orchestrator.start()
-        return (orchestrator.state.value.phase as RealWifiAuditPhase.Completed).outcome
+        return orchestrator.state.value.phase
     }
 }

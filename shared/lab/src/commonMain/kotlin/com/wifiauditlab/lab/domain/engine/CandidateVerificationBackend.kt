@@ -10,30 +10,45 @@ package com.wifiauditlab.lab.domain.engine
  * to call platform APIs.
  *
  * ```
- *                          CandidateVerifier
- *                               ▲
- *                               │
- * Search Engine V2 ─────────────┤
- *                               │
- *               ┌───────────────┼──────────────────┐
- *               │               │                  │
- *        Synthetic       Known-secret       unsupported
- *     (LocalSynthetic) (LocalKnownSecret) (NetworkBacked…)
+ *                    Search Engine V2
+ *                           ↓
+ *                       candidate
+ *                           ↓
+ *                   CandidateVerifier
+ *                     /           \
+ *                    /             \
+ *         BlackBox Lab        External backend
+ *        hidden secret            pending
  * ```
  */
 sealed interface CandidateVerificationBackend {
     /** Synthetic / hidden secret held inside a [com.wifiauditlab.lab.domain.LabChallenge]. */
     data object LocalSynthetic : CandidateVerificationBackend
 
-    /** Known password encapsulated for local audit ([com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier]). */
+    /**
+     * Known password encapsulated for Synthetic / Prototype / tests only
+     * ([com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier]).
+     * Not used by RealWifiAudit.
+     */
     data object LocalKnownSecret : CandidateVerificationBackend
+
+    /**
+     * Didactic Lab black-box: secret lives only in
+     * [com.wifiauditlab.lab.domain.BlackBoxChallengeVerifier].
+     * Search Engine / planner / UI never see it.
+     */
+    data object BlackBoxLab : CandidateVerificationBackend
+
+    /**
+     * RealWifiAudit external oracle — pending platform backend.
+     * Wired via assessment [ExternalCandidateVerificationPort]; Lab stays free of Android.
+     */
+    data object ExternalPending : CandidateVerificationBackend
 
     /**
      * Reserved deliberately.
      *
-     * There is **no** automated search backed by a real network.
-     * One-shot manual validation against a fixed lab AP lives outside the Search Engine
-     * (Android adapter / session orchestrator in `:androidApp` / `:shared:assessment`).
+     * There is **no** automated search backed by a real network inside Lab.
      */
     data object NetworkBackedUnsupported : CandidateVerificationBackend
 }

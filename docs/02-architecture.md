@@ -54,34 +54,32 @@ REAL ENVIRONMENT (Lab Mode OFF = producto por defecto)
     → RealWifiAuditScreen
     → RealWifiAuditOrchestrator
     → StrategyResolver / Planner
-    → RealWifiAuditBackend
-    → AndroidRealWifiAuditBackend (USER_IMPLEMENTATION_POINT_REAL_WIFI_AUDIT)
-      Estado: Architecture ready / platform execution backend pending
+    → RealWifiSearchPort (SE V2 + external CandidateVerifier)
+    → ExternalCandidateVerificationPort (black-box; placeholder Unavailable)
 
 LAB ENVIRONMENT (Lab Mode ON = Real + Lab)
   LabScreen
-    → Synthetic Lab / Local Network Prototype
-    → Search Engine V2 → CandidateVerifier (local)
+    → Synthetic Lab / Local Network Prototype / BlackBox RandomHidden
+    → Search Engine V2 → CandidateVerifier (local / BlackBox)
     → planners / workers / STOP / metrics / calibration / benchmarks
 ```
 
-El Search Engine **no** se conecta a `RealWifiAuditBackend` / autenticación Wi‑Fi.
-Vive sólo bajo Lab y usa `CandidateVerifier` local.
-Ver `docs/15-real-wifi-audit-architecture.md` y `docs/16-real-wifi-backend-manual.md`.
+Search Engine **does not** know the target secret.
+Real mode requires an external verification backend.
+Ver `docs/15`, `docs/16`, `docs/17`.
 
 ### Punto de extensión Lab: `CandidateVerifier`
 
 ```text
-                          CandidateVerifier
-                               ▲
-                               │
- Search Engine V2 ─────────────┤
-                               │
-               ┌───────────────┼──────────────────┐
-               │               │                  │
-        Synthetic       Known-secret       unsupported
-     LocalSynthetic   LocalKnownSecret   NetworkBackedUnsupported
-  SyntheticExact…   Encapsulated…     UnsupportedNetwork…
+                    Search Engine V2
+                           ↓
+                       candidate
+                           ↓
+                   CandidateVerifier
+                     /           \
+                    /             \
+         BlackBox Lab        External backend
+        hidden secret            pending
 ```
 
 - El motor, el scheduler y la generación de candidatos dependen **sólo** de
@@ -105,8 +103,8 @@ calibración, benchmarks). Con Lab Mode ON reaparecen las mismas superficies.
 | `RealWifiAuditStrategyResolver` | assessment | `SecurityFamily` → strategy |
 | `RealWifiAuditPlanner` | assessment | Plan sin secretos |
 | `RealWifiAuditOrchestrator` | assessment | prepare / start / stop / progress |
-| `RealWifiAuditBackend` | assessment | Frontera orquestación ↔ plataforma |
-| `AndroidRealWifiAuditBackend` | androidApp | Stub `Unavailable(NotImplemented)` + marker único; **no** conecta SE/`CandidateVerifier` |
+| `RealWifiSearchPort` | assessment + androidApp | Adapter SE V2 + external verifier |
+| `ExternalCandidateVerificationPort` | assessment | Black-box oracle (placeholder Unavailable) |
 | `EncapsulatedPasswordVerifier` | lab | Target aislado; verificación local (Lab) |
 | `AutomaticPasswordAuditPlanner` | lab | Plan multi-stage ciego al secreto (Lab) |
 | `PasswordAuditResultComposer` | assessment | Resultados locales Lab |

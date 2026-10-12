@@ -7,10 +7,16 @@ import com.wifiauditlab.assessment.domain.wifi.WifiStandard
 
 /** How the Lab challenge secret is sourced — always verified locally, never against an AP. */
 enum class LabSecretMode {
-    /** Random hidden secret drawn from the configured alphabet and length. */
+    /**
+     * Didactic black-box: random secret encapsulated in [com.wifiauditlab.lab.domain.BlackBoxChallengeVerifier].
+     * ViewModel / planner / Search Engine / UI never hold the plaintext.
+     */
     RandomHidden,
 
-    /** Synthetic local network profile for security assessment (password audit = FIX-03B). */
+    /**
+     * Local Prototype: user-supplied password via [com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier]
+     * (Synthetic / Guided / Advanced known-password demos only — not RealWifiAudit).
+     */
     LocalPrototype,
 }
 

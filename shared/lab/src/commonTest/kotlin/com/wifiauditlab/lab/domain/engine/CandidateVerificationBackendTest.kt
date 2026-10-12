@@ -1,5 +1,6 @@
 package com.wifiauditlab.lab.domain.engine
 
+import com.wifiauditlab.lab.domain.BlackBoxChallengeVerifier
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,6 +19,8 @@ class CandidateVerificationBackendTest {
         assertFalse(synthetic.verify("other"))
         assertEquals(CandidateVerificationBackend.LocalKnownSecret, CandidateVerificationBackend.LocalKnownSecret)
         assertEquals(CandidateVerificationBackend.LocalSynthetic, CandidateVerificationBackend.LocalSynthetic)
+        assertEquals(CandidateVerificationBackend.BlackBoxLab, CandidateVerificationBackend.BlackBoxLab)
+        assertEquals(CandidateVerificationBackend.ExternalPending, CandidateVerificationBackend.ExternalPending)
     }
 
     @Test
@@ -39,5 +42,6 @@ class CandidateVerificationBackendTest {
         val secret = "super-secret-value"
         assertFalse(EncapsulatedPasswordVerifier.encapsulate(secret).toString().contains(secret))
         assertFalse(SyntheticExactMatchVerifier.of(secret).toString().contains(secret))
+        assertFalse(BlackBoxChallengeVerifier.encapsulate(secret).toString().contains(secret))
     }
 }

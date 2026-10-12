@@ -114,6 +114,23 @@ class LabChallenge private constructor(
             )
 
         /**
+         * Didactic Lab black-box: [verifier] holds the only copy of the secret.
+         * Planning uses [policy] alone — never derives space from the hidden value.
+         */
+        fun withBlackBoxVerifier(
+            policy: LabSecretPolicy,
+            verifier: BlackBoxChallengeVerifier,
+            seed: Long? = null,
+            id: ChallengeId = ChallengeId.random(),
+        ): LabChallenge =
+            withEncapsulatedVerifier(
+                policy = policy,
+                verifier = verifier,
+                seed = seed,
+                id = id,
+            )
+
+        /**
          * Blind planning challenge: random internal secret only so strategies that peek
          * at [isSolution] in tests still work; production planners must use [policy] alone.
          */

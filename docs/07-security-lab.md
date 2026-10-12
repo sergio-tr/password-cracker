@@ -36,7 +36,7 @@ Modos de verificación:
   (`SearchLimits.untilCancelled`). Sigue siendo **solo local** (known-password o
   RandomHidden sintético) — nunca autentica contra el AP.
 - **Producto real (Lab Mode OFF):** Nearby/Vault ofrecen «Auditar esta red» →
-  `RealWifiAudit*` / `AndroidRealWifiAuditBackend`
+  `RealWifiAudit*` / confirmation adapter`
   (**Architecture ready / platform execution backend pending**;
   `Unavailable(NotImplemented)` + marker único).
   **No** hay CTA de password manual ni arranque del Search Engine /

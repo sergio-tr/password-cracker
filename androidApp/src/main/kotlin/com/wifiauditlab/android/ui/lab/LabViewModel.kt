@@ -12,6 +12,7 @@ import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.core.math.CombinationCount
 import com.wifiauditlab.lab.domain.Alphabet
+import com.wifiauditlab.lab.domain.BlackBoxChallengeVerifier
 import com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier
 import com.wifiauditlab.lab.domain.LabChallenge
 import com.wifiauditlab.lab.domain.LabSearchEvent
@@ -55,6 +56,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
 enum class AlphabetChoice(
@@ -884,8 +886,33 @@ class LabViewModel(
             seed = state.config.seed,
         )
 
-    private fun buildSyntheticSearchChallenge(state: LabUiState): LabChallenge =
-        buildSyntheticPreviewChallenge(state)
+    /**
+     * RandomHidden didactic black-box: generate a secret, encapsulate it in
+     * [BlackBoxChallengeVerifier], and discard the plaintext so the ViewModel
+     * never retains it. The Search Engine only sees true/false.
+     */
+    private fun buildSyntheticSearchChallenge(state: LabUiState): LabChallenge {
+        val alphabet = state.config.resolvedAlphabet()
+        val lengthPolicy = state.config.resolvedLengthPolicy()
+        val seed = state.config.seed
+        val random = if (seed != null) Random(seed) else Random.Default
+        val length =
+            if (lengthPolicy.minLength == lengthPolicy.maxLength) {
+                lengthPolicy.minLength
+            } else {
+                random.nextInt(lengthPolicy.minLength, lengthPolicy.maxLength + 1)
+            }
+        val generated =
+            buildString {
+                repeat(length) { append(alphabet[random.nextInt(alphabet.size)]) }
+            }
+        val verifier = BlackBoxChallengeVerifier.encapsulate(generated)
+        return LabChallenge.withBlackBoxVerifier(
+            policy = LabSecretPolicy(alphabet, lengthPolicy),
+            verifier = verifier,
+            seed = seed,
+        )
+    }
 
     private fun blindPolicyFromConfig(
         config: LabConfig,

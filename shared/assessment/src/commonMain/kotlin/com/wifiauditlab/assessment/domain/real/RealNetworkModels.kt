@@ -25,3 +25,32 @@ data class RealNetworkConsent(
         require(granted) { "consent must be granted" }
     }
 }
+
+/**
+ * Password material held only in memory for local search / one-shot confirmation.
+ * Never log or render via [toString].
+ */
+class SensitiveCredential private constructor(
+    private val value: String,
+) {
+    fun reveal(): String = value
+
+    fun toValidationChars(): CharArray = value.toCharArray()
+
+    override fun toString(): String = "SensitiveCredential(███)"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is SensitiveCredential) return false
+        return value == other.value
+    }
+
+    override fun hashCode(): Int = value.hashCode()
+
+    companion object {
+        fun of(plaintext: String): SensitiveCredential {
+            require(plaintext.isNotEmpty()) { "credential must not be empty" }
+            return SensitiveCredential(plaintext)
+        }
+    }
+}
