@@ -611,6 +611,10 @@ private fun denialLabel(denial: AuthorizedApTestDenial): String =
         AuthorizedApTestDenial.UnsupportedFamily -> stringResource(R.string.audit_ap_denial_family)
         AuthorizedApTestDenial.PlatformCapabilityUnavailable ->
             stringResource(R.string.audit_ap_denial_capability)
+        AuthorizedApTestDenial.FixedLabNotConfigured ->
+            stringResource(R.string.audit_ap_denial_fixed_lab_not_configured)
+        AuthorizedApTestDenial.FixedLabTargetMismatch ->
+            stringResource(R.string.audit_ap_denial_fixed_lab_mismatch)
     }
 
 @OptIn(ExperimentalLayoutApi::class)

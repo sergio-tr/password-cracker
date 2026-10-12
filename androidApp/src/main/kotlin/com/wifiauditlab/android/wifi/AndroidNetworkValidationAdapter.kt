@@ -177,7 +177,8 @@ class AndroidNetworkValidationAdapter(
         val builder = WifiNetworkSpecifier.Builder().setSsid(snapshot.ssid)
         val bssid = snapshot.bssid
         if (!bssid.isNullOrBlank()) {
-            runCatching { builder.setBssid(MacAddress.fromString(bssid)) }
+            // Exact BSSID when known (required for SINGLE_REAL FixedLab; no wildcards/patterns).
+            builder.setBssid(MacAddress.fromString(bssid))
         }
         when (snapshot.securityFamily) {
             SecurityFamily.WPA2_PERSONAL,

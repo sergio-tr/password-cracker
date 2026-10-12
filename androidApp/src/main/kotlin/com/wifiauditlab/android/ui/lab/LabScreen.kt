@@ -62,7 +62,10 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
+fun LabScreen(
+    viewModel: LabViewModel = koinViewModel(),
+    onOpenRealWifiProbe: (() -> Unit)? = null,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
         viewModel.refreshNetworkContext()
@@ -197,7 +200,25 @@ fun LabScreen(viewModel: LabViewModel = koinViewModel()) {
                     EstimatesCard(state)
                 }
             }
+            if (onOpenRealWifiProbe != null &&
+                (state.mode == LabInteractionMode.Advanced || state.advancedExpanded)
+            ) {
+                RealWifiProbeEntryCard(onOpen = onOpenRealWifiProbe)
+            }
             Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun RealWifiProbeEntryCard(onOpen: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.real_wifi_probe_entry_title), fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.real_wifi_probe_entry_body))
+            OutlinedButton(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.real_wifi_probe_entry_cta))
+            }
         }
     }
 }

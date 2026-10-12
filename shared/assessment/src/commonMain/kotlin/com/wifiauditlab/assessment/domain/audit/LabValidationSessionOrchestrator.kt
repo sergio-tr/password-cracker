@@ -31,7 +31,16 @@ data class LabValidationStartRequest(
      * Not stored on [LabValidationSession].
      */
     val credential: ValidationCredential,
-)
+    val verificationMode: VerificationMode = VerificationMode.LAB_NETWORK_VALIDATION,
+    /** Required when [verificationMode] is [VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION]. */
+    val fixedLabAccessPoint: FixedLabAccessPoint? = null,
+) {
+    init {
+        require(verificationMode.isPlatformNetworkValidation()) {
+            "Start request must use a platform network-validation mode"
+        }
+    }
+}
 
 sealed interface LabValidationStartOutcome {
     data class Started(
@@ -49,10 +58,11 @@ sealed interface LabValidationStartOutcome {
 }
 
 /**
- * Central orchestrator for [VerificationMode.LAB_NETWORK_VALIDATION] sessions.
+ * Central orchestrator for platform network-validation sessions
+ * ([VerificationMode.LAB_NETWORK_VALIDATION], [VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION]).
  *
  * UI / ViewModel must not duplicate gate, budget, monitor, or concurrency rules.
- * Maximum one active LAB session at a time.
+ * Maximum one active session at a time. Never drives the Search Engine.
  */
 class LabValidationSessionOrchestrator(
     private val gate: AuthorizedApTestGate = AuthorizedApTestGate(),
@@ -116,12 +126,17 @@ class LabValidationSessionOrchestrator(
             val capability = adapter.capability()
             val labModeEnabled = labModePreferences.isLabModeEnabled()
             val key = AuthorizedLabNetworkKey.of(request.requestedSsid.value, request.securityFamily)
-            val labAuthorized = registry.isAuthorized(key)
+            val labAuthorized =
+                when (request.verificationMode) {
+                    VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION ->
+                        request.fixedLabAccessPoint != null
+                    else -> registry.isAuthorized(key)
+                }
 
             val gateResult =
                 gate.evaluate(
                     AuthorizedApTestGateRequest(
-                        mode = VerificationMode.LAB_NETWORK_VALIDATION,
+                        mode = request.verificationMode,
                         labModeEnabled = labModeEnabled,
                         requestedSsid = request.requestedSsid,
                         requestedBssid = request.requestedBssid,
@@ -130,6 +145,7 @@ class LabValidationSessionOrchestrator(
                         labAuthorized = labAuthorized,
                         userConsentGranted = request.userConsentGranted,
                         capability = capability,
+                        fixedLabAccessPoint = request.fixedLabAccessPoint,
                     ),
                 )
 
@@ -142,6 +158,7 @@ class LabValidationSessionOrchestrator(
                     val deniedSession =
                         LabValidationSession(
                             sessionId = sessionId,
+                            verificationMode = request.verificationMode,
                             networkSnapshot =
                                 snapshotOrFallback(connection, request.securityFamily)
                                     ?: LabNetworkSnapshot(
@@ -171,32 +188,37 @@ class LabValidationSessionOrchestrator(
             }
 
             val snapshot =
-                LabNetworkSnapshot.fromConnection(connection!!, request.securityFamily)
-                    ?: run {
-                        val reasons = listOf(AuthorizedApTestDenial.InsufficientConnectionInfo)
-                        val deniedSession =
-                            LabValidationSession(
-                                sessionId = sessionId,
-                                networkSnapshot =
-                                    LabNetworkSnapshot(
-                                        ssid = request.requestedSsid.value.trim(),
-                                        securityFamily = request.securityFamily,
-                                    ),
-                                createdAtEpochMs = now,
-                                finishedAtEpochMs = now,
-                                state = LabValidationSessionState.Denied,
-                                consentGranted = request.userConsentGranted,
-                                capabilitySnapshot = capability,
-                                admissionDenials = reasons,
-                                budget = request.budget,
-                                terminationReason = LabSessionTerminationReason.GateDenied,
-                                resultSummary = "Denied:InsufficientConnectionInfo",
-                            )
-                        request.credential.clear()
-                        _session.value = deniedSession
-                        appendEvidence(deniedSession, "snapshot_failed", null, "InsufficientConnectionInfo")
-                        return@withLock LabValidationStartOutcome.Denied(reasons, deniedSession)
-                    }
+                if (request.verificationMode == VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION) {
+                    request.fixedLabAccessPoint!!.toSnapshot()
+                } else {
+                    LabNetworkSnapshot.fromConnection(connection!!, request.securityFamily)
+                        ?: run {
+                            val reasons = listOf(AuthorizedApTestDenial.InsufficientConnectionInfo)
+                            val deniedSession =
+                                LabValidationSession(
+                                    sessionId = sessionId,
+                                    verificationMode = request.verificationMode,
+                                    networkSnapshot =
+                                        LabNetworkSnapshot(
+                                            ssid = request.requestedSsid.value.trim(),
+                                            securityFamily = request.securityFamily,
+                                        ),
+                                    createdAtEpochMs = now,
+                                    finishedAtEpochMs = now,
+                                    state = LabValidationSessionState.Denied,
+                                    consentGranted = request.userConsentGranted,
+                                    capabilitySnapshot = capability,
+                                    admissionDenials = reasons,
+                                    budget = request.budget,
+                                    terminationReason = LabSessionTerminationReason.GateDenied,
+                                    resultSummary = "Denied:InsufficientConnectionInfo",
+                                )
+                            request.credential.clear()
+                            _session.value = deniedSession
+                            appendEvidence(deniedSession, "snapshot_failed", null, "InsufficientConnectionInfo")
+                            return@withLock LabValidationStartOutcome.Denied(reasons, deniedSession)
+                        }
+                }
 
             // Target must be the current network (gate already matched requested vs connection).
             if (snapshot.ssid != request.requestedSsid.value.trim()) {
@@ -205,6 +227,7 @@ class LabValidationSessionOrchestrator(
                 val deniedSession =
                     LabValidationSession(
                         sessionId = sessionId,
+                        verificationMode = request.verificationMode,
                         networkSnapshot = snapshot,
                         createdAtEpochMs = now,
                         finishedAtEpochMs = now,
@@ -224,6 +247,7 @@ class LabValidationSessionOrchestrator(
             val session =
                 LabValidationSession(
                     sessionId = sessionId,
+                    verificationMode = request.verificationMode,
                     networkSnapshot = snapshot,
                     createdAtEpochMs = now,
                     startedAtEpochMs = now,
@@ -479,7 +503,10 @@ class LabValidationSessionOrchestrator(
             sessionJob?.cancel()
             return
         }
-        if (!registry.isAuthorized(snapshot.registryKey())) {
+        val activeMode = _session.value?.verificationMode
+        if (activeMode != VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION &&
+            !registry.isAuthorized(snapshot.registryKey())
+        ) {
             requestStop(LabSessionTerminationReason.NetworkAuthorizationRevoked)
             sessionJob?.cancel()
             return
@@ -513,7 +540,7 @@ class LabValidationSessionOrchestrator(
                 sessionId = session.sessionId,
                 timestampEpochMs = clockMs(),
                 event = event,
-                verificationMode = VerificationMode.LAB_NETWORK_VALIDATION,
+                verificationMode = session.verificationMode,
                 networkSsid = session.networkSnapshot.ssid,
                 networkFamily = session.networkSnapshot.securityFamily.name,
                 capability = capabilityLabel(session.capabilitySnapshot),

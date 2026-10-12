@@ -32,6 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.wifiauditlab.android.lab.LabModeSurfaces
+import com.wifiauditlab.android.lab.RealWifiProbeFeature
 import com.wifiauditlab.android.ui.audit.PasswordAuditScreen
 import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
 import com.wifiauditlab.android.ui.audit.passwordAuditRequestFromNearby
@@ -44,12 +45,14 @@ import com.wifiauditlab.android.ui.lab.labNetworkContextFromVault
 import com.wifiauditlab.android.ui.nearby.NearbyScreen
 import com.wifiauditlab.android.ui.onboarding.OnboardingScreen
 import com.wifiauditlab.android.ui.permissions.PermissionCenterScreen
+import com.wifiauditlab.android.ui.realwifi.RealWifiProbeScreen
 import com.wifiauditlab.android.ui.security.SecurityAnalysisRequest
 import com.wifiauditlab.android.ui.security.SecurityAnalysisScreen
 import com.wifiauditlab.android.ui.security.SecurityAnalysisTargetStore
 import com.wifiauditlab.android.ui.settings.SettingsScreen
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.android.ui.vault.VaultScreen
+import com.wifiauditlab.assessment.domain.audit.FixedLabAccessPointProvider
 import com.wifiauditlab.assessment.port.LabModePreferences
 import com.wifiauditlab.assessment.port.OnboardingPreferences
 import org.koin.compose.koinInject
@@ -94,6 +97,7 @@ private object Routes {
     const val PERMISSIONS = "permissions"
     const val SECURITY_ANALYSIS = "security_analysis"
     const val PASSWORD_AUDIT = "password_audit"
+    const val REAL_WIFI_PROBE = "real_wifi_probe"
 }
 
 @Composable
@@ -105,6 +109,9 @@ private fun AppRoot() {
     val labContext: LabNetworkContextStore = koinInject()
     val labPasswordSeed: LabPasswordSeedStore = koinInject()
     val passwordAuditTarget: PasswordAuditTargetStore = koinInject()
+    val fixedLabProvider: FixedLabAccessPointProvider = koinInject()
+    val realWifiProbeEntryAvailable =
+        RealWifiProbeFeature.isCompiledIn && fixedLabProvider.configuredOrNull() != null
     var showOnboarding by remember { mutableStateOf(!onboardingPreferences.isCompleted()) }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -119,10 +126,14 @@ private fun AppRoot() {
         showOnboarding ||
             currentDestination?.route == Routes.PERMISSIONS ||
             currentDestination?.route == Routes.SECURITY_ANALYSIS ||
-            currentDestination?.route == Routes.PASSWORD_AUDIT
+            currentDestination?.route == Routes.PASSWORD_AUDIT ||
+            currentDestination?.route == Routes.REAL_WIFI_PROBE
 
     LaunchedEffect(labModeEnabled, currentDestination?.route) {
-        if (!labModeEnabled && currentDestination?.route == Destination.Lab.route) {
+        val onLabSurface =
+            currentDestination?.route == Destination.Lab.route ||
+                currentDestination?.route == Routes.REAL_WIFI_PROBE
+        if (!labModeEnabled && onLabSurface) {
             labContext.clear()
             labPasswordSeed.clear()
             navController.navigate(LabModeSurfaces.SAFE_TOP_LEVEL_AFTER_LAB_HIDDEN) {
@@ -234,7 +245,14 @@ private fun AppRoot() {
             }
             composable(Destination.Lab.route) {
                 if (LabModeSurfaces.showLabTab(labModeEnabled)) {
-                    LabScreen()
+                    LabScreen(
+                        onOpenRealWifiProbe =
+                            if (realWifiProbeEntryAvailable) {
+                                { navController.navigate(Routes.REAL_WIFI_PROBE) }
+                            } else {
+                                null
+                            },
+                    )
                 } else {
                     LaunchedEffect(Unit) {
                         navController.navigate(LabModeSurfaces.SAFE_TOP_LEVEL_AFTER_LAB_HIDDEN) {
@@ -265,6 +283,11 @@ private fun AppRoot() {
                         navController.popBackStack()
                     },
                 )
+            }
+            if (RealWifiProbeFeature.isCompiledIn) {
+                composable(Routes.REAL_WIFI_PROBE) {
+                    RealWifiProbeScreen(onBack = { navController.popBackStack() })
+                }
             }
         }
     }

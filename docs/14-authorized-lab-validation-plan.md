@@ -470,6 +470,20 @@ sin marcar PASS automático:
 - [x] Validar en red de laboratorio bajo opciones avanzadas / Lab Mode
 - [x] Lab Mode sigue OFF por defecto
 
+### SINGLE_REAL_CREDENTIAL_VALIDATION — Prueba Wi‑Fi real (**Implemented** Code+CI; Physical pending)
+
+Didáctica one-shot contra un `FixedLabAccessPoint` (SSID+BSSID de `local.properties`).
+Solo flavor **`lab`**. Reutiliza gate/orquestador/adapter; **no** Search Engine.
+Ver [ADR-005](./adr/ADR-005-fixed-lab-one-shot-credential-validation.md).
+
+- [x] Flavor `lab` + BuildConfig `LAB_WIFI_*` / `REAL_WIFI_PROBE_ENABLED`
+- [x] Match estricto FixedLab (no registry / no wildcard)
+- [x] UI Lab → Prueba Wi‑Fi real + consentimiento por sesión + learning + STOP + cooldown
+- [x] Un click → máx. un `validateOnce` / `requestNetwork`
+- [x] Resultados tipados (`RequestUnavailable` ≠ wrong password)
+- [x] Tests JVM con `SimulatedValidationAdapter`
+- [ ] Walkthrough físico — **MANUAL NOT EXECUTED** (`docs/test-evidence.md`)
+
 ### F5 — Opcional privilegiado (fuera de Play; no bloquea F3/F4)
 
 - [ ] Flavor `privileged` + `PrivilegedCredentialReader` si aplica

@@ -169,8 +169,8 @@ data class LabValidationSession(
     val resultSummary: String? = null,
 ) {
     init {
-        require(verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
-            "LabValidationSession only supports LAB_NETWORK_VALIDATION"
+        require(verificationMode.isPlatformNetworkValidation()) {
+            "LabValidationSession only supports platform network-validation modes"
         }
     }
 

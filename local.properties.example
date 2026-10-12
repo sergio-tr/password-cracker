@@ -1,0 +1,8 @@
+# Copy keys into local.properties (gitignored). Never commit real passwords.
+#
+# Required for labDebug «Prueba Wi-Fi real»:
+# LAB_WIFI_SSID=WIFI_LAB_SERGIO
+# LAB_WIFI_BSSID=aa:bb:cc:dd:ee:ff
+# LAB_WIFI_SECURITY=WPA2_PERSONAL
+#
+# Password is entered only at runtime — never put it here.

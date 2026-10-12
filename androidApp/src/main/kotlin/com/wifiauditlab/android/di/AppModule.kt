@@ -2,6 +2,8 @@ package com.wifiauditlab.android.di
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wifiauditlab.android.lab.BuildConfigFixedLabAccessPointProvider
+import com.wifiauditlab.android.lab.RealWifiProbeFeature
 import com.wifiauditlab.android.platform.AndroidCalibrationEnvironmentProvider
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.android.platform.KeystoreSecretVault
@@ -20,6 +22,7 @@ import com.wifiauditlab.android.ui.nearby.NearbyViewModel
 import com.wifiauditlab.android.ui.onboarding.OnboardingViewModel
 import com.wifiauditlab.android.ui.permissions.AndroidPermissionInventory
 import com.wifiauditlab.android.ui.permissions.PermissionCenterViewModel
+import com.wifiauditlab.android.ui.realwifi.RealWifiProbeViewModel
 import com.wifiauditlab.android.ui.security.SecurityAnalysisTargetStore
 import com.wifiauditlab.android.ui.security.SecurityAnalysisViewModel
 import com.wifiauditlab.android.ui.settings.SettingsBenchmarkViewModel
@@ -56,6 +59,7 @@ import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGate
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
 import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
+import com.wifiauditlab.assessment.domain.audit.FixedLabAccessPointProvider
 import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.LabSessionEvidenceLog
 import com.wifiauditlab.assessment.domain.audit.LabValidationSessionOrchestrator
@@ -150,6 +154,7 @@ val appModule =
             AndroidWifiConnectionMonitor(androidContext(), get())
         }
         single { AuthorizedApTestGate() }
+        single<FixedLabAccessPointProvider> { BuildConfigFixedLabAccessPointProvider() }
         single {
             LabValidationSessionOrchestrator(
                 gate = get(),
@@ -289,6 +294,17 @@ val appModule =
                 labModePreferences = get(),
                 apTestGate = get(),
                 labSessionOrchestrator = get(),
+            )
+        }
+        viewModel {
+            RealWifiProbeViewModel(
+                featureCompiledIn = RealWifiProbeFeature.isCompiledIn,
+                fixedLabProvider = get(),
+                labModePreferences = get(),
+                connectionProvider = get(),
+                capabilityProvider = get(),
+                gate = get(),
+                orchestrator = get(),
             )
         }
         viewModel { SettingsCalibrationViewModel(get(), get()) }

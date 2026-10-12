@@ -1,8 +1,25 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
 }
+
+val localProperties =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+        }
+    }
+
+fun localProp(key: String): String = localProperties.getProperty(key, "").orEmpty()
+
+fun escapeBuildConfigString(value: String): String =
+    value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
 
 android {
     namespace = "com.wifiauditlab.android"
@@ -17,6 +34,34 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "audience"
+    productFlavors {
+        create("standard") {
+            dimension = "audience"
+            isDefault = true
+            buildConfigField("boolean", "REAL_WIFI_PROBE_ENABLED", "false")
+            buildConfigField("String", "LAB_WIFI_SSID", "\"\"")
+            buildConfigField("String", "LAB_WIFI_BSSID", "\"\"")
+            buildConfigField("String", "LAB_WIFI_SECURITY", "\"WPA2_PERSONAL\"")
+        }
+        create("lab") {
+            dimension = "audience"
+            applicationIdSuffix = ".lab"
+            versionNameSuffix = "-lab"
+            // Fixed lab AP identity from local.properties (never a password).
+            val ssid = escapeBuildConfigString(localProp("LAB_WIFI_SSID"))
+            val bssid = escapeBuildConfigString(localProp("LAB_WIFI_BSSID"))
+            val security =
+                escapeBuildConfigString(
+                    localProp("LAB_WIFI_SECURITY").ifBlank { "WPA2_PERSONAL" },
+                )
+            buildConfigField("boolean", "REAL_WIFI_PROBE_ENABLED", "true")
+            buildConfigField("String", "LAB_WIFI_SSID", "\"$ssid\"")
+            buildConfigField("String", "LAB_WIFI_BSSID", "\"$bssid\"")
+            buildConfigField("String", "LAB_WIFI_SECURITY", "\"$security\"")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -26,6 +71,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {
