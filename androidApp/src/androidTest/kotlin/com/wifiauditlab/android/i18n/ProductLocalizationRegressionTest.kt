@@ -25,7 +25,7 @@ class ProductLocalizationRegressionTest {
         assertEquals("Laboratorio sintético", ctx.getString(R.string.lab_title))
         assertEquals("Guardadas", ctx.getString(R.string.nav_vault))
         assertEquals("Ajustes", ctx.getString(R.string.settings_title))
-        assertEquals("Auditar contraseña", ctx.getString(R.string.audit_title))
+        assertEquals("Auditoría Wi-Fi", ctx.getString(R.string.real_audit_title))
     }
 
     @Test
@@ -35,17 +35,23 @@ class ProductLocalizationRegressionTest {
         assertEquals("Synthetic lab", ctx.getString(R.string.lab_title))
         assertEquals("Saved", ctx.getString(R.string.nav_vault))
         assertEquals("Settings", ctx.getString(R.string.settings_title))
-        assertEquals("Audit password", ctx.getString(R.string.audit_title))
+        assertEquals("Wi-Fi audit", ctx.getString(R.string.real_audit_title))
     }
 
     @Test
-    fun auditSemanticErrors_existInBothLocales() {
+    fun realAuditCta_existsInBothLocales() {
         val es = localizedContext(Locale("es"))
         val en = localizedContext(Locale.ENGLISH)
-        assertEquals("Falta la contraseña conocida.", es.getString(R.string.audit_err_password_required))
-        assertEquals("Known password is missing.", en.getString(R.string.audit_err_password_required))
-        assertEquals("Contraseña encontrada", es.getString(R.string.audit_outcome_found))
-        assertEquals("Password found", en.getString(R.string.audit_outcome_found))
+        assertEquals("Auditar esta red", es.getString(R.string.real_audit_cta))
+        assertEquals("Audit this network", en.getString(R.string.real_audit_cta))
+        assertEquals(
+            "Backend de verificación no disponible",
+            es.getString(R.string.real_audit_start_blocked_backend),
+        )
+        assertEquals(
+            "Verification backend not available",
+            en.getString(R.string.real_audit_start_blocked_backend),
+        )
     }
 
     private fun localizedContext(locale: Locale): Context {

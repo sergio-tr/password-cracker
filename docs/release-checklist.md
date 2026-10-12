@@ -12,7 +12,7 @@ Publicar sigue requiriendo revisión humana y el pase manual.
 | Logs / excepciones / `toString` de secretos | `NetworkSecret.toString()` redacta. Sin `Log`/`println` de secretos. |
 | `android.*` en `commonMain` | No hay matches. |
 | `GlobalScope` | No hay usos. |
-| Jobs sin cancelar | `LabViewModel` y `PasswordAuditViewModel.onCleared` cancelan; Nearby/Vault usan `viewModelScope`. |
+| Jobs sin cancelar | `LabViewModel` y `RealWifiAuditViewModel` / Probe cancelan vía orchestrator; Nearby/Vault usan `viewModelScope`. |
 | Bloqueo del hilo principal | Lab y audit corren en `searchDispatcher` (Default). |
 | Frontera Real/Lab | `:shared:lab` → sólo `:shared:core`. Search Engine nunca autentica contra AP. |
 | Known-password audit | Verificación local vía `EncapsulatedPasswordVerifier`; informe separa config vs resistencia. |

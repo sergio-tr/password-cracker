@@ -13,8 +13,6 @@ import com.wifiauditlab.android.platform.SharedPreferencesCalibrationRepository
 import com.wifiauditlab.android.platform.SharedPreferencesLabModePreferences
 import com.wifiauditlab.android.platform.SharedPreferencesLabSessionEvidenceLog
 import com.wifiauditlab.android.platform.SharedPreferencesOnboardingPreferences
-import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
-import com.wifiauditlab.android.ui.audit.PasswordAuditViewModel
 import com.wifiauditlab.android.ui.lab.LabNetworkContextStore
 import com.wifiauditlab.android.ui.lab.LabPasswordSeedStore
 import com.wifiauditlab.android.ui.lab.LabViewModel
@@ -38,7 +36,6 @@ import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
 import com.wifiauditlab.android.wifi.AndroidWifiScanner
 import com.wifiauditlab.android.wifi.RealWifiSearchAdapter
-import com.wifiauditlab.android.wifi.hasConnectionInspectionPermission
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
 import com.wifiauditlab.assessment.application.CreateSavedNetwork
 import com.wifiauditlab.assessment.application.DeleteSavedNetwork
@@ -60,16 +57,11 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.AuthorizedApTestGate
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
-import com.wifiauditlab.assessment.domain.audit.ConnectionInspectionPermissionGate
-import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.FixedLabAccessPointProvider
-import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.audit.LabSessionEvidenceLog
 import com.wifiauditlab.assessment.domain.audit.LabValidationSessionOrchestrator
 import com.wifiauditlab.assessment.domain.audit.NetworkValidationAdapter
-import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.PlatformApAuthCapabilityProvider
-import com.wifiauditlab.assessment.domain.audit.SecretStrengthAnalyzer
 import com.wifiauditlab.assessment.domain.classifier.WifiSecurityClassifier
 import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
@@ -127,14 +119,6 @@ val appModule =
             AndroidCurrentWifiConnectionProvider(androidContext(), get())
         }
         single<NetworkConnectionMatcher> { DefaultNetworkConnectionMatcher() }
-        single<PasswordAuditEligibilityChecker> {
-            val permissions: AndroidWifiPermissionManager = get()
-            DefaultPasswordAuditEligibilityChecker(
-                connectionProvider = get(),
-                connectionMatcher = get(),
-                permissionGate = ConnectionInspectionPermissionGate { permissions.hasConnectionInspectionPermission() },
-            )
-        }
         single<RealWifiAuditStrategyResolver> { DefaultRealWifiAuditStrategyResolver() }
         single<RealWifiAuditPlanner> { DefaultRealWifiAuditPlanner() }
         single<ExternalCandidateVerificationPort> {
@@ -162,7 +146,6 @@ val appModule =
         single { SecurityAnalysisTargetStore() }
         single { LabNetworkContextStore() }
         single { LabPasswordSeedStore() }
-        single { PasswordAuditTargetStore() }
         single { RealWifiAuditTargetStore() }
         single<AuthorizedLabNetworkStore> { SharedPreferencesAuthorizedLabNetworkStore(androidContext()) }
         single<LabSessionEvidenceLog> { SharedPreferencesLabSessionEvidenceLog(androidContext()) }
@@ -200,7 +183,6 @@ val appModule =
             )
         }
         single<AutomaticPasswordAuditPlanner> { DefaultAutomaticPasswordAuditPlanner() }
-        single<SecretStrengthAnalyzer> { HeuristicSecretStrengthAnalyzer() }
         single<SqlDriver> { AndroidSqliteDriver(VaultDatabase.Schema, androidContext(), "vault.db") }
         single { VaultDatabase(get()) }
         single<SavedNetworkRepository> {
@@ -307,27 +289,6 @@ val appModule =
         }
         viewModel { OnboardingViewModel(get()) }
         viewModel { SecurityAnalysisViewModel(get(), get()) }
-        viewModel {
-            PasswordAuditViewModel(
-                targetStore = get(),
-                planner = get(),
-                getSavedNetwork = get(),
-                revealSecret = get(),
-                updateSecret = get(),
-                createSavedNetwork = get(),
-                eligibilityChecker = get(),
-                assessNetworkSecurity = get(),
-                engine = get(),
-                calibration = get(),
-                strengthAnalyzer = get(),
-                authorizedLabStore = get(),
-                apCapabilityProvider = get(),
-                connectionProvider = get(),
-                labModePreferences = get(),
-                apTestGate = get(),
-                labSessionOrchestrator = get(),
-            )
-        }
         viewModel {
             RealWifiProbeViewModel(
                 featureCompiledIn = RealWifiProbeFeature.isCompiledIn,

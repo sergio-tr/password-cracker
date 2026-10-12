@@ -16,14 +16,9 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wifiauditlab.android.R
-import com.wifiauditlab.android.support.FakeSavedNetworkRepository
 import com.wifiauditlab.android.support.FakeWifiScanner
 import com.wifiauditlab.android.support.nearbyViewModel
 import com.wifiauditlab.android.support.vaultViewModel
-import com.wifiauditlab.android.ui.audit.PasswordAuditRequest
-import com.wifiauditlab.android.ui.audit.PasswordAuditScreen
-import com.wifiauditlab.android.ui.audit.PasswordAuditTargetStore
-import com.wifiauditlab.android.ui.audit.PasswordAuditViewModel
 import com.wifiauditlab.android.ui.lab.GuidedPrototypePhase
 import com.wifiauditlab.android.ui.lab.LabScreen
 import com.wifiauditlab.android.ui.lab.LabViewModel
@@ -45,17 +40,9 @@ import com.wifiauditlab.android.ui.settings.SettingsScreen
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.android.ui.vault.VaultScreen
 import com.wifiauditlab.assessment.application.AssessNetworkSecurity
-import com.wifiauditlab.assessment.application.CreateSavedNetwork
-import com.wifiauditlab.assessment.application.GetSavedNetwork
-import com.wifiauditlab.assessment.application.RevealSavedNetworkSecret
-import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
-import com.wifiauditlab.assessment.domain.audit.HeuristicSecretStrengthAnalyzer
-import com.wifiauditlab.assessment.domain.audit.PasswordAuditNetworkContext
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
-import com.wifiauditlab.assessment.domain.wifi.Bssid
 import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
-import com.wifiauditlab.assessment.domain.wifi.Ssid
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.port.WifiScanState
 import com.wifiauditlab.core.math.CombinationCount
@@ -414,64 +401,6 @@ class ProductRegressionComposeTest {
         composeTestRule.setContent {
             WifiAuditLabTheme {
                 SecurityAnalysisScreen(
-                    viewModel = vm,
-                    onBack = { backPressed = true },
-                )
-            }
-        }
-        composeTestRule.waitForIdle()
-
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.navigate_back))
-            .assertIsDisplayed()
-            .performClick()
-        assertTrue(backPressed)
-    }
-
-    @Test
-    fun childScreen_passwordAudit_hasNavigateBack() {
-        var backPressed = false
-        val store = PasswordAuditTargetStore()
-        store.set(
-            PasswordAuditRequest(
-                network =
-                    PasswordAuditNetworkContext(
-                        displayName = "Audit",
-                        ssid = Ssid("AuditSSID"),
-                        bssid = Bssid.of("11:22:33:44:55:66"),
-                        securityProfile =
-                            WifiSecurityProfile(
-                                family = SecurityFamily.WPA2_PERSONAL,
-                                keyManagements = setOf("WPA_PSK"),
-                                managementFrameProtection = ManagementFrameProtection.CAPABLE,
-                                isTransitionMode = false,
-                                rawCapabilities = null,
-                            ),
-                        wifiStandard = null,
-                        band = null,
-                    ),
-                savedNetworkId = null,
-            ),
-        )
-        val vm =
-            PasswordAuditViewModel(
-                targetStore = store,
-                planner = DefaultAutomaticPasswordAuditPlanner(),
-                getSavedNetwork = GetSavedNetwork(FakeSavedNetworkRepository()),
-                revealSecret = RevealSavedNetworkSecret(FakeSavedNetworkRepository(), com.wifiauditlab.android.support.FakeSecretVault()),
-                updateSecret = UpdateSavedNetworkSecret(FakeSavedNetworkRepository(), com.wifiauditlab.android.support.FakeSecretVault()),
-                createSavedNetwork = CreateSavedNetwork(FakeSavedNetworkRepository(), com.wifiauditlab.android.support.FakeSecretVault()),
-                eligibilityChecker = null,
-                assessNetworkSecurity = AssessNetworkSecurity(SecurityAssessmentRegistry.default()),
-                engine = NoOpEngine(),
-                calibration = null,
-                strengthAnalyzer = HeuristicSecretStrengthAnalyzer(),
-                availableProcessors = 4,
-                ioDispatcher = Dispatchers.Main.immediate,
-            )
-        composeTestRule.setContent {
-            WifiAuditLabTheme {
-                PasswordAuditScreen(
                     viewModel = vm,
                     onBack = { backPressed = true },
                 )

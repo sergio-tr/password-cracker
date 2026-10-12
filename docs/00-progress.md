@@ -30,35 +30,28 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). **LAB search-space:** letras Aa, rango min/max (tope suave 16), límites flexibles + hasta DETENER. |
 | Lab desde red cercana | **Partial** (Lab Mode ON): CTA Lab + contexto; prototipo precargado; Search Engine sólo en Lab. |
 | Lab desde Vault | **Partial** (Lab Mode ON): CTA Lab; seed one-shot si revelada; sin auth a AP. CTA real «Auditar esta red» siempre. |
-| Quick Audit como CTA real | **Removed** del flujo Nearby/Vault real; motor/planner siguen en Lab. |
 | Modo guiado del Lab | **Partial** (FIX-04 + FIX-07/08/12): bucle Crear y probar → Iniciar → resultado; familia → perfil PSK/WEP auth-aware; Advanced LocalPrototype usa el mismo planner; PSK ≥ 8; OPEN/Enterprise sin CTA PSK; regresión en JVM + Compose; manual pendiente usuario. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
-| Elegibilidad de auditoría de contraseña | **Superseded** por auditoría real (`RealWifiAudit*`). Search Engine / planner permanecen en Lab. |
-| Real Wi‑Fi audit | **Architecture implemented**; production external backend **NOT IMPLEMENTED**. Capability gate → Ready | BackendUnavailable (START disabled). Sin Vault/known-secret. Lab black-box: BlackBoxChallengeVerifier. Guías: docs/15–17. |
-| Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
-| Planner automático de auditoría | **Partial** (FIX-06…12): PSK/WEP auth-aware + explainability (FIX-09); Guided+Advanced LocalPrototype usan planner; Guided RandomHidden → `GenericProgressiveSearchPlanBuilder` (FIX-11); Advanced RandomHidden → optimizer; pesos = heurísticos. Manual UX pending. |
-| Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
-| Dual-mode LOCAL / LAB_NETWORK_VALIDATION (F0–F2) | **Implemented** + **Automated tested**: F0 gate/registry; F1 sesión/orquestador; F2 un probe local-only. **Available** solo API 34+ + STA concurrency + permisos; si no → Unavailable tipado. **Physical validated**: pendiente checklist F3. |
-| LAB product integration (F3) | **Implemented** (Code): registro Nearby/Vault, capability UX, sesión/STOP, evidence durable sanitizada, backup rules. **Automated tested**: JVM + instrumentación evidence. **Physical validated**: checklist en `docs/14` / `test-evidence` (no marcar PASS sin dispositivo). |
-| Audit mode UX consolidation (F4) | **Implemented**: LOCAL recomendado + tarjeta comparativa + LAB bajo opciones avanzadas / Lab Mode. |
-| Prueba Wi‑Fi real (`SINGLE_REAL_CREDENTIAL_VALIDATION`) | **Implemented** (Code): flavor `lab`, `FixedLabAccessPoint`, gate estricto SSID+BSSID, UI one-shot + consentimiento + learning + STOP/cooldown; reutiliza orquestador/adapter F0–F4. **Automated tested**: JVM gate/orchestrator/ViewModel (fake adapter). **Physical validated**: walkthrough **MANUAL NOT EXECUTED**. |
-| Ejecución de auditoría | **Implemented** (PR5): Search Engine local; métricas agregadas; `onCleared` cancela sesión. |
-| STOP / cancelación (auditoría) | **Implemented** (PR5): `DETENER` en `Scaffold.bottomBar`; cancelación cooperativa. |
-| Resultados de auditoría | **Implemented** (PR6): `WifiPasswordAuditResult`; config Wi‑Fi vs contraseña separados; recomendaciones; guía «Cómo mejorarla». |
-| Informe de resistencia de contraseña | **Implemented** (PR6): `PasswordResistanceRating`; evidencia Medido/Estimado/Modelado. |
-| Tests flujo novice (auditoría) | **Implemented** (PR7): `PasswordAuditComposeTest` — STOP + found + vault + restore automático; `PasswordAuditViewModelTest`. |
+| RealWifiAudit architecture | **IMPLEMENTED**: scan/target/security/strategy/planner; SE V2 integration; External verifier abstraction. Production external verifier **NOT IMPLEMENTED** (`UnsupportedExternalCandidateVerificationPort` → BackendUnavailable). Real automatic audit **BLOCKED** por ese backend. Sin Vault/known-secret. Guías: docs/15–17. |
+| PasswordAudit UI legacy | **Removed** del producto (Screen/ViewModel/DI/nav). Planner/motor siguen en Lab. Domain `VerificationMode.LOCAL_AUDIT` conservado para gate/LAB_NETWORK_VALIDATION tests. |
+| Aislamiento del target conocido (Lab) | **Implemented**: `EncapsulatedPasswordVerifier` / `BlackBoxChallengeVerifier` + planners ciegos. |
+| Planner automático (Lab) | **Partial** (FIX-06…12): PSK/WEP auth-aware + explainability; Guided/Advanced LocalPrototype; Guided RandomHidden → progressive; pesos heurísticos. Manual UX pending. |
+| Dual-mode LOCAL / LAB_NETWORK_VALIDATION (F0–F2) | **Implemented** (domain/gate/orchestrator/adapter). UI PasswordAudit que lo exponía = **removed**; Probe one-shot usa `SINGLE_REAL`. **Physical validated**: pendiente checklist. |
+| LAB product integration (F3) | **Implemented** (Code): registro Nearby/Vault, capability UX, sesión/STOP, evidence durable. Entry UI principal = Lab/Probe. |
+| Prueba Wi‑Fi real / RealWifiProbe (`SINGLE_REAL`) | **Implemented** (Code): flavor `lab`, `FixedLabAccessPoint`, one-shot — **separado** de RealWifiAudit. **Physical validated**: **MANUAL NOT EXECUTED**. |
+| Lab search ejecución / STOP / resultados | **Implemented** en LabScreen (Search Engine local, métricas, cancelación cooperativa, informe resistencia). |
 | Calibración sintética + estimación por rangos | **Implemented** (run + persistencia durable SharedPreferences, FASE 22). |
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
 | Resultado del Lab en UI | **Implemented** integrado en la pantalla Lab (`ResultCard`). Ruta propia = Deferred. |
 | Destinos UI | Cercanas · Guardadas · Laboratorio (sólo Lab Mode ON) · Ajustes. Branding visible **WiFiSearcher**. |
 | Lab Mode = visibilidad producto | **Implemented**: OFF oculta tab/CTAs/registry/calibración/benchmarks/comparativa LAB; ON las restaura en runtime. |
-| CandidateVerifier seam | **Implemented**: backends LocalSynthetic / LocalKnownSecret / NetworkBackedUnsupported (+ `UnsupportedNetworkCandidateVerifier`); sin verifier Wi‑Fi. |
+| CandidateVerifier seam | **Implemented**: LocalSynthetic / LocalKnownSecret / BlackBoxLab / NetworkBackedUnsupported; RealWifiAudit → `ExternalCandidateVerificationPort` (prod Unavailable). |
 | Onboarding (primera ejecución) | **Partial**: flujo existe; strings migrados FIX-01; manual pendiente usuario. |
 | Permission Center | **Partial**: inventario OK; strings + ArrowBack FIX-01/02; manual pendiente usuario. |
 | Análisis de seguridad dedicado | **Partial**: pantalla existe; strings migrados FIX-01; manual pendiente usuario. |
-| Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis, Password Audit) | JUnit + `runTest`. |
-| Compose UI tests (`androidTest`) | Nearby…Lab + **Password Audit** — fakes; **ejecutados en CI emulador** (FASE 21). |
+| Tests ViewModel (Nearby, Vault, Lab, Onboarding, Permissions, Security Analysis, RealWifiAudit) | JUnit + `runTest`. |
+| Compose UI tests (`androidTest`) | Nearby…Lab + RealWifiAudit localization — fakes; **ejecutados en CI emulador** (FASE 21). |
 | Instrumentación Android | SQLDelight / Keystore / lifecycle — **CI emulador** API 29+35. |
 | Tooling CI | JVM job + Android emulator job (`docs/ci-emulator.md`). |
 | Docs `01`–`13`, ADRs, release checklist, test evidence | Índice vivo aquí; walkthrough known-password en `docs/13-known-password-audit-walkthrough.md`. |
