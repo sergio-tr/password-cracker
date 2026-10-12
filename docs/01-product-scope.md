@@ -8,10 +8,10 @@ WiFiSearcher
 │   ├── Nearby (scan real)
 │   ├── Vault
 │   ├── Security Assessment
-│   └── Real Wi‑Fi audit (Architecture ready / backend pending)
+│   └── Real Wi‑Fi audit (SE V2 + external CandidateVerifier; secret unknown)
 │         → StrategyResolver / Planner / Orchestrator
-│         → RealWifiAuditBackend
-│         → AndroidRealWifiAuditBackend (NotImplemented marker)
+│         → Search Engine V2 + CandidateVerifier → External backend
+│         → UnsupportedExternalCandidateVerificationPort (placeholder)
 │
 └── Lab Mode ON (adds Lab; does not remove Real)
     ├── Synthetic Lab
@@ -35,12 +35,10 @@ Aplicación Android didáctica de auditoría Wi-Fi que permite:
 - Guardar redes conocidas con alias y ubicación descriptiva.
 - Gestionar de forma segura credenciales introducidas por el usuario (Vault, CRUD).
 - **Auditar la red Wi‑Fi seleccionada** (producto real): estrategia según
-  `SecurityFamily`, plan, orquestación, métricas y STOP.
-  **Architecture ready / platform execution backend pending.**
-  El backend Android experimental queda en un único marker
-  (`USER_IMPLEMENTATION_POINT_REAL_WIFI_AUDIT`); por defecto
-  `Unavailable(NotImplemented)`. No usa el Search Engine / `CandidateVerifier`
-  contra el AP.
+  `SecurityFamily`, plan, Search Engine V2, métricas y STOP. El secreto objetivo
+  es **desconocido** para la app; la verificación de candidatos requiere un
+  backend externo (`ExternalCandidateVerificationPort`). Sin backend →
+  `BackendUnavailable` (START disabled; no se llama a `orchestrator.start()`).
 - Con **Lab Mode ON**, disponer de un **laboratorio** (Synthetic / Prototype /
   Search Engine V2 / planners / benchmarks / calibration) para estudiar espacios
   de búsqueda locales — sin mezclarlo con el backend real.
@@ -50,11 +48,11 @@ Aplicación Android didáctica de auditoría Wi-Fi que permite:
 | REAL ENVIRONMENT | LAB ENVIRONMENT |
 | --- | --- |
 | Nearby / Vault / assessment | Synthetic Lab / Prototype / Search Engine V2 |
-| `RealWifiAuditBackend` | `CandidateVerifier` local |
+| SE V2 + external CandidateVerifier (no known secret) | `CandidateVerifier` local / BlackBox |
 | CTA «Auditar esta red» | Planners, workers, STOP, métricas, calibration |
-| Adapter Android (NotImplemented) | Nunca autentica contra el AP desde el motor |
+| External verifier placeholder (Unavailable) | Nunca autentica contra el AP desde el motor |
 
-**Prohibido**: conectar Search Engine V2 a autenticación Wi‑Fi real.
+**Prohibido**: known-secret / Vault / EncapsulatedPasswordVerifier en RealWifiAudit.
 Lab Mode OFF oculta Lab; no elimina el código.
 
 ## No-objetivos

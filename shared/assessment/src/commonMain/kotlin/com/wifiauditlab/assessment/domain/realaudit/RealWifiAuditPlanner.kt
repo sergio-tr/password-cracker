@@ -7,7 +7,7 @@ import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
  * Builds a [RealWifiAuditPlan] from the selected network and security profile.
  *
  * Pure assessment-layer planner: no Android, no known secret, no Lab imports.
- * Search Engine V2 remains Lab-only and is **not** wired from this plan.
+ * Search Engine V2 wiring happens in the Android local-search adapter.
  */
 fun interface RealWifiAuditPlanner {
     fun createPlan(

@@ -1,188 +1,197 @@
 package com.wifiauditlab.android.ui.realaudit
 
-import com.wifiauditlab.android.ui.nearby.NearbyItem
+import com.wifiauditlab.assessment.domain.real.RealNetworkReference
 import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditPlanner
 import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditStrategyResolver
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditBackend
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditBackendResult
+import com.wifiauditlab.assessment.domain.realaudit.ExternalCandidateVerificationPort
+import com.wifiauditlab.assessment.domain.realaudit.ExternalVerificationResult
+import com.wifiauditlab.assessment.domain.realaudit.ExternalVerifierCapability
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditCapability
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditOrchestrator
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditOutcome
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditPhase
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditPlan
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditProgress
 import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditProgressSink
-import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditStrategy
-import com.wifiauditlab.assessment.domain.wifi.Bssid
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditUnavailableReason
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiSearchExecutionResult
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiSearchOutcome
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiSearchPort
+import com.wifiauditlab.assessment.domain.realaudit.UnsupportedExternalCandidateVerificationPort
 import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import com.wifiauditlab.assessment.domain.wifi.Ssid
-import com.wifiauditlab.assessment.domain.wifi.WifiBand
-import com.wifiauditlab.assessment.domain.wifi.WifiChannel
-import com.wifiauditlab.assessment.domain.wifi.WifiObservation
 import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
-import com.wifiauditlab.assessment.domain.wifi.WifiSignal
-import com.wifiauditlab.assessment.domain.wifi.WifiStandard
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
-/**
- * Application-path E2E with [FakeRealWifiAuditBackend]:
- * Nearby selection → store → strategy → plan → orchestrator → progress → result / STOP.
- */
 class RealWifiAuditEndToEndTest {
+    private val dispatcher = UnconfinedTestDispatcher()
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
     @Test
-    fun nearby_selected_network_runs_through_orchestrator_to_completed() =
-        runTest {
-            val backend = FakeRealWifiAuditBackend()
+    fun unsupported_verifier_backend_unavailable_start_disabled() =
+        runTest(dispatcher) {
+            val search = FakeSearch()
             val store = RealWifiAuditTargetStore()
+            store.set(
+                RealWifiAuditTarget(
+                    network = network(),
+                    securityProfile = profile(),
+                ),
+            )
             val orchestrator =
                 RealWifiAuditOrchestrator(
                     strategyResolver = DefaultRealWifiAuditStrategyResolver(),
                     planner = DefaultRealWifiAuditPlanner(),
-                    backend = backend,
+                    search = search,
+                    externalVerifier = UnsupportedExternalCandidateVerificationPort(),
                 )
+            val vm = RealWifiAuditViewModel(store, orchestrator)
 
-            val item = nearbyItem(ssid = "MiRed", family = SecurityFamily.WPA2_PERSONAL)
-            store.set(realWifiAuditTargetFromNearby(item))
-            val target = requireNotNull(store.target.value)
+            assertTrue(vm.state.value.phase is RealWifiAuditPhase.BackendUnavailable)
+            assertFalse(vm.state.value.canStart)
+            assertTrue(vm.state.value.showBackendUnavailableCard)
 
-            orchestrator.prepare(target.network, target.securityProfile)
-            assertTrue(orchestrator.state.value.phase is RealWifiAuditPhase.Ready)
-            assertEquals(RealWifiAuditStrategy.PersonalPskAudit, orchestrator.state.value.strategy)
-            assertEquals(SecurityFamily.WPA2_PERSONAL, orchestrator.state.value.securityProfile?.family)
-            assertEquals(Ssid("MiRed"), orchestrator.state.value.network?.ssid)
+            vm.start()
+            vm.start()
 
-            orchestrator.start()
-
-            val plan = requireNotNull(backend.lastPlan)
-            assertEquals(target.network, plan.network)
-            assertEquals(SecurityFamily.WPA2_PERSONAL, plan.securityProfile.family)
-            assertEquals(RealWifiAuditStrategy.PersonalPskAudit, plan.strategy)
-            assertTrue(backend.progressEvents.isNotEmpty())
-            val completed = orchestrator.state.value.phase as RealWifiAuditPhase.Completed
-            assertEquals(RealWifiAuditOutcome.Completed, completed.outcome)
+            assertEquals(0, orchestrator.startInvocationCount)
+            assertEquals(0, search.invokeCount)
+            assertTrue(vm.state.value.phase is RealWifiAuditPhase.BackendUnavailable)
         }
 
     @Test
-    fun start_then_stop_cancels_fake_backend() =
-        runTest {
-            val backend = FakeRealWifiAuditBackend(delayMillis = 200)
+    fun available_fake_verifier_ready_start_enabled() =
+        runTest(dispatcher) {
+            val search =
+                FakeSearch(
+                    RealWifiSearchExecutionResult.Found(
+                        RealWifiAuditProgress(strategyLabel = "PSK Audit", candidatesProcessed = 7),
+                    ),
+                )
+            val store = RealWifiAuditTargetStore()
+            store.set(RealWifiAuditTarget(network(), profile()))
             val orchestrator =
                 RealWifiAuditOrchestrator(
                     strategyResolver = DefaultRealWifiAuditStrategyResolver(),
                     planner = DefaultRealWifiAuditPlanner(),
-                    backend = backend,
+                    search = search,
+                    externalVerifier = AvailableExternal(),
                 )
-            val item = nearbyItem(ssid = "StopMe", family = SecurityFamily.WPA3_PERSONAL)
-            val target = realWifiAuditTargetFromNearby(item)
-            orchestrator.prepare(target.network, target.securityProfile)
-            assertEquals(RealWifiAuditStrategy.PersonalSaeAudit, orchestrator.state.value.strategy)
+            val vm = RealWifiAuditViewModel(store, orchestrator)
 
-            val job = async { orchestrator.start() }
-            backend.entered.await()
-            assertTrue(orchestrator.state.value.phase is RealWifiAuditPhase.Running)
+            assertTrue(vm.state.value.phase is RealWifiAuditPhase.Ready)
+            assertTrue(vm.state.value.canStart)
+            assertTrue(vm.state.value.capability is RealWifiAuditCapability.Available)
+            assertFalse(vm.state.value.showBackendUnavailableCard)
 
-            orchestrator.stop()
-            assertTrue(backend.cancelCalled)
-            job.await()
-
-            val phase = orchestrator.state.value.phase as RealWifiAuditPhase.Completed
-            assertEquals(RealWifiAuditOutcome.Cancelled, phase.outcome)
+            vm.start()
+            assertEquals(1, orchestrator.startInvocationCount)
+            assertEquals(1, search.invokeCount)
         }
 
-    private fun nearbyItem(
-        ssid: String,
-        family: SecurityFamily,
-    ): NearbyItem {
-        val profile =
-            WifiSecurityProfile(
-                family = family,
-                keyManagements = emptySet(),
-                managementFrameProtection = ManagementFrameProtection.UNKNOWN,
-                isTransitionMode = false,
-                rawCapabilities = null,
-            )
-        return NearbyItem(
-            observation =
-                WifiObservation(
-                    ssid = Ssid(ssid),
-                    bssid = Bssid.of("aa:bb:cc:dd:ee:01"),
-                    signal = WifiSignal(-48),
-                    channel = WifiChannel(6, WifiBand.GHZ_2_4, 2437),
-                    standard = WifiStandard.WIFI_5,
-                    securityProfile = profile,
-                    observedAtEpochMillis = 1L,
-                ),
-            alias = ssid,
-            savedNetworkId = null,
-            isKnown = false,
-            ambiguous = false,
-        )
-    }
-}
-
-class FakeRealWifiAuditBackend(
-    private val delayMillis: Long = 0,
-) : RealWifiAuditBackend {
-    var lastPlan: RealWifiAuditPlan? = null
-    var cancelCalled: Boolean = false
-    val progressEvents = mutableListOf<RealWifiAuditProgress>()
-    val entered = CompletableDeferred<Unit>()
-
-    @Volatile
-    private var cancelled: Boolean = false
-
-    override suspend fun execute(
-        plan: RealWifiAuditPlan,
-        progress: RealWifiAuditProgressSink,
-    ): RealWifiAuditBackendResult {
-        lastPlan = plan
-        cancelled = false
-        progress.onProgress(
-            RealWifiAuditProgress(
-                strategyLabel = plan.strategyLabel,
-                candidatesProcessed = 0,
-                elapsedMillis = 0,
-                workerCount = plan.limits.workerCountHint,
-                statusMessage = "Prepared",
-            ).also { progressEvents.add(it) },
-        )
-        entered.complete(Unit)
-        if (delayMillis > 0) {
-            val steps = (delayMillis / 10).coerceAtLeast(1)
-            repeat(steps.toInt()) {
-                if (cancelled) return RealWifiAuditBackendResult.Cancelled
-                delay(10)
-                progress.onProgress(
-                    RealWifiAuditProgress(
-                        strategyLabel = plan.strategyLabel,
-                        candidatesProcessed = it.toLong() + 1,
-                        elapsedMillis = (it + 1) * 10L,
-                        workerCount = plan.limits.workerCountHint,
-                    ).also { event -> progressEvents.add(event) },
+    @Test
+    fun recomposition_equivalent_prepare_does_not_create_completed_error() =
+        runTest(dispatcher) {
+            val search = FakeSearch()
+            val orchestrator =
+                RealWifiAuditOrchestrator(
+                    strategyResolver = DefaultRealWifiAuditStrategyResolver(),
+                    planner = DefaultRealWifiAuditPlanner(),
+                    search = search,
+                    externalVerifier = UnsupportedExternalCandidateVerificationPort(),
                 )
-            }
+            orchestrator.prepare(network(), profile())
+            orchestrator.prepare(network(), profile())
+            assertTrue(orchestrator.state.value.phase is RealWifiAuditPhase.BackendUnavailable)
+            assertFalse(orchestrator.state.value.phase is RealWifiAuditPhase.Completed)
         }
-        if (cancelled) return RealWifiAuditBackendResult.Cancelled
-        progress.onProgress(
-            RealWifiAuditProgress(
-                strategyLabel = plan.strategyLabel,
-                candidatesProcessed = progressEvents.lastOrNull()?.candidatesProcessed ?: 1,
-                elapsedMillis = progressEvents.lastOrNull()?.elapsedMillis ?: 1,
-                workerCount = plan.limits.workerCountHint,
-                statusMessage = "Done",
-            ).also { progressEvents.add(it) },
+
+    @Test
+    fun exhausted_with_available_verifier() =
+        runTest(dispatcher) {
+            val search =
+                FakeSearch(
+                    RealWifiSearchExecutionResult.Exhausted(
+                        RealWifiAuditProgress(strategyLabel = "PSK Audit"),
+                    ),
+                )
+            val orchestrator =
+                RealWifiAuditOrchestrator(
+                    strategyResolver = DefaultRealWifiAuditStrategyResolver(),
+                    planner = DefaultRealWifiAuditPlanner(),
+                    search = search,
+                    externalVerifier = AvailableExternal(),
+                )
+            orchestrator.prepare(network(), profile())
+            orchestrator.start()
+            val outcome =
+                (orchestrator.state.value.phase as RealWifiAuditPhase.Completed).outcome
+                    as RealWifiAuditOutcome.Completed
+            assertEquals(RealWifiSearchOutcome.Exhausted, outcome.search)
+        }
+
+    private fun network() =
+        RealNetworkReference(
+            ssid = Ssid("Home"),
+            bssid = null,
+            securityFamily = SecurityFamily.WPA2_PERSONAL,
+            displayName = "Home",
         )
-        return RealWifiAuditBackendResult.Completed
+
+    private fun profile() =
+        WifiSecurityProfile(
+            family = SecurityFamily.WPA2_PERSONAL,
+            keyManagements = emptySet(),
+            managementFrameProtection = ManagementFrameProtection.UNKNOWN,
+            isTransitionMode = false,
+            rawCapabilities = null,
+        )
+
+    private class FakeSearch(
+        private val result: RealWifiSearchExecutionResult =
+            RealWifiSearchExecutionResult.Unavailable(
+                RealWifiAuditUnavailableReason.ExternalVerifierUnavailable,
+            ),
+    ) : RealWifiSearchPort {
+        var invokeCount = 0
+
+        override suspend fun search(
+            plan: RealWifiAuditPlan,
+            progress: RealWifiAuditProgressSink,
+        ): RealWifiSearchExecutionResult {
+            invokeCount += 1
+            return result
+        }
+
+        override fun cancel() = Unit
     }
 
-    override fun cancel() {
-        cancelCalled = true
-        cancelled = true
+    private class AvailableExternal : ExternalCandidateVerificationPort {
+        override fun capability(): ExternalVerifierCapability = ExternalVerifierCapability.Available
+
+        override suspend fun verify(candidate: String): ExternalVerificationResult =
+            ExternalVerificationResult.Match
+
+        override fun cancel() = Unit
     }
 }

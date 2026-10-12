@@ -905,7 +905,7 @@ class LabViewModelTest {
     }
 
     @Test
-    fun randomMode_usesHiddenSecretChallenge() =
+    fun randomMode_usesBlackBoxChallengeVerifier() =
         runTest(dispatcher) {
             val engine = CapturingEngine()
             val vm = viewModel(engine)
@@ -925,6 +925,6 @@ class LabViewModelTest {
             advanceUntilIdle()
             val challenge = engine.lastChallenge
             assertNotNull(challenge)
-            assertTrue(challenge.toString().contains("verifier=internal"))
+            assertTrue(challenge.toString().contains("verifier=encapsulated"))
         }
 }

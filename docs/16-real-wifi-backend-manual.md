@@ -1,52 +1,39 @@
-# 16 · Punto de implementación manual — backend Wi‑Fi real
+# 16 · External verifier placeholder
 
-**Estado:** Architecture ready / platform execution backend pending.
-
-Documento alineado con el código tras el refactor de auditoría.
-
-## ÚNICO PUNTO MANUAL
+## Estado
 
 ```text
-androidApp/src/main/kotlin/com/wifiauditlab/android/wifi/AndroidRealWifiAuditBackend.kt
-
-buscar:
-
-USER_IMPLEMENTATION_POINT_REAL_WIFI_AUDIT
+External verifier abstraction: implemented
+Production external verifier backend: NOT IMPLEMENTED
 ```
 
-Una sola ocurrencia en producción. Por defecto `execute` responde
-`Unavailable(NotImplemented)`.
+## Ruta
 
-## Qué ya está resuelto antes de llegar aquí
+`shared/assessment/src/commonMain/kotlin/com/wifiauditlab/assessment/domain/realaudit/ExternalCandidateVerification.kt`
 
-- Red seleccionada por el usuario (`plan.network`)
-- `SecurityFamily` / `WifiSecurityProfile` (`plan.securityProfile`)
-- Estrategia (`plan.strategy`)
-- `RealWifiAuditPlan` (`plan.limits`, `plan.strategyLabel`)
-- Métricas / `RealWifiAuditProgressSink`
-- Cancelación (`cancel()` / flag `cancelled`)
-- Lifecycle UI / ViewModel / navegación
+Clase de producción (única):
 
-## Objetos disponibles en el marker
+`UnsupportedExternalCandidateVerificationPort`
+
+Marker (exactamente una vez en el código):
 
 ```text
-plan.network.ssid
-plan.network.bssid?          // opcional
-plan.network.securityFamily
-plan.network.displayName
-plan.securityProfile
-plan.strategy                // sealed RealWifiAuditStrategy
-plan.limits
-plan.strategyLabel
-progress                     // RealWifiAuditProgressSink
-cancelled / cancel()
+USER_IMPLEMENTATION_POINT_EXTERNAL_VERIFIER
 ```
 
-## Qué NO implementar aquí (política actual)
+## Comportamiento
 
-- Automatización de intentos de credenciales / candidatos contra el AP
-- Lógica de red dentro de `:shared:lab`
-- Conectar Search Engine V2 (`CandidateVerifier`) a autenticación Wi‑Fi real
+- `capability()` → `Unavailable`
+- RealWifiAudit `prepare` → `BackendUnavailable`
+- START disabled; `orchestrator.start()` no se invoca
 
-Cualquier backend experimental dependiente del mecanismo de autenticación debe
-quedar **únicamente** detrás de esta frontera.
+No implementar aquí un backend Wi‑Fi ni loops `requestNetwork` por candidato
+sin un diseño revisado.
+
+DI (`AppModule`):
+
+```text
+single<ExternalCandidateVerificationPort> {
+    UnsupportedExternalCandidateVerificationPort()
+}
+```
