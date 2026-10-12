@@ -31,6 +31,10 @@ Artifacts (siempre / al fallar JVM): reports JUnit/HTML, logcat **sanitizado**
 | Lab | Engine + VM | Fake engine UI + STOP | — | Runs largos físicos |
 | Quick Audit | `PasswordAuditViewModelTest` (presets, Vault, eligibility, cancel, missing-target) | `PasswordAuditComposeTest` (STOP, found, vault, advanced restore) | — | Flujo físico conectado |
 | LAB_NETWORK_VALIDATION (F0–F3) | Gate / orchestrator / evidence retention / capability mapping | Vault Compose (registro lab) | `SharedPreferencesLabSessionEvidenceLogInstrumentedTest` | Checklist físico F3 (`docs/14`, `test-evidence`) — **no** PASS automático |
+| Lab Mode visibility | `LabModeSurfacesTest` + `LabModeVisibilityViewModelTest` | `LabModeVisibilityComposeTest` (OFF→ON→Guided/Prototype/Advanced→OFF→Nearby); Nearby/Vault CTAs | — | Hide ≠ delete; full Lab surfaces restore |
+| Recognition icons | — | Connected/Unknown icon-only + CD; no visible «Conectado»/«Desconocido» | — | — |
+| Branding WiFiSearcher | `AppBrandingTest` (strings.xml) | — | — | — |
+| CandidateVerifier seam | `CandidateVerificationBackendTest`, `LabModuleBoundaryTest` | — | — | — |
 | Known-password domain | `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`, `PasswordAuditResultComposerTest` | — | — | — |
 | Auth-aware PSK (FIX-06/07/08) | `LabViewModelTest` (PSK ≥ 8, OPEN/Enterprise), `PasswordAuditViewModelTest` (WPA3 plan) | `ProductRegressionComposeTest` (WPA2 start path, short PSK, WPA3 preset) | — | Flujo producto en dispositivo |
 

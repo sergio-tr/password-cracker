@@ -400,9 +400,11 @@ private fun VerificationModeSection(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            VerificationModeComparisonCard()
+            if (state.labModeEnabled) {
+                VerificationModeComparisonCard()
+            }
 
-            if (state.allowsAuthorizedApTest) {
+            if (state.labModeEnabled && state.allowsAuthorizedApTest) {
                 TextButton(onClick = { advancedExpanded = !advancedExpanded }) {
                     Text(
                         if (advancedExpanded) {
@@ -414,29 +416,23 @@ private fun VerificationModeSection(
                 }
             }
 
-            if (advancedExpanded && state.allowsAuthorizedApTest) {
-                if (!state.labModeEnabled) {
-                    Text(
-                        stringResource(R.string.audit_lab_mode_disabled_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    FilterChip(
-                        selected =
-                            state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION,
-                        onClick = {
-                            viewModel.selectVerificationMode(
-                                VerificationMode.LAB_NETWORK_VALIDATION,
-                            )
-                        },
-                        enabled = requestAllowsLabValidation(state),
-                        label = { Text(stringResource(R.string.audit_verification_ap)) },
-                    )
-                }
+            if (advancedExpanded && state.labModeEnabled && state.allowsAuthorizedApTest) {
+                FilterChip(
+                    selected =
+                        state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION,
+                    onClick = {
+                        viewModel.selectVerificationMode(
+                            VerificationMode.LAB_NETWORK_VALIDATION,
+                        )
+                    },
+                    enabled = requestAllowsLabValidation(state),
+                    label = { Text(stringResource(R.string.audit_verification_ap)) },
+                )
             }
 
-            if (state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION) {
+            if (state.labModeEnabled &&
+                state.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION
+            ) {
                 Text(
                     stringResource(R.string.audit_verification_lab_help),
                     style = MaterialTheme.typography.bodySmall,

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Wi-Fi Audit Lab</string>
+    <string name="app_name">WiFiSearcher</string>
+    <string name="connection_status_connected">Connected</string>
+    <string name="connection_status_unknown">Unknown</string>
 
     <string name="audit_title">Audit password</string>
     <string name="audit_start">START AUDIT</string>
@@ -157,7 +159,7 @@
     <string name="settings_language_es">Español</string>
     <string name="settings_language_en">English</string>
     <string name="settings_lab_mode">Lab mode</string>
-    <string name="settings_lab_mode_help">Enables experimental validation features for your own or expressly authorized lab networks. Enabling this alone does not authorize a test: you still need a connected network, LAB registry, session consent, and platform capability.</string>
+    <string name="settings_lab_mode_help">Shows or completely hides Lab features (tab, synthetic prototypes, benchmarks, LAB network registration, and experimental validation). Off by default. Enabling it alone does not authorize a network test: you still need connection, registry, consent, and platform capability.</string>
     <string name="settings_lab_mode_switch">Allow LAB validation (experimental)</string>
     <string name="settings_permissions">Permissions and services</string>
     <string name="settings_permissions_help">Review required permissions, system services, and optional capabilities.</string>
@@ -171,6 +173,7 @@
     <string name="settings_cap_secrets">Secure secret storage: %1$s</string>
     <string name="settings_cap_geo">Geolocation: %1$s</string>
     <string name="settings_about">What this app does</string>
+    <string name="settings_about_app">WiFiSearcher — real environment (Nearby, Vault, analysis, local audit) plus optional Lab Mode.</string>
     <string name="settings_about_nearby">Nearby — discover real Wi-Fi networks and assess their security.</string>
     <string name="settings_about_vault">Saved — the Vault: alias, location, and encrypted password.</string>
     <string name="settings_about_lab">Lab — local synthetic experiments with limits and a STOP button.</string>

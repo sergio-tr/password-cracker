@@ -108,6 +108,29 @@ class PasswordAuditViewModel(
 
     init {
         bootstrap()
+        val prefs = labModePreferences
+        if (prefs != null) {
+            viewModelScope.launch {
+                prefs.enabled.collect { enabled ->
+                    _state.update { current ->
+                        current.copy(
+                            labModeEnabled = enabled,
+                            verificationMode =
+                                if (!enabled &&
+                                    current.verificationMode == VerificationMode.LAB_NETWORK_VALIDATION
+                                ) {
+                                    VerificationMode.LOCAL_AUDIT
+                                } else {
+                                    current.verificationMode
+                                },
+                            apTestConsentGranted =
+                                if (!enabled) false else current.apTestConsentGranted,
+                        )
+                    }
+                    refreshApTestAdmission()
+                }
+            }
+        }
     }
 
     private fun bootstrap() {

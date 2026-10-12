@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Wi-Fi Audit Lab</string>
+    <string name="app_name">WiFiSearcher</string>
+    <string name="connection_status_connected">Conectado</string>
+    <string name="connection_status_unknown">Desconocido</string>
 
     <!-- Password audit (Quick Audit) -->
     <string name="audit_title">Auditar contraseña</string>
@@ -158,7 +160,7 @@
     <string name="settings_language_es">Español</string>
     <string name="settings_language_en">English</string>
     <string name="settings_lab_mode">Modo laboratorio</string>
-    <string name="settings_lab_mode_help">Habilita funciones experimentales de validación sobre redes propias o de laboratorio expresamente autorizadas. No autoriza por sí solo una prueba: también hacen falta red conectada, registro LAB, consentimiento de sesión y capability de plataforma.</string>
+    <string name="settings_lab_mode_help">Muestra u oculta por completo las funciones de Laboratorio (tab, prototipos sintéticos, benchmarks, registro de red LAB y validaciones experimentales). Desactivado por defecto. Activarlo no autoriza por sí solo una prueba de red: siguen haciendo falta conexión, registro, consentimiento y capability.</string>
     <string name="settings_lab_mode_switch">Permitir Validación LAB (experimental)</string>
     <string name="settings_permissions">Permisos y servicios</string>
     <string name="settings_permissions_help">Revisa permisos requeridos, servicios del sistema y capacidades opcionales.</string>
@@ -172,6 +174,7 @@
     <string name="settings_cap_secrets">Almacenamiento seguro de secretos: %1$s</string>
     <string name="settings_cap_geo">Geolocalización: %1$s</string>
     <string name="settings_about">Qué hace esta app</string>
+    <string name="settings_about_app">WiFiSearcher — entorno real (Cercanas, Vault, análisis, auditoría local) y Laboratorio opcional.</string>
     <string name="settings_about_nearby">Cercanas — descubre redes Wi-Fi reales y evalúa su seguridad.</string>
     <string name="settings_about_vault">Guardadas — el Vault: alias, ubicación y contraseña cifrada.</string>
     <string name="settings_about_lab">Laboratorio — experimentos sintéticos locales con límites y un botón STOP.</string>

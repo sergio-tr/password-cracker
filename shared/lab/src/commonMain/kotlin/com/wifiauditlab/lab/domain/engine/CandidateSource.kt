@@ -15,7 +15,26 @@ interface CandidateSource {
     fun candidates(): Sequence<String>
 }
 
-/** Decides whether a candidate is the solution. In the lab this is an exact match. */
+/**
+ * Verification boundary used by the search engine.
+ *
+ * Current supported implementations verify candidates locally
+ * ([com.wifiauditlab.lab.domain.EncapsulatedPasswordVerifier],
+ * [SyntheticExactMatchVerifier], or challenge-internal secrets via
+ * `LabChallenge.asVerifier()`).
+ *
+ * A different verification backend can be introduced behind this
+ * interface without changing the search engine, scheduler or
+ * candidate generation pipeline.
+ *
+ * Network-backed automated candidate verification is intentionally
+ * not implemented in this project — see [UnsupportedNetworkCandidateVerifier]
+ * and [CandidateVerificationBackend.NetworkBackedUnsupported].
+ *
+ * The Search Engine must never import Android Wi‑Fi APIs
+ * (`WifiManager`, `ConnectivityManager`, `NetworkValidationAdapter`)
+ * or `:shared:assessment`.
+ */
 fun interface CandidateVerifier {
     fun verify(candidate: String): Boolean
 }

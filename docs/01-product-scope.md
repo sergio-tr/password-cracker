@@ -1,5 +1,22 @@
 # 01 · Alcance del producto
 
+Nombre visible: **WiFiSearcher** (package/applicationId históricos `wifiauditlab` sin cambio).
+
+```text
+WiFiSearcher
+├── Real environment
+│   ├── Nearby
+│   ├── Vault
+│   ├── Security Assessment
+│   └── Local Password Audit
+│
+└── Lab Mode (optional, default OFF)
+    ├── Synthetic Lab
+    ├── Network Prototype
+    ├── Benchmarks / calibration
+    └── Single Real Credential Validation (one-shot; never Search Engine → AP)
+```
+
 ## Objetivo
 
 Aplicación Android didáctica de auditoría Wi-Fi que permite:
