@@ -51,10 +51,12 @@ red. La frontera no se apoya en disciplina de código sino en el grafo de módul
 ```text
 REAL ENVIRONMENT (Lab Mode OFF = producto por defecto)
   Nearby / Vault
-    → RealNetworkPasswordEligibility (Exact BSSID)
-    → RealNetworkPasswordTestScreen
-    → RealNetworkPasswordExecutionPort
-    → AndroidRealNetworkPasswordExecutionAdapter (TODO / NotImplemented)
+    → RealWifiAuditScreen
+    → RealWifiAuditOrchestrator
+    → StrategyResolver / Planner
+    → RealWifiAuditBackend
+    → AndroidRealWifiAuditBackend (USER_IMPLEMENTATION_POINT_REAL_WIFI_AUDIT)
+      Estado: Architecture ready / platform execution backend pending
 
 LAB ENVIRONMENT (Lab Mode ON = Real + Lab)
   LabScreen
@@ -63,8 +65,9 @@ LAB ENVIRONMENT (Lab Mode ON = Real + Lab)
     → planners / workers / STOP / metrics / calibration / benchmarks
 ```
 
-El Search Engine **no** se conecta a `RealNetworkPasswordExecutionPort`.
+El Search Engine **no** se conecta a `RealWifiAuditBackend` / autenticación Wi‑Fi.
 Vive sólo bajo Lab y usa `CandidateVerifier` local.
+Ver `docs/15-real-wifi-audit-architecture.md` y `docs/16-real-wifi-backend-manual.md`.
 
 ### Punto de extensión Lab: `CandidateVerifier`
 
@@ -94,14 +97,16 @@ Vive sólo bajo Lab y usa `CandidateVerifier` local.
 elimina ni desconecta el código Lab (DI, motor, Guided/Advanced, prototipos,
 calibración, benchmarks). Con Lab Mode ON reaparecen las mismas superficies.
 
-## Real password probe + Lab search (componentes)
+## Real Wi‑Fi audit + Lab search (componentes)
 
 | Componente | Módulo | Rol |
 | --- | --- | --- |
 | `CurrentWifiConnectionProvider` | assessment + androidApp | Detección de red conectada |
-| `RealNetworkPasswordEligibilityChecker` | assessment | Exact → Executable; Probable → informativo |
-| `RealNetworkPasswordExecutionPort` | assessment | Puerto de ejecución real (sin Android types) |
-| `AndroidRealNetworkPasswordExecutionAdapter` | androidApp | Stub tipado `NotImplemented` |
+| `RealWifiAuditStrategyResolver` | assessment | `SecurityFamily` → strategy |
+| `RealWifiAuditPlanner` | assessment | Plan sin secretos |
+| `RealWifiAuditOrchestrator` | assessment | prepare / start / stop / progress |
+| `RealWifiAuditBackend` | assessment | Frontera orquestación ↔ plataforma |
+| `AndroidRealWifiAuditBackend` | androidApp | Stub `Unavailable(NotImplemented)` + marker único; **no** conecta SE/`CandidateVerifier` |
 | `EncapsulatedPasswordVerifier` | lab | Target aislado; verificación local (Lab) |
 | `AutomaticPasswordAuditPlanner` | lab | Plan multi-stage ciego al secreto (Lab) |
 | `PasswordAuditResultComposer` | assessment | Resultados locales Lab |

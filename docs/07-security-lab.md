@@ -35,10 +35,12 @@ Modos de verificación:
   UI hard 24); límites de intentos y/o duración independientes, o **Hasta DETENER**
   (`SearchLimits.untilCancelled`). Sigue siendo **solo local** (known-password o
   RandomHidden sintético) — nunca autentica contra el AP.
-- **Producto real (Lab Mode OFF):** Nearby/Vault ofrecen «Probar contraseña en esta
-  red» sólo con match Exact a la conexión actual → `RealNetworkPasswordExecutionPort`
-  (adapter Android aún `NotImplemented`). **No** hay CTA «solo local» ni arranque del
-  Search Engine desde el flujo real.
+- **Producto real (Lab Mode OFF):** Nearby/Vault ofrecen «Auditar esta red» →
+  `RealWifiAudit*` / `AndroidRealWifiAuditBackend`
+  (**Architecture ready / platform execution backend pending**;
+  `Unavailable(NotImplemented)` + marker único).
+  **No** hay CTA de password manual ni arranque del Search Engine /
+  `CandidateVerifier` desde el flujo real.
 - **Nearby → Lab (LAB-05, Lab Mode ON):** al abrir Lab desde una red cercana, el
   prototipo local se rellena con SSID/alias/seguridad; el usuario introduce la
   contraseña conocida. CTA Lab: «Probar en laboratorio (local)».

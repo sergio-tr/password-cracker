@@ -52,11 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
-import com.wifiauditlab.android.ui.audit.label
 import com.wifiauditlab.android.ui.common.NetworkRecognitionIndicator
 import com.wifiauditlab.android.ui.common.NetworkRecognitionStatus
 import com.wifiauditlab.android.ui.security.familyLabelRes
-import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.security.SecurityRating
 import com.wifiauditlab.assessment.domain.wifi.SignalQuality
@@ -70,7 +68,7 @@ fun NearbyScreen(
     viewModel: NearbyViewModel = koinViewModel(),
     onOpenSecurityAnalysis: (NearbyItem) -> Unit = {},
     onOpenLab: (NearbyItem, String?) -> Unit = { _, _ -> },
-    onOpenRealPasswordTest: (NearbyItem) -> Unit = {},
+    onOpenRealWifiAudit: (NearbyItem) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val detail by viewModel.detail.collectAsStateWithLifecycle()
@@ -147,8 +145,8 @@ fun NearbyScreen(
                 onOpenLab(current.item, current.assessment?.headline)
                 viewModel.dismissDetail()
             },
-            onOpenRealPasswordTest = {
-                onOpenRealPasswordTest(current.item)
+            onOpenRealWifiAudit = {
+                onOpenRealWifiAudit(current.item)
                 viewModel.dismissDetail()
             },
             onOpenWifiSettings = {
@@ -229,7 +227,7 @@ private fun NetworkDetailSheet(
     onSave: (String) -> Unit,
     onOpenSecurityAnalysis: () -> Unit,
     onOpenLab: () -> Unit,
-    onOpenRealPasswordTest: () -> Unit,
+    onOpenRealWifiAudit: () -> Unit,
     onOpenWifiSettings: () -> Unit,
     onRequestPermissions: () -> Unit,
     onSetLabRegistered: (Boolean) -> Unit,
@@ -313,12 +311,7 @@ private fun NetworkDetailSheet(
             }
 
             Spacer(Modifier.height(8.dp))
-            RealPasswordTestSection(
-                eligibility = detail.realPasswordEligibility,
-                onOpenRealPasswordTest = onOpenRealPasswordTest,
-                onOpenWifiSettings = onOpenWifiSettings,
-                onRequestPermissions = onRequestPermissions,
-            )
+            RealWifiAuditSection(onOpenRealWifiAudit = onOpenRealWifiAudit)
 
             if (detail.labModeEnabled) {
                 Spacer(Modifier.height(8.dp))
@@ -402,82 +395,19 @@ private fun NetworkDetailSheet(
 }
 
 @Composable
-private fun RealPasswordTestSection(
-    eligibility: RealNetworkPasswordEligibility?,
-    onOpenRealPasswordTest: () -> Unit,
-    onOpenWifiSettings: () -> Unit,
-    onRequestPermissions: () -> Unit,
-) {
-    val cta = stringResource(R.string.real_test_cta)
-    val openWifiSettings = stringResource(R.string.audit_open_wifi_settings)
-    when (eligibility) {
-        null -> Text(stringResource(R.string.nearby_checking_eligibility))
-        is RealNetworkPasswordEligibility.Executable -> {
-            Text(
-                stringResource(
-                    if (eligibility.bssidConfirmed) {
-                        R.string.real_test_connected_exact
-                    } else {
-                        R.string.real_test_connected_ssid
-                    },
-                ),
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(stringResource(R.string.real_test_available), style = MaterialTheme.typography.bodySmall)
-            Button(
-                onClick = onOpenRealPasswordTest,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = cta },
-            ) {
-                Icon(Icons.Filled.WifiLock, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(cta)
-            }
-        }
-        is RealNetworkPasswordEligibility.ProbableMatchOnly -> {
-            // Checker maps same-SSID to Executable; keep CTA if this branch appears.
-            Text(stringResource(R.string.real_test_connected_ssid), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.real_test_available), style = MaterialTheme.typography.bodySmall)
-            Button(
-                onClick = onOpenRealPasswordTest,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = cta },
-            ) {
-                Icon(Icons.Filled.WifiLock, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(cta)
-            }
-        }
-        RealNetworkPasswordEligibility.NotCurrentlyConnected -> {
-            Text(stringResource(R.string.real_test_not_connected), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.real_test_not_connected_body))
-            OutlinedButton(
-                onClick = onOpenWifiSettings,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = openWifiSettings },
-            ) { Text(openWifiSettings) }
-        }
-        is RealNetworkPasswordEligibility.UnsupportedAuthenticationModel -> {
-            Text(eligibility.reason.label())
-        }
-        RealNetworkPasswordEligibility.MissingPermissions -> {
-            Text(stringResource(R.string.nearby_missing_permissions))
-            OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.nearby_grant_permission))
-            }
-        }
-        RealNetworkPasswordEligibility.InsufficientInformation -> {
-            Text(stringResource(R.string.nearby_insufficient_info))
-            OutlinedButton(onClick = onRequestPermissions, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.nearby_review_permissions))
-            }
-        }
+private fun RealWifiAuditSection(onOpenRealWifiAudit: () -> Unit) {
+    val cta = stringResource(R.string.real_audit_cta)
+    Text(stringResource(R.string.real_audit_available), style = MaterialTheme.typography.bodySmall)
+    Button(
+        onClick = onOpenRealWifiAudit,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = cta },
+    ) {
+        Icon(Icons.Filled.WifiLock, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.size(8.dp))
+        Text(cta)
     }
 }
 

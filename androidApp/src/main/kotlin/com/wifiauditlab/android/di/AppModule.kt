@@ -22,8 +22,8 @@ import com.wifiauditlab.android.ui.nearby.NearbyViewModel
 import com.wifiauditlab.android.ui.onboarding.OnboardingViewModel
 import com.wifiauditlab.android.ui.permissions.AndroidPermissionInventory
 import com.wifiauditlab.android.ui.permissions.PermissionCenterViewModel
-import com.wifiauditlab.android.ui.realtest.RealNetworkPasswordTestTargetStore
-import com.wifiauditlab.android.ui.realtest.RealNetworkPasswordTestViewModel
+import com.wifiauditlab.android.ui.realaudit.RealWifiAuditTargetStore
+import com.wifiauditlab.android.ui.realaudit.RealWifiAuditViewModel
 import com.wifiauditlab.android.ui.realwifi.RealWifiProbeViewModel
 import com.wifiauditlab.android.ui.security.SecurityAnalysisTargetStore
 import com.wifiauditlab.android.ui.security.SecurityAnalysisViewModel
@@ -33,7 +33,7 @@ import com.wifiauditlab.android.ui.vault.VaultViewModel
 import com.wifiauditlab.android.wifi.AndroidCurrentWifiConnectionProvider
 import com.wifiauditlab.android.wifi.AndroidNetworkValidationAdapter
 import com.wifiauditlab.android.wifi.AndroidNetworkValidationCapabilityEvaluator
-import com.wifiauditlab.android.wifi.AndroidRealNetworkPasswordExecutionAdapter
+import com.wifiauditlab.android.wifi.AndroidRealWifiAuditBackend
 import com.wifiauditlab.android.wifi.AndroidWifiConnectionMonitor
 import com.wifiauditlab.android.wifi.AndroidWifiMapper
 import com.wifiauditlab.android.wifi.AndroidWifiPermissionManager
@@ -75,9 +75,12 @@ import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMat
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
 import com.wifiauditlab.assessment.domain.match.KnownNetworkMatcher
-import com.wifiauditlab.assessment.domain.real.DefaultRealNetworkPasswordEligibilityChecker
-import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibilityChecker
-import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordExecutionPort
+import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditPlanner
+import com.wifiauditlab.assessment.domain.realaudit.DefaultRealWifiAuditStrategyResolver
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditBackend
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditOrchestrator
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditPlanner
+import com.wifiauditlab.assessment.domain.realaudit.RealWifiAuditStrategyResolver
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider
 import com.wifiauditlab.assessment.port.LabModePreferences
@@ -130,17 +133,14 @@ val appModule =
                 permissionGate = ConnectionInspectionPermissionGate { permissions.hasConnectionInspectionPermission() },
             )
         }
-        single<RealNetworkPasswordEligibilityChecker> {
-            val permissions: AndroidWifiPermissionManager = get()
-            DefaultRealNetworkPasswordEligibilityChecker(
-                connectionProvider = get(),
-                connectionMatcher = get(),
-                permissionGate = { permissions.hasConnectionInspectionPermission() },
-            )
-        }
-        single<RealNetworkPasswordExecutionPort> {
-            AndroidRealNetworkPasswordExecutionAdapter(
-                context = androidContext(),
+        single<RealWifiAuditStrategyResolver> { DefaultRealWifiAuditStrategyResolver() }
+        single<RealWifiAuditPlanner> { DefaultRealWifiAuditPlanner() }
+        single<RealWifiAuditBackend> { AndroidRealWifiAuditBackend() }
+        single {
+            RealWifiAuditOrchestrator(
+                strategyResolver = get(),
+                planner = get(),
+                backend = get(),
             )
         }
         single<SecretVault> { KeystoreSecretVault(androidContext()) }
@@ -150,7 +150,7 @@ val appModule =
         single { LabNetworkContextStore() }
         single { LabPasswordSeedStore() }
         single { PasswordAuditTargetStore() }
-        single { RealNetworkPasswordTestTargetStore() }
+        single { RealWifiAuditTargetStore() }
         single<AuthorizedLabNetworkStore> { SharedPreferencesAuthorizedLabNetworkStore(androidContext()) }
         single<LabSessionEvidenceLog> { SharedPreferencesLabSessionEvidenceLog(androidContext()) }
         single {
@@ -258,7 +258,6 @@ val appModule =
                 saveNearbyNetwork = get(),
                 recordNearbySightings = get(),
                 connectionProvider = get(),
-                realPasswordEligibilityChecker = get(),
                 connectionMatcher = get(),
                 labModePreferences = get(),
                 labNetworkRegistry = get(),
@@ -278,7 +277,6 @@ val appModule =
                 revealSecretUseCase = get(),
                 labModePreferences = get(),
                 labNetworkRegistry = get(),
-                realPasswordEligibilityChecker = get(),
             )
         }
         viewModel {
@@ -329,12 +327,9 @@ val appModule =
             )
         }
         viewModel {
-            RealNetworkPasswordTestViewModel(
+            RealWifiAuditViewModel(
                 targetStore = get(),
-                executionPort = get(),
-                eligibilityChecker = get(),
-                connectionProvider = get(),
-                revealSecret = get(),
+                orchestrator = get(),
             )
         }
         viewModel { SettingsCalibrationViewModel(get(), get()) }

@@ -12,7 +12,7 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Branding **WiFiSearcher**. Lab OFF: Cercanas, Guardadas, Ajustes + flujo real «Probar contraseña» (`RealNetworkPasswordTestScreen`). Lab ON: añade **Laboratorio** (Synthetic / Prototype / Search Engine V2 / benchmarks / calibration). Nearby: Connected/Unknown **icon-only** + contentDescription. Onboarding, Permission Center, Análisis de seguridad. |
+| Implementadas | Branding **WiFiSearcher**. Lab OFF: Cercanas, Guardadas, Ajustes + flujo real «Auditar esta red» (`RealWifiAuditScreen`; arquitectura lista / backend plataforma pendiente). Lab ON: añade **Laboratorio** (Synthetic / Guided / Advanced / Prototype / Search Engine V2 / benchmarks / calibration); auditoría real sigue visible. Nearby: Connected/Unknown **icon-only** + contentDescription. Onboarding, Permission Center, Análisis de seguridad. |
 | Deferred | Implementación Android del adapter real (sigue `NotImplemented`). Lab Result como ruta propia. |
 
 ## Principios aplicados
