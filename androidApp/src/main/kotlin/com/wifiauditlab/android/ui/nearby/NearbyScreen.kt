@@ -180,7 +180,6 @@ private fun NetworkCard(
     item: NearbyItem,
     onSelect: (NearbyItem) -> Unit,
 ) {
-    val connectedCd = stringResource(R.string.nearby_cd_connected)
     Card(onClick = { onSelect(item) }, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -193,10 +192,8 @@ private fun NetworkCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (item.isCurrentlyConnected) {
-                        NetworkRecognitionIndicator(
-                            status = NetworkRecognitionStatus.Connected,
-                            modifier = Modifier.semantics { contentDescription = connectedCd },
-                        )
+                        // Icon-only; a11y via NetworkRecognitionIndicator contentDescription.
+                        NetworkRecognitionIndicator(status = NetworkRecognitionStatus.Connected)
                     }
                     when {
                         item.ambiguous ->

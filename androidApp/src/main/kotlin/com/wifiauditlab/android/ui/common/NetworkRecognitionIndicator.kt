@@ -9,8 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.wifiauditlab.android.R
 
@@ -37,27 +35,19 @@ fun NetworkRecognitionIndicator(
 ) {
     when (status) {
         NetworkRecognitionStatus.Connected -> {
-            val cd = stringResource(R.string.connection_status_connected)
             Icon(
                 imageVector = Icons.Filled.Wifi,
-                contentDescription = cd,
+                contentDescription = stringResource(R.string.connection_status_connected),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier =
-                    modifier
-                        .size(20.dp)
-                        .semantics { contentDescription = cd },
+                modifier = modifier.size(20.dp),
             )
         }
         NetworkRecognitionStatus.Unknown -> {
-            val cd = stringResource(R.string.connection_status_unknown)
             Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = cd,
+                contentDescription = stringResource(R.string.connection_status_unknown),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier =
-                    modifier
-                        .size(20.dp)
-                        .semantics { contentDescription = cd },
+                modifier = modifier.size(20.dp),
             )
         }
         NetworkRecognitionStatus.Known -> {

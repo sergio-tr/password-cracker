@@ -5,6 +5,7 @@ import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -315,9 +316,14 @@ class NearbyComposeTest {
             }
         }
         waitForText("Home")
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.connection_status_connected))
-            .assertIsDisplayed()
+        val connectedCd = activity.getString(R.string.connection_status_connected)
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule
+                .onAllNodesWithContentDescription(connectedCd)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        composeTestRule.onNodeWithContentDescription(connectedCd).assertIsDisplayed()
         assertTrue(
             composeTestRule
                 .onAllNodesWithText(activity.getString(R.string.nearby_connected))
@@ -326,7 +332,7 @@ class NearbyComposeTest {
         )
         assertTrue(
             composeTestRule
-                .onAllNodesWithText(activity.getString(R.string.connection_status_connected))
+                .onAllNodesWithText(connectedCd)
                 .fetchSemanticsNodes()
                 .isEmpty(),
         )

@@ -27,7 +27,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -135,6 +135,7 @@ class LabModeVisibilityComposeTest {
                         NavigationBarItem(
                             selected = selected == destination.route,
                             onClick = { selected = destination.route },
+                            modifier = Modifier.testTag("shell_nav_${destination.route}"),
                             icon = {
                                 Icon(
                                     destination.icon,
@@ -198,26 +199,18 @@ class LabModeVisibilityComposeTest {
         // launch → Lab Mode OFF → Lab tab absent
         composeTestRule.onNodeWithTag("shell_nearby").assertIsDisplayed()
         assertTrue(
-            composeTestRule
-                .onAllNodesWithContentDescription(activity.getString(R.string.nav_lab))
-                .fetchSemanticsNodes()
-                .isEmpty(),
+            composeTestRule.onAllNodesWithTag("shell_nav_lab").fetchSemanticsNodes().isEmpty(),
         )
 
         // Settings → enable Lab Mode
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.nav_settings))
-            .performClick()
+        composeTestRule.onNodeWithTag("shell_nav_settings").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("shell_lab_mode_switch").assertIsOff().performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("shell_lab_mode_switch").assertIsOn()
 
         // Lab tab appears → open Lab → Guided + Prototype + Advanced
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.nav_lab))
-            .assertIsDisplayed()
-            .performClick()
+        composeTestRule.onNodeWithTag("shell_nav_lab").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
         composeTestRule
             .onNodeWithText(activity.getString(R.string.lab_title))
@@ -242,24 +235,17 @@ class LabModeVisibilityComposeTest {
             .assertIsDisplayed()
 
         // Lab → Settings → disable → navigate safely to Nearby → Lab gone
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.nav_settings))
-            .performClick()
+        composeTestRule.onNodeWithTag("shell_nav_settings").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("shell_lab_mode_switch").assertIsOn().performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("shell_lab_mode_switch").assertIsOff()
 
-        composeTestRule
-            .onNodeWithContentDescription(activity.getString(R.string.nav_nearby))
-            .performClick()
+        composeTestRule.onNodeWithTag("shell_nav_nearby").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("shell_nearby").assertIsDisplayed()
         assertTrue(
-            composeTestRule
-                .onAllNodesWithContentDescription(activity.getString(R.string.nav_lab))
-                .fetchSemanticsNodes()
-                .isEmpty(),
+            composeTestRule.onAllNodesWithTag("shell_nav_lab").fetchSemanticsNodes().isEmpty(),
         )
         assertTrue(
             composeTestRule
