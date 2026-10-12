@@ -294,13 +294,11 @@ class VaultComposeTest {
         composeTestRule.waitForIdle()
         assertTrue(openedLab?.alias == "LabEntry")
 
-        // Local-only audit CTA removed from real/Vault product surface.
-        assertTrue(
-            composeTestRule
-                .onAllNodesWithText(activity.getString(R.string.vault_open_audit))
-                .fetchSemanticsNodes()
-                .isEmpty(),
-        )
+        // Product real-audit CTA remains available from Vault.
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.vault_open_real_audit))
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test

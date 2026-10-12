@@ -8,37 +8,37 @@ Nombre visible de producto: **WiFiSearcher**. El identificador técnico históri
 
 ```text
 WiFiSearcher
-├── Real environment
+├── Real environment (Lab Mode OFF = default)
 │   ├── Nearby
 │   ├── Vault
 │   ├── Security Assessment
-│   └── Local Password Audit
+│   └── RealWifiAudit (strategy / planner / SE V2; external verifier pending)
 │
 └── Lab Mode (optional, OFF by default)
-    ├── Synthetic Lab
-    ├── Network Prototype
-    ├── Benchmarks / calibration
-    └── Single Real Credential Validation (one-shot; never Search Engine → AP)
+    ├── Synthetic Lab / Local Prototype / BlackBox RandomHidden
+    ├── Search Engine V2 / planners / benchmarks / calibration
+    └── RealWifiProbe (flavor lab; one-shot FixedLab credential validation)
 ```
 
 ## Dos dominios, frontera dura
 
 - **Real Wi-Fi Assessment** (`:shared:assessment`): descubre redes, normaliza su
-  seguridad, las explica y gestiona un Vault de redes conocidas y credenciales.
+  seguridad, las explica, gestiona el Vault y orquesta `RealWifiAudit`.
 - **Synthetic / local Search Engine** (`:shared:lab`): exploración de espacios de
   búsqueda con `CandidateVerifier` inyectable. **Nunca** autentica candidatos
-  contra un AP real.
+  contra un AP real desde el motor Lab.
 
 > Activar **Lab Mode** en Ajustes muestra el tab Laboratorio y CTAs asociados.
-> Con Lab Mode OFF esas superficies desaparecen por completo; Nearby, Vault,
-> análisis y auditoría local siguen disponibles.
+> Con Lab Mode OFF esas superficies desaparecen; Nearby, Vault, análisis y
+> RealWifiAudit siguen disponibles. El backend externo de verificación de
+> candidatos de producción **no está implementado** (capability Unavailable).
 
 ## Módulos
 
 | Módulo | Tipo | Contenido |
 | --- | --- | --- |
 | `:shared:core` | KMP (jvm + android) | Value objects base: `CombinationCount`, `PlatformCapabilities`. |
-| `:shared:assessment` | KMP | Dominio Wi-Fi, clasificador, matcher, assessment, Vault y casos de uso. |
+| `:shared:assessment` | KMP | Dominio Wi-Fi, clasificador, matcher, assessment, Vault, RealWifiAudit. |
 | `:shared:lab` | KMP | Motor de búsqueda local, planificador, `CandidateVerifier`, límites. |
 | `:shared:persistence` | KMP | SQLDelight Vault. |
 | `:androidApp` | App Android | Adaptadores, DI (Koin) y UI Compose (Material 3). |
@@ -61,4 +61,4 @@ WiFiSearcher
 
 Ver `docs/` (alcance, arquitectura, dominio, Wi-Fi, seguridad, Vault,
 laboratorio, motor de búsqueda, UI/UX, testing e iOS readiness) y los ADR en
-`docs/adr/`.
+`docs/adr/`. Guías RealWifiAudit: `docs/15`–`docs/17`.

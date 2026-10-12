@@ -4,7 +4,6 @@
     <string name="connection_status_connected">Connected</string>
     <string name="connection_status_unknown">Unknown</string>
 
-    <string name="audit_title">Audit password</string>
     <string name="audit_start">START AUDIT</string>
     <string name="audit_stop">STOP</string>
     <string name="audit_stopping">Stopping…</string>
@@ -168,7 +167,6 @@
     <string name="audit_evidence_measured">Measured</string>
     <string name="audit_evidence_estimated">Estimated</string>
     <string name="audit_evidence_modelled">Modelled</string>
-    <string name="audit_cta_nearby">Test my password (local only)</string>
     <!-- Real Wi-Fi audit (product; backend NotImplemented) -->
     <string name="real_audit_title">Wi-Fi audit</string>
     <string name="real_audit_cta">Audit this network</string>
@@ -666,7 +664,6 @@
     <string name="vault_sec_unknown">Unknown</string>
     <string name="vault_cd_open_lab">Try in lab</string>
     <string name="vault_open_lab">Try in lab (local)</string>
-    <string name="vault_open_audit">Audit password (local only)</string>
     <string name="vault_lab_seed_password_hint">If the password is visible, it is copied to the lab once (local only).</string>
     <string name="vault_lab_section">Lab network</string>
     <string name="vault_lab_alias">Alias: %1$s</string>
