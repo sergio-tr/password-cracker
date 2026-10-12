@@ -8,9 +8,10 @@ WiFiSearcher
 │   ├── Nearby (scan real)
 │   ├── Vault
 │   ├── Security Assessment
-│   └── Real password probe
-│         → RealNetworkPasswordExecutionPort
-│         → Android adapter (may be NotImplemented)
+│   └── Real Wi‑Fi audit (Architecture ready / backend pending)
+│         → StrategyResolver / Planner / Orchestrator
+│         → RealWifiAuditBackend
+│         → AndroidRealWifiAuditBackend (NotImplemented marker)
 │
 └── Lab Mode ON (adds Lab; does not remove Real)
     ├── Synthetic Lab
@@ -21,7 +22,7 @@ WiFiSearcher
 ```
 
 Contrato: el Search Engine local **no** se lanza desde el flujo de red real.
-«Probar mi contraseña (solo local)» ya no es el CTA de producto real.
+No hay CTA de «Probar contraseña» como producto principal.
 
 ## Objetivo
 
@@ -33,31 +34,34 @@ Aplicación Android didáctica de auditoría Wi-Fi que permite:
 - Identificar redes previamente guardadas (matching robusto, no por BSSID único).
 - Guardar redes conocidas con alias y ubicación descriptiva.
 - Gestionar de forma segura credenciales introducidas por el usuario (Vault, CRUD).
-- **Probar una contraseña contra la red Wi‑Fi actualmente conectada** (producto real):
-  sólo con identidad Exact (BSSID), consentimiento y `RealNetworkPasswordExecutionPort`.
-  La implementación Android puede estar pendiente (`NotImplemented`); no usa el
-  Search Engine.
+- **Auditar la red Wi‑Fi seleccionada** (producto real): estrategia según
+  `SecurityFamily`, plan, orquestación, métricas y STOP.
+  **Architecture ready / platform execution backend pending.**
+  El backend Android experimental queda en un único marker
+  (`USER_IMPLEMENTATION_POINT_REAL_WIFI_AUDIT`); por defecto
+  `Unavailable(NotImplemented)`. No usa el Search Engine / `CandidateVerifier`
+  contra el AP.
 - Con **Lab Mode ON**, disponer de un **laboratorio** (Synthetic / Prototype /
   Search Engine V2 / planners / benchmarks / calibration) para estudiar espacios
-  de búsqueda locales, con progreso, límites y cancelación — sin mezclarlo con
-  el CTA de producto real.
+  de búsqueda locales — sin mezclarlo con el backend real.
 
 ## Dos entornos, una frontera dura
 
 | REAL ENVIRONMENT | LAB ENVIRONMENT |
 | --- | --- |
 | Nearby / Vault / assessment | Synthetic Lab / Prototype / Search Engine V2 |
-| `RealNetworkPasswordExecutionPort` | `CandidateVerifier` local |
-| CTA «Probar contraseña en esta red» (Exact) | Planners, workers, STOP, métricas, calibration |
-| Adapter Android (puede ser NotImplemented) | Nunca autentica contra el AP desde el motor |
+| `RealWifiAuditBackend` | `CandidateVerifier` local |
+| CTA «Auditar esta red» | Planners, workers, STOP, métricas, calibration |
+| Adapter Android (NotImplemented) | Nunca autentica contra el AP desde el motor |
 
-**Prohibido**: conectar Search Engine V2 a `RealNetworkPasswordExecutionPort` o
-a autenticación Wi‑Fi real. Lab Mode OFF oculta Lab; no elimina el código.
+**Prohibido**: conectar Search Engine V2 a autenticación Wi‑Fi real.
+Lab Mode OFF oculta Lab; no elimina el código.
 
 ## No-objetivos
 
 - No se implementan heurísticas orientadas a atacar credenciales reales (sin rockyou
   ni diccionarios de contraseñas filtradas).
-- No se realizan conexiones ni intentos de autenticación contra redes externas.
+- No se realizan conexiones ni intentos de autenticación automáticos contra redes
+  externas en esta fase (backend pendiente detrás del marker).
 - No se intenta descubrir contraseñas desconocidas de redes cercanas (by design).
 - La geolocalización real es opcional y sólo se almacena si el usuario lo pide.

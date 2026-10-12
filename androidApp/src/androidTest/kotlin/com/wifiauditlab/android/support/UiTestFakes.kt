@@ -21,7 +21,6 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.audit.InMemoryAuthorizedLabNetworkStore
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
-import com.wifiauditlab.assessment.domain.real.DefaultRealNetworkPasswordEligibilityChecker
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
@@ -185,8 +184,6 @@ fun nearbyViewModel(
         ),
         RecordNearbySightings(RecordSavedNetworkSighting(repo)),
         connectionProvider,
-        realPasswordEligibilityChecker =
-            DefaultRealNetworkPasswordEligibilityChecker(connectionProvider),
         labModePreferences = labModePreferences,
         labNetworkRegistry = labNetworkRegistry,
     )
@@ -196,10 +193,6 @@ fun vaultViewModel(
     vault: FakeSecretVault = FakeSecretVault(),
     labModePreferences: LabModePreferences = FakeLabModePreferences(false),
     labNetworkRegistry: AuthorizedLabNetworkStore = InMemoryAuthorizedLabNetworkStore(),
-    connectionProvider: CurrentWifiConnectionProvider =
-        object : CurrentWifiConnectionProvider {
-            override suspend fun currentConnection() = null
-        },
 ): VaultViewModel =
     VaultViewModel(
         ObserveSavedNetworks(repo),
@@ -214,6 +207,4 @@ fun vaultViewModel(
         RevealSavedNetworkSecret(repo, vault),
         labModePreferences = labModePreferences,
         labNetworkRegistry = labNetworkRegistry,
-        realPasswordEligibilityChecker =
-            DefaultRealNetworkPasswordEligibilityChecker(connectionProvider),
     )

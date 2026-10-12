@@ -41,10 +41,10 @@ import com.wifiauditlab.android.ui.lab.labNetworkContextFromVault
 import com.wifiauditlab.android.ui.nearby.NearbyScreen
 import com.wifiauditlab.android.ui.onboarding.OnboardingScreen
 import com.wifiauditlab.android.ui.permissions.PermissionCenterScreen
-import com.wifiauditlab.android.ui.realtest.RealNetworkPasswordTestScreen
-import com.wifiauditlab.android.ui.realtest.RealNetworkPasswordTestTargetStore
-import com.wifiauditlab.android.ui.realtest.realNetworkPasswordTestRequestFromNearby
-import com.wifiauditlab.android.ui.realtest.realNetworkPasswordTestRequestFromVault
+import com.wifiauditlab.android.ui.realaudit.RealWifiAuditScreen
+import com.wifiauditlab.android.ui.realaudit.RealWifiAuditTargetStore
+import com.wifiauditlab.android.ui.realaudit.realWifiAuditTargetFromNearby
+import com.wifiauditlab.android.ui.realaudit.realWifiAuditTargetFromVault
 import com.wifiauditlab.android.ui.realwifi.RealWifiProbeScreen
 import com.wifiauditlab.android.ui.security.SecurityAnalysisRequest
 import com.wifiauditlab.android.ui.security.SecurityAnalysisScreen
@@ -53,6 +53,8 @@ import com.wifiauditlab.android.ui.settings.SettingsScreen
 import com.wifiauditlab.android.ui.theme.WifiAuditLabTheme
 import com.wifiauditlab.android.ui.vault.VaultScreen
 import com.wifiauditlab.assessment.domain.audit.FixedLabAccessPointProvider
+import com.wifiauditlab.assessment.domain.wifi.ManagementFrameProtection
+import com.wifiauditlab.assessment.domain.wifi.WifiSecurityProfile
 import com.wifiauditlab.assessment.port.LabModePreferences
 import com.wifiauditlab.assessment.port.OnboardingPreferences
 import org.koin.compose.koinInject
@@ -90,14 +92,14 @@ private enum class Destination(
 /**
  * Navigation chrome (FIX-02):
  * - TOP LEVEL (bottom nav): no [ArrowBack]; user switches tabs.
- * - CHILD (permissions, security_analysis, real_password_test, real_wifi_probe):
+ * - CHILD (permissions, security_analysis, real_wifi_audit, real_wifi_probe):
  *   [ArrowBack] + [R.string.navigate_back].
  * Lab tab is present only while Lab Mode is enabled.
  */
 private object Routes {
     const val PERMISSIONS = "permissions"
     const val SECURITY_ANALYSIS = "security_analysis"
-    const val REAL_PASSWORD_TEST = "real_password_test"
+    const val REAL_WIFI_AUDIT = "real_wifi_audit"
     const val REAL_WIFI_PROBE = "real_wifi_probe"
 }
 
@@ -109,7 +111,7 @@ private fun AppRoot() {
     val analysisTarget: SecurityAnalysisTargetStore = koinInject()
     val labContext: LabNetworkContextStore = koinInject()
     val labPasswordSeed: LabPasswordSeedStore = koinInject()
-    val realPasswordTestTarget: RealNetworkPasswordTestTargetStore = koinInject()
+    val realWifiAuditTarget: RealWifiAuditTargetStore = koinInject()
     val fixedLabProvider: FixedLabAccessPointProvider = koinInject()
     val realWifiProbeEntryAvailable =
         RealWifiProbeFeature.isCompiledIn && fixedLabProvider.configuredOrNull() != null
@@ -127,7 +129,7 @@ private fun AppRoot() {
         showOnboarding ||
             currentDestination?.route == Routes.PERMISSIONS ||
             currentDestination?.route == Routes.SECURITY_ANALYSIS ||
-            currentDestination?.route == Routes.REAL_PASSWORD_TEST ||
+            currentDestination?.route == Routes.REAL_WIFI_AUDIT ||
             currentDestination?.route == Routes.REAL_WIFI_PROBE
 
     LaunchedEffect(labModeEnabled, currentDestination?.route) {
@@ -213,9 +215,9 @@ private fun AppRoot() {
                             restoreState = true
                         }
                     },
-                    onOpenRealPasswordTest = { item ->
-                        realPasswordTestTarget.set(realNetworkPasswordTestRequestFromNearby(item))
-                        navController.navigate(Routes.REAL_PASSWORD_TEST)
+                    onOpenRealWifiAudit = { item ->
+                        realWifiAuditTarget.set(realWifiAuditTargetFromNearby(item))
+                        navController.navigate(Routes.REAL_WIFI_AUDIT)
                     },
                 )
             }
@@ -237,10 +239,21 @@ private fun AppRoot() {
                             restoreState = true
                         }
                     },
-                    onOpenRealPasswordTest = { network ->
+                    onOpenRealWifiAudit = { network ->
                         labPasswordSeed.clear()
-                        realPasswordTestTarget.set(realNetworkPasswordTestRequestFromVault(network))
-                        navController.navigate(Routes.REAL_PASSWORD_TEST)
+                        realWifiAuditTarget.set(
+                            realWifiAuditTargetFromVault(
+                                network,
+                                WifiSecurityProfile(
+                                    family = network.securityFamily,
+                                    keyManagements = emptySet(),
+                                    managementFrameProtection = ManagementFrameProtection.UNKNOWN,
+                                    isTransitionMode = false,
+                                    rawCapabilities = null,
+                                ),
+                            ),
+                        )
+                        navController.navigate(Routes.REAL_WIFI_AUDIT)
                     },
                 )
             }
@@ -277,10 +290,10 @@ private fun AppRoot() {
             composable(Routes.SECURITY_ANALYSIS) {
                 SecurityAnalysisScreen(onBack = { navController.popBackStack() })
             }
-            composable(Routes.REAL_PASSWORD_TEST) {
-                RealNetworkPasswordTestScreen(
+            composable(Routes.REAL_WIFI_AUDIT) {
+                RealWifiAuditScreen(
                     onBack = {
-                        realPasswordTestTarget.clear()
+                        realWifiAuditTarget.clear()
                         navController.popBackStack()
                     },
                 )

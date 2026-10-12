@@ -68,14 +68,18 @@ Sin dependencia de APs reales, Internet ni diálogos OEM. Validación Wi‑Fi re
 ## Cobertura JVM / KMP
 
 ViewModels en `androidApp/src/test`, dominio en `shared/*/…Test`. Destacados
-para producto real: `RealNetworkPasswordExecutionTest` (SSID±BSSID, permisos),
-`RealNetworkPasswordTestViewModelTest` (wiring, mismatch SSID, BSSID opcional),
-`NearbyViewModelTest`. Guía: `docs/15-manual-real-network-implementation.md`.
+para producto real: `RealWifiAuditStrategyResolverTest`,
+`RealWifiAuditOrchestratorTest` (plan→backend, STOP),
+`RealWifiAuditTargetTest`, `RealWifiAuditLabIndependenceTest`,
+`RealWifiAuditEndToEndTest` (Nearby→fake backend→progress/STOP),
+`NearbyViewModelTest`. Guías: `docs/15-real-wifi-audit-architecture.md`,
+`docs/16-real-wifi-backend-manual.md`.
 Lab (motor local): `AutomaticPasswordAuditPlannerTest`,
-`WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`.
+`WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`,
+motores V2 (`WorkerAware` / `IndexedParallel` / scheduler / space).
 
-Contrato UI Lab Mode: OFF → Cercanas/Guardadas/Ajustes; ON → + Lab.
-CTA real con mismo SSID; BSSID no obligatorio.
+Contrato UI Lab Mode: OFF → Cercanas/Guardadas/Ajustes + Real Audit;
+ON → lo anterior + Lab. BSSID no obligatorio. Backend real = pending.
 
 ## Deferred
 

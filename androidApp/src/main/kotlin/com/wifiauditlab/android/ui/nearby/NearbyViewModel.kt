@@ -15,8 +15,6 @@ import com.wifiauditlab.assessment.domain.connection.CurrentWifiConnection
 import com.wifiauditlab.assessment.domain.connection.DefaultNetworkConnectionMatcher
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatcher
-import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibility
-import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibilityChecker
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
 import com.wifiauditlab.assessment.domain.vault.SavedNetworkId
 import com.wifiauditlab.assessment.domain.wifi.WifiObservation
@@ -53,12 +51,11 @@ data class NearbyUiState(
     val items: List<NearbyItem> = emptyList(),
 )
 
-/** Detail of a selected network, with its (async) security assessment and real-probe eligibility. */
+/** Detail of a selected network, with its (async) security assessment. */
 data class NearbyDetailState(
     val item: NearbyItem,
     val assessment: SecurityAssessment? = null,
     val saved: Boolean = false,
-    val realPasswordEligibility: RealNetworkPasswordEligibility? = null,
     val labModeEnabled: Boolean = false,
     val labRegistered: Boolean = false,
     /** Lab Mode on + connected Exact/Probable + family supports LAB validation. */
@@ -87,7 +84,6 @@ class NearbyViewModel(
     private val saveNearbyNetwork: SaveNearbyNetwork,
     private val recordNearbySightings: RecordNearbySightings,
     private val connectionProvider: CurrentWifiConnectionProvider,
-    private val realPasswordEligibilityChecker: RealNetworkPasswordEligibilityChecker,
     private val connectionMatcher: NetworkConnectionMatcher = DefaultNetworkConnectionMatcher(),
     private val labModePreferences: LabModePreferences? = null,
     private val labNetworkRegistry: AuthorizedLabNetworkStore? = null,
@@ -145,7 +141,6 @@ class NearbyViewModel(
         viewModelScope.launch {
             val family = item.observation.securityProfile.family
             val assessment = assessSecurity(item.observation)
-            val eligibility = realPasswordEligibilityChecker.check(item.observation)
             val registered =
                 labNetworkRegistry?.isAuthorized(
                     AuthorizedLabNetworkKey.of(item.observation.ssid.value, family),
@@ -156,7 +151,6 @@ class NearbyViewModel(
                         item,
                         it.copy(
                             assessment = assessment,
-                            realPasswordEligibility = eligibility,
                             labRegistered = registered,
                         ),
                     )

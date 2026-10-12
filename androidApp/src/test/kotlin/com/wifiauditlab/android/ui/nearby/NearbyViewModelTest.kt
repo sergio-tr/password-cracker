@@ -11,8 +11,6 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
 import com.wifiauditlab.assessment.domain.connection.CurrentWifiConnection
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
-import com.wifiauditlab.assessment.domain.real.DefaultRealNetworkPasswordEligibilityChecker
-import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
@@ -176,7 +174,6 @@ class NearbyViewModelTest {
             ),
             RecordNearbySightings(RecordSavedNetworkSighting(repo)),
             provider,
-            DefaultRealNetworkPasswordEligibilityChecker(provider),
         )
     }
 
@@ -195,7 +192,7 @@ class NearbyViewModelTest {
         }
 
     @Test
-    fun connected_network_is_flagged_and_eligible_for_real_password_test() =
+    fun connected_network_is_flagged_for_selected_audit_target() =
         runTest(dispatcher) {
             val obs = observation()
             val scanner = FakeScanner(WifiScanState.Results(listOf(obs)))
@@ -216,8 +213,7 @@ class NearbyViewModelTest {
 
             vm.select(item)
             advanceUntilIdle()
-            val eligibility = vm.detail.value?.realPasswordEligibility
-            assertTrue(eligibility is RealNetworkPasswordEligibility.Executable)
+            assertEquals(obs.ssid, vm.detail.value?.item?.observation?.ssid)
             job.cancel()
         }
 

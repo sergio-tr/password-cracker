@@ -30,21 +30,21 @@ El **classifier** vive en el núcleo de negocio (`:shared:assessment`), sin tipo
 Android, por lo que es testeable sin emulador y reutilizable en iOS. El mapper
 sólo adapta datos de la plataforma.
 
-## Red conectada y prueba real de contraseña
+## Red conectada y auditoría Wi‑Fi real
 
 | Clase (androidApp / assessment) | Rol |
 | --- | --- |
 | `AndroidCurrentWifiConnectionProvider` | Adaptador de `CurrentWifiConnectionProvider`; lee SSID/BSSID de la conexión activa. |
-| `DefaultRealNetworkPasswordEligibilityChecker` | Mismo SSID + familia + permisos → `Executable`; BSSID confirmado = evidencia opcional. |
-| `RealNetworkPasswordExecutionPort` | Puerto application-neutral (sin tipos Android). |
-| `AndroidRealNetworkPasswordExecutionAdapter` | `WifiNetworkSpecifier` + `requestNetwork`; BSSID opcional en el Specifier. |
-| `NetworkConnectionMatch` | Exact / Probable / … (sin cambiar); el checker real mapea Exact **y** Probable a Executable. |
+| `RealWifiAuditOrchestrator` / Strategy / Planner | Orquestación de auditoría (sin secretos). |
+| `RealWifiAuditBackend` | Frontera application-neutral. |
+| `AndroidRealWifiAuditBackend` | Stub `Unavailable(NotImplemented)` + marker único. **Architecture ready / platform execution backend pending.** |
+| `NetworkConnectionMatch` | Exact / Probable / … (badge Connected); **no** bloquea la auditoría. |
 
-En Nearby/Vault, si el SSID seleccionado coincide con la Wi‑Fi actual,
-CTA «Probar contraseña en esta red» → `RealNetworkPasswordTestScreen`.
-Sin hardcode ni `local.properties`: datos del scan + `CurrentWifiConnectionProvider`.
+En Nearby/Vault, CTA «Auditar esta red» → `RealWifiAuditScreen` con la red
+seleccionada. Sin hardcode ni `local.properties`.
 
 El Search Engine local **no** se lanza desde este flujo (solo Lab Mode).
+Guías: `docs/15-real-wifi-audit-architecture.md`, `docs/16-real-wifi-backend-manual.md`.
 
 ### Lab dual-mode histórico (ADR-004 / F0–F3) — superficies Lab
 
