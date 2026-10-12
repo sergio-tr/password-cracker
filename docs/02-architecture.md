@@ -50,6 +50,42 @@ El Search Engine funciona exclusivamente de forma local: puede utilizarse con
 challenges sintéticos o con contraseñas conocidas encapsuladas; nunca envía
 candidatos a redes externas ni autentica contra access points.
 
+### Punto de extensión: `CandidateVerifier`
+
+```text
+                          CandidateVerifier
+                               ▲
+                               │
+ Search Engine V2 ─────────────┤
+                               │
+               ┌───────────────┼──────────────────┐
+               │               │                  │
+        Synthetic       Known-secret       unsupported
+     LocalSynthetic   LocalKnownSecret   NetworkBackedUnsupported
+  SyntheticExact…   Encapsulated…     UnsupportedNetwork…
+```
+
+- El motor, el scheduler y la generación de candidatos dependen **sólo** de
+  `CandidateVerifier`.
+- Un backend distinto se introduce detrás de esa interfaz; no acoplar
+  `WifiManager` / `ConnectivityManager` / `NetworkValidationAdapter` ni
+  `:shared:assessment` dentro de `:shared:lab`.
+- `UnsupportedNetworkCandidateVerifier` es un placeholder arquitectónico:
+  falla cerrado y no contiene implementación de red.
+
+Separado (no es `CandidateVerifier`; vive fuera del Search Engine):
+
+```text
+Single Real Credential Validation (optional Lab / stash)
+      → AuthorizedApTestGate → LabValidationSessionOrchestrator
+      → NetworkValidationAdapter → requestNetwork one-shot
+```
+
+**Lab Mode** (`LabModePreferences` / `LabModeSurfaces`): preferencia global
+(default false) que **oculta** superficies Lab en UI cuando está OFF; **no**
+elimina ni desconecta el código Lab (DI, motor, Guided/Advanced, prototipos,
+calibración, benchmarks). Con Lab Mode ON reaparecen las mismas superficies.
+
 ## Known-password audit (componentes)
 
 | Componente | Módulo | Rol |

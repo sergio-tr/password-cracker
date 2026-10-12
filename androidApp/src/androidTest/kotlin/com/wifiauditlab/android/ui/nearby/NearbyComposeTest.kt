@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -38,10 +39,17 @@ class NearbyComposeTest {
     private fun setNearby(
         scanner: FakeWifiScanner,
         repo: FakeSavedNetworkRepository = FakeSavedNetworkRepository(),
+        labModeEnabled: Boolean = false,
         onOpenSecurityAnalysis: (NearbyItem) -> Unit = {},
         onOpenLab: (NearbyItem, String?) -> Unit = { _, _ -> },
     ): NearbyViewModel {
-        val vm = nearbyViewModel(scanner, repo)
+        val vm =
+            nearbyViewModel(
+                scanner,
+                repo,
+                labModePreferences =
+                    com.wifiauditlab.android.support.FakeLabModePreferences(labModeEnabled),
+            )
         composeTestRule.setContent {
             WifiAuditLabTheme {
                 NearbyScreen(
@@ -89,11 +97,25 @@ class NearbyComposeTest {
     }
 
     @Test
-    fun results_unknownNetworkShowsChip() {
+    fun results_unknownNetworkShowsIconOnly() {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))))
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").assertIsDisplayed()
-        composeTestRule.onNodeWithText(activity.getString(R.string.nearby_unknown)).assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.connection_status_unknown))
+            .assertIsDisplayed()
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.nearby_unknown))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.connection_status_unknown))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 
     @Test
@@ -169,7 +191,10 @@ class NearbyComposeTest {
 
     @Test
     fun openDetail_showsSecurityAndVaultActions() {
-        setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))))
+        setNearby(
+            FakeWifiScanner(WifiScanState.Results(listOf(observation()))),
+            labModeEnabled = true,
+        )
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
         val openWifi = activity.getString(R.string.audit_open_wifi_settings)
@@ -184,6 +209,27 @@ class NearbyComposeTest {
         val saveVault = activity.getString(R.string.nearby_save_vault)
         waitForText(saveVault)
         composeTestRule.onNodeWithText(saveVault).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun openDetail_labModeOff_hidesLabCta() {
+        setNearby(
+            FakeWifiScanner(WifiScanState.Results(listOf(observation()))),
+            labModeEnabled = false,
+        )
+        waitForText("Home")
+        composeTestRule.onNodeWithText("Home").performClick()
+        waitForText(activity.getString(R.string.nearby_analyze_security))
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.nearby_open_lab))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        composeTestRule
+            .onNodeWithText(activity.getString(R.string.nearby_analyze_security))
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test
@@ -233,6 +279,7 @@ class NearbyComposeTest {
         var opened: NearbyItem? = null
         setNearby(
             FakeWifiScanner(WifiScanState.Results(listOf(observation()))),
+            labModeEnabled = true,
             onOpenLab = { item, _ -> opened = item },
         )
         waitForText("Home")
@@ -242,5 +289,46 @@ class NearbyComposeTest {
         composeTestRule.onNodeWithText(openLab).performClick()
         composeTestRule.waitUntil(5_000) { opened != null }
         assertTrue(opened!!.observation.ssid.value == "Home")
+    }
+
+    @Test
+    fun connectedNetwork_showsIconOnlyWithoutConnectedLabel() {
+        val connection =
+            com.wifiauditlab.assessment.domain.connection.CurrentWifiConnection(
+                ssid = com.wifiauditlab.assessment.domain.wifi.Ssid("Home"),
+                bssid = Bssid.of("AA:BB:CC:DD:EE:01"),
+                securityFamily = SecurityFamily.WPA2_PERSONAL,
+                rssi = -40,
+            )
+        val provider =
+            object : com.wifiauditlab.assessment.port.CurrentWifiConnectionProvider {
+                override suspend fun currentConnection() = connection
+            }
+        val vm =
+            nearbyViewModel(
+                FakeWifiScanner(WifiScanState.Results(listOf(observation(ssid = "Home")))),
+                connectionProvider = provider,
+            )
+        composeTestRule.setContent {
+            WifiAuditLabTheme {
+                NearbyScreen(viewModel = vm)
+            }
+        }
+        waitForText("Home")
+        composeTestRule
+            .onNodeWithContentDescription(activity.getString(R.string.connection_status_connected))
+            .assertIsDisplayed()
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.nearby_connected))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        assertTrue(
+            composeTestRule
+                .onAllNodesWithText(activity.getString(R.string.connection_status_connected))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 }

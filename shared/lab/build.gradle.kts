@@ -21,6 +21,9 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlin.coroutines.test)
         }
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
     }
 }
 

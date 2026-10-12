@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class NearbyItem(
@@ -92,6 +93,7 @@ class NearbyViewModel(
     private val labNetworkRegistry: AuthorizedLabNetworkStore? = null,
 ) : ViewModel() {
     private val latestConnection = MutableStateFlow<CurrentWifiConnection?>(null)
+    private val labModeEnabled = MutableStateFlow(labModePreferences?.isLabModeEnabled() == true)
 
     val state: StateFlow<NearbyUiState> =
         observeNearby()
@@ -120,39 +122,64 @@ class NearbyViewModel(
     private val _detail = MutableStateFlow<NearbyDetailState?>(null)
     val detail: StateFlow<NearbyDetailState?> = _detail.asStateFlow()
 
+    init {
+        val prefs = labModePreferences
+        if (prefs != null) {
+            viewModelScope.launch {
+                prefs.enabled.collect { enabled ->
+                    labModeEnabled.value = enabled
+                    _detail.update { current ->
+                        current?.let { refreshLabFlags(it.item, it) }
+                    }
+                }
+            }
+        }
+    }
+
     fun refresh() {
         viewModelScope.launch { refreshNearby() }
     }
 
     fun select(item: NearbyItem) {
-        val labMode = labModePreferences?.isLabModeEnabled() == true
-        val family = item.observation.securityProfile.family
-        val canRegister =
-            labMode &&
-                item.isCurrentlyConnected &&
-                family.supportsLabNetworkValidation()
-        _detail.value =
-            NearbyDetailState(
-                item = item,
-                labModeEnabled = labMode,
-                canRegisterAsLab = canRegister,
-            )
+        _detail.value = refreshLabFlags(item, NearbyDetailState(item = item))
         viewModelScope.launch {
+            val family = item.observation.securityProfile.family
             val assessment = assessSecurity(item.observation)
             val eligibility = eligibilityChecker.check(item.observation)
             val registered =
                 labNetworkRegistry?.isAuthorized(
                     AuthorizedLabNetworkKey.of(item.observation.ssid.value, family),
                 ) == true
-            _detail.value =
-                _detail.value?.takeIf { it.item == item }?.copy(
-                    assessment = assessment,
-                    auditEligibility = eligibility,
-                    labRegistered = registered,
-                    labModeEnabled = labMode,
-                    canRegisterAsLab = canRegister,
-                )
+            _detail.update { current ->
+                current?.takeIf { it.item == item }?.let {
+                    refreshLabFlags(
+                        item,
+                        it.copy(
+                            assessment = assessment,
+                            auditEligibility = eligibility,
+                            labRegistered = registered,
+                        ),
+                    )
+                }
+            }
         }
+    }
+
+    private fun refreshLabFlags(
+        item: NearbyItem,
+        base: NearbyDetailState,
+    ): NearbyDetailState {
+        val labMode = labModeEnabled.value
+        val family = item.observation.securityProfile.family
+        val canRegister =
+            labMode &&
+                item.isCurrentlyConnected &&
+                family.supportsLabNetworkValidation()
+        return base.copy(
+            labModeEnabled = labMode,
+            canRegisterAsLab = canRegister,
+            labRegistered = if (labMode) base.labRegistered else false,
+        )
     }
 
     fun dismissDetail() {

@@ -270,7 +270,12 @@ class VaultComposeTest {
 
         var openedLab: SavedWifiNetwork? = null
         var openedAudit: SavedWifiNetwork? = null
-        val vm = vaultViewModel(repo, vault)
+        val vm =
+            vaultViewModel(
+                repo,
+                vault,
+                labModePreferences = FakeLabModePreferences(true),
+            )
         composeTestRule.setContent {
             WifiAuditLabTheme {
                 VaultScreen(

@@ -49,15 +49,19 @@ import com.wifiauditlab.assessment.port.WifiScanState
 import com.wifiauditlab.assessment.port.WifiScanner
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class FakeLabModePreferences(
-    private var enabled: Boolean = false,
+    initiallyEnabled: Boolean = false,
 ) : LabModePreferences {
-    override fun isLabModeEnabled(): Boolean = enabled
+    private val _enabled = MutableStateFlow(initiallyEnabled)
+    override val enabled = _enabled.asStateFlow()
+
+    override fun isLabModeEnabled(): Boolean = _enabled.value
 
     override fun setLabModeEnabled(enabled: Boolean) {
-        this.enabled = enabled
+        _enabled.value = enabled
     }
 }
 

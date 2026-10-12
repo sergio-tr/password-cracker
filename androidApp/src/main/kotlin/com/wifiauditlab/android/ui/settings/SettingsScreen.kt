@@ -26,9 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -39,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.i18n.AppLanguage
 import com.wifiauditlab.android.i18n.AppLanguagePreferences
+import com.wifiauditlab.android.lab.LabModeSurfaces
 import com.wifiauditlab.android.platform.AndroidPlatformCapabilities
 import com.wifiauditlab.assessment.port.LabModePreferences
 import org.koin.androidx.compose.koinViewModel
@@ -54,7 +52,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val labModePreferences: LabModePreferences = koinInject()
-    var labModeEnabled by remember { mutableStateOf(labModePreferences.isLabModeEnabled()) }
+    val labModeEnabled by labModePreferences.enabled.collectAsStateWithLifecycle()
     val currentLanguage = AppLanguagePreferences.current(context)
     val yesLabel = stringResource(R.string.settings_yes)
     val noLabel = stringResource(R.string.settings_no)
@@ -87,7 +85,6 @@ fun SettingsScreen(
                             checked = labModeEnabled,
                             onCheckedChange = { enabled ->
                                 labModePreferences.setLabModeEnabled(enabled)
-                                labModeEnabled = enabled
                             },
                         )
                     }
@@ -134,16 +131,18 @@ fun SettingsScreen(
                     }
                 }
             }
-            CalibrationCard(
-                state = calibration,
-                onRecalibrate = calibrationViewModel::recalibrate,
-            )
-            BenchmarksCard(
-                state = benchmarks,
-                onRunSuite = benchmarkViewModel::runSuite,
-                onCompare = benchmarkViewModel::compareBaselineVsParallel,
-                onClear = benchmarkViewModel::clearHistory,
-            )
+            if (LabModeSurfaces.showLabSettingsExtras(labModeEnabled)) {
+                CalibrationCard(
+                    state = calibration,
+                    onRecalibrate = calibrationViewModel::recalibrate,
+                )
+                BenchmarksCard(
+                    state = benchmarks,
+                    onRunSuite = benchmarkViewModel::runSuite,
+                    onCompare = benchmarkViewModel::compareBaselineVsParallel,
+                    onClear = benchmarkViewModel::clearHistory,
+                )
+            }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(stringResource(R.string.settings_capabilities), fontWeight = FontWeight.SemiBold)
@@ -176,9 +175,12 @@ fun SettingsScreen(
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.settings_about), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_about_app))
                     Text(stringResource(R.string.settings_about_nearby))
                     Text(stringResource(R.string.settings_about_vault))
-                    Text(stringResource(R.string.settings_about_lab))
+                    if (labModeEnabled) {
+                        Text(stringResource(R.string.settings_about_lab))
+                    }
                     Text(stringResource(R.string.settings_about_audit))
                     Text(stringResource(R.string.settings_about_engine))
                 }

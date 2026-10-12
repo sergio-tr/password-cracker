@@ -48,7 +48,9 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Paralelismo controlado | **Implemented** (`WorkerAwareLabSearchEngine`); benchmarks formales **Implemented** (FASE 23). |
 | Search engine v2 (indexed/scheduler) | **Implemented** (FASE 24): `IndexedCandidateSpace`, `DynamicRangeScheduler`, `IndexedParallelLabSearchEngine`; default multi-worker = V2. |
 | Resultado del Lab en UI | **Implemented** integrado en la pantalla Lab (`ResultCard`). Ruta propia = Deferred. |
-| Destinos UI | Cercanas · Guardadas · Laboratorio · Ajustes (labels nav localizados; cuerpos de pantallas ver Partial). |
+| Destinos UI | Cercanas · Guardadas · Laboratorio (sólo Lab Mode ON) · Ajustes. Branding visible **WiFiSearcher**. |
+| Lab Mode = visibilidad producto | **Implemented**: OFF oculta tab/CTAs/registry/calibración/benchmarks/comparativa LAB; ON las restaura en runtime. |
+| CandidateVerifier seam | **Implemented**: backends LocalSynthetic / LocalKnownSecret / NetworkBackedUnsupported (+ `UnsupportedNetworkCandidateVerifier`); sin verifier Wi‑Fi. |
 | Onboarding (primera ejecución) | **Partial**: flujo existe; strings migrados FIX-01; manual pendiente usuario. |
 | Permission Center | **Partial**: inventario OK; strings + ArrowBack FIX-01/02; manual pendiente usuario. |
 | Análisis de seguridad dedicado | **Partial**: pantalla existe; strings migrados FIX-01; manual pendiente usuario. |

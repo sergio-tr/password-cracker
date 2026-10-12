@@ -77,10 +77,19 @@ class VaultViewModel(
     private val filter = MutableStateFlow(SavedNetworkSecretFilter.All)
     private val selectedId = MutableStateFlow<SavedNetworkId?>(null)
     private val revealed = MutableStateFlow<Pair<SavedNetworkId, String>?>(null)
-    private val labModeEnabled = MutableStateFlow(false)
+    private val labModeEnabled = MutableStateFlow(labModePreferences?.isLabModeEnabled() == true)
     private val labRegistered = MutableStateFlow(false)
 
     private val networks = observeSaved()
+
+    init {
+        val prefs = labModePreferences
+        if (prefs != null) {
+            viewModelScope.launch {
+                prefs.enabled.collect { labModeEnabled.value = it }
+            }
+        }
+    }
 
     val state: StateFlow<VaultUiState> =
         combine(networks, query, sort, filter) { all, q, s, f ->
@@ -122,6 +131,7 @@ class VaultViewModel(
         selectedId.value = network.id
         labModeEnabled.value = labModePreferences?.isLabModeEnabled() == true
         labRegistered.value = false
+        // labModeEnabled also tracks prefs.enabled for runtime toggles.
         viewModelScope.launch {
             val registered =
                 labNetworkRegistry?.isAuthorized(

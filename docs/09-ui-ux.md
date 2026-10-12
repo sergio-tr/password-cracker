@@ -12,7 +12,7 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 
 | Estado | Pantallas |
 | --- | --- |
-| Implementadas | Cercanas (Nearby), Guardadas (Vault + CTAs Lab/Audit LAB-06), Laboratorio (modo guiado prototipo local + Avanzado + ejecución + **resultado integrado**), Ajustes, **Onboarding** (primera ejecución), **Permission Center** (desde Ajustes), **Análisis de seguridad** (desde detalle de red), **Auditar contraseña** (Quick Audit). |
+| Implementadas | Branding **WiFiSearcher**. Cercanas, Guardadas, Ajustes siempre; **Laboratorio** y CTAs Lab sólo con Lab Mode ON (nav dinámica). Nearby: Connected/Unknown **icon-only** + contentDescription. Onboarding, Permission Center, Análisis de seguridad, Auditar contraseña (local). |
 | Deferred | Lab Result como **ruta** propia (el resultado ya se muestra en Lab). |
 
 ## Principios aplicados
@@ -64,7 +64,7 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
 Casa                       Guardada
 MOVISTAR_XXXX
 WPA2/WPA3 · 5 GHz · Wi-Fi 6
-Excelente                  [Conectado]
+Excelente                  [icono Wi‑Fi / contentDescription Conectado]
 ```
 
 Red conectada elegible: CTA «Auditar contraseña» en el detalle.

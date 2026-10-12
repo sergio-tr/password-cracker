@@ -1,40 +1,59 @@
-# Wi-Fi Audit Lab
+# WiFiSearcher
 
-Aplicación Android **didáctica** de auditoría Wi-Fi, con un núcleo compartible
-(Kotlin Multiplatform) preparado para una futura implementación iOS.
+Aplicación Android **didáctica** de descubrimiento y auditoría Wi‑Fi, con un núcleo
+compartible (Kotlin Multiplatform) preparado para una futura implementación iOS.
 
-La app tiene **dos dominios físicamente separados**:
+Nombre visible de producto: **WiFiSearcher**. El identificador técnico histórico
+(`com.wifiauditlab.android`, módulos `:shared:…`) se mantiene por compatibilidad.
+
+```text
+WiFiSearcher
+├── Real environment
+│   ├── Nearby
+│   ├── Vault
+│   ├── Security Assessment
+│   └── Local Password Audit
+│
+└── Lab Mode (optional, OFF by default)
+    ├── Synthetic Lab
+    ├── Network Prototype
+    ├── Benchmarks / calibration
+    └── Single Real Credential Validation (one-shot; never Search Engine → AP)
+```
+
+## Dos dominios, frontera dura
 
 - **Real Wi-Fi Assessment** (`:shared:assessment`): descubre redes, normaliza su
   seguridad, las explica y gestiona un Vault de redes conocidas y credenciales.
-- **Synthetic Security Lab** (`:shared:lab`): laboratorio sintético para estudiar
-  algoritmos de exploración de espacios de búsqueda, con métricas, límites y
-  cancelación. **Nunca** se conecta a una red real.
+- **Synthetic / local Search Engine** (`:shared:lab`): exploración de espacios de
+  búsqueda con `CandidateVerifier` inyectable. **Nunca** autentica candidatos
+  contra un AP real.
 
-> El laboratorio genera un secreto local sintético y sólo lo busca contra sí
-> mismo. `:shared:lab` no depende de `:shared:assessment` ni de ninguna API de
-> red: la frontera está garantizada por el grafo de módulos de Gradle.
+> Activar **Lab Mode** en Ajustes muestra el tab Laboratorio y CTAs asociados.
+> Con Lab Mode OFF esas superficies desaparecen por completo; Nearby, Vault,
+> análisis y auditoría local siguen disponibles.
 
 ## Módulos
 
 | Módulo | Tipo | Contenido |
 | --- | --- | --- |
 | `:shared:core` | KMP (jvm + android) | Value objects base: `CombinationCount`, `PlatformCapabilities`. |
-| `:shared:assessment` | KMP | Dominio Wi-Fi, clasificador de seguridad, matcher, assessment, Vault y casos de uso. |
-| `:shared:lab` | KMP | Motor de búsqueda sintético, planificador, límites, métricas y viabilidad. |
-| `:androidApp` | App Android | Adaptadores (Wi-Fi, permisos, Keystore), DI (Koin) y UI Compose (Material 3). |
+| `:shared:assessment` | KMP | Dominio Wi-Fi, clasificador, matcher, assessment, Vault y casos de uso. |
+| `:shared:lab` | KMP | Motor de búsqueda local, planificador, `CandidateVerifier`, límites. |
+| `:shared:persistence` | KMP | SQLDelight Vault. |
+| `:androidApp` | App Android | Adaptadores, DI (Koin) y UI Compose (Material 3). |
 
 ## Requisitos de compilación
 
 - JDK 17+ (probado con JDK 21).
-- Android SDK con `platforms;android-35` y `build-tools;35.0.0`.
-- El Gradle wrapper descarga Gradle 8.11.1 automáticamente.
+- Android SDK con compile/target SDK del proyecto.
+- El Gradle wrapper descarga la distribución configurada automáticamente.
 
 ## Comandos habituales
 
 ```bash
-./gradlew test                     # tests unitarios JVM de todos los módulos compartidos
-./gradlew :shared:lab:jvmTest      # tests del laboratorio
+./gradlew test                     # tests unitarios JVM de módulos compartidos
+./gradlew :shared:lab:jvmTest      # tests del Search Engine / lab
 ./gradlew :androidApp:assembleDebug
 ```
 

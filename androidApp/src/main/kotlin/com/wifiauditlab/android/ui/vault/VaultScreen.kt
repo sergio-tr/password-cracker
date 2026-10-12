@@ -319,26 +319,28 @@ private fun NetworkDetailSheet(
                 HorizontalDivider()
             }
 
-            Button(
-                onClick = onOpenLab,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = openLabCd },
-            ) {
-                Icon(
-                    Icons.Filled.Science,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.vault_open_lab))
-            }
-            if (network.securityFamily.supportsSharedPasswordDemo()) {
-                Text(
-                    stringResource(R.string.vault_lab_seed_password_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                )
+            if (detail.labModeEnabled) {
+                Button(
+                    onClick = onOpenLab,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = openLabCd },
+                ) {
+                    Icon(
+                        Icons.Filled.Science,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.vault_open_lab))
+                }
+                if (network.securityFamily.supportsSharedPasswordDemo()) {
+                    Text(
+                        stringResource(R.string.vault_lab_seed_password_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
             if (showAuditCta) {
                 OutlinedButton(

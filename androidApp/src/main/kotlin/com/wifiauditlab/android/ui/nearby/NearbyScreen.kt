@@ -22,7 +22,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiLock
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -54,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.audit.label
+import com.wifiauditlab.android.ui.common.NetworkRecognitionIndicator
+import com.wifiauditlab.android.ui.common.NetworkRecognitionStatus
 import com.wifiauditlab.android.ui.security.familyLabelRes
 import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessment
@@ -187,33 +188,30 @@ private fun NetworkCard(
                     item.alias ?: item.observation.ssid.toString(),
                     fontWeight = FontWeight.SemiBold,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     if (item.isCurrentlyConnected) {
-                        AssistChip(
-                            onClick = { onSelect(item) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Filled.Wifi,
-                                    contentDescription = connectedCd,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            },
-                            label = { Text(stringResource(R.string.nearby_connected)) },
+                        NetworkRecognitionIndicator(
+                            status = NetworkRecognitionStatus.Connected,
                             modifier = Modifier.semantics { contentDescription = connectedCd },
                         )
                     }
-                    AssistChip(
-                        onClick = { onSelect(item) },
-                        label = {
-                            Text(
-                                when {
-                                    item.ambiguous -> stringResource(R.string.nearby_ambiguous)
-                                    item.isKnown -> stringResource(R.string.nearby_saved)
-                                    else -> stringResource(R.string.nearby_unknown)
-                                },
+                    when {
+                        item.ambiguous ->
+                            AssistChip(
+                                onClick = { onSelect(item) },
+                                label = { Text(stringResource(R.string.nearby_ambiguous)) },
                             )
-                        },
-                    )
+                        item.isKnown ->
+                            AssistChip(
+                                onClick = { onSelect(item) },
+                                label = { Text(stringResource(R.string.nearby_saved)) },
+                            )
+                        else ->
+                            NetworkRecognitionIndicator(status = NetworkRecognitionStatus.Unknown)
+                    }
                 }
             }
             if (item.alias != null) Text(item.observation.ssid.toString())
@@ -325,22 +323,25 @@ private fun NetworkDetailSheet(
                 onRequestPermissions = onRequestPermissions,
             )
 
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = onOpenLab,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = openLabCd },
-            ) {
-                Icon(
-                    Icons.Filled.Science,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.nearby_open_lab))
+            if (detail.labModeEnabled) {
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = onOpenLab,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = openLabCd },
+                ) {
+                    Icon(
+                        Icons.Filled.Science,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.nearby_open_lab))
+                }
             }
+            Spacer(Modifier.height(8.dp))
             OutlinedButton(
                 onClick = onOpenSecurityAnalysis,
                 modifier = Modifier.fillMaxWidth(),
