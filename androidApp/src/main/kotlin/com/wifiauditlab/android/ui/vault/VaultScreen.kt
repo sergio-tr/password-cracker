@@ -66,6 +66,7 @@ import com.wifiauditlab.android.R
 import com.wifiauditlab.android.ui.lab.supportsSharedPasswordDemo
 import com.wifiauditlab.assessment.application.SavedNetworkListSort
 import com.wifiauditlab.assessment.application.SavedNetworkSecretFilter
+import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibility
 import com.wifiauditlab.assessment.domain.vault.SavedWifiNetwork
 import com.wifiauditlab.assessment.domain.wifi.SecurityFamily
 import org.koin.androidx.compose.koinViewModel
@@ -77,7 +78,7 @@ import java.util.Date
 fun VaultScreen(
     viewModel: VaultViewModel = koinViewModel(),
     onOpenLab: (SavedWifiNetwork, String?) -> Unit = { _, _ -> },
-    onOpenPasswordAudit: (SavedWifiNetwork) -> Unit = {},
+    onOpenRealPasswordTest: (SavedWifiNetwork) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val detail by viewModel.detail.collectAsStateWithLifecycle()
@@ -139,8 +140,8 @@ fun VaultScreen(
             onOpenLab = {
                 onOpenLab(current.network, current.revealedSecret)
             },
-            onOpenPasswordAudit = {
-                onOpenPasswordAudit(current.network)
+            onOpenRealPasswordTest = {
+                onOpenRealPasswordTest(current.network)
             },
         )
     }
@@ -223,14 +224,14 @@ private fun NetworkDetailSheet(
     viewModel: VaultViewModel,
     onDismiss: () -> Unit,
     onOpenLab: () -> Unit,
-    onOpenPasswordAudit: () -> Unit,
+    onOpenRealPasswordTest: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val clipboard = LocalClipboardManager.current
     val network = detail.network
     val openLabCd = stringResource(R.string.vault_cd_open_lab)
-    val showAuditCta =
-        network.hasSecret && network.securityFamily.supportsSharedPasswordDemo()
+    val showRealTestCta =
+        detail.realPasswordEligibility is RealNetworkPasswordEligibility.Executable
 
     var editAlias by remember { mutableStateOf(false) }
     var editLocation by remember { mutableStateOf(false) }
@@ -342,9 +343,9 @@ private fun NetworkDetailSheet(
                     )
                 }
             }
-            if (showAuditCta) {
+            if (showRealTestCta) {
                 OutlinedButton(
-                    onClick = onOpenPasswordAudit,
+                    onClick = onOpenRealPasswordTest,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(
@@ -353,7 +354,7 @@ private fun NetworkDetailSheet(
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.size(8.dp))
-                    Text(stringResource(R.string.vault_open_audit))
+                    Text(stringResource(R.string.vault_open_real_test))
                 }
             }
 

@@ -35,16 +35,17 @@ Modos de verificación:
   UI hard 24); límites de intentos y/o duración independientes, o **Hasta DETENER**
   (`SearchLimits.untilCancelled`). Sigue siendo **solo local** (known-password o
   RandomHidden sintético) — nunca autentica contra el AP.
-- **Nearby → Lab (LAB-05):** al abrir Lab desde una red cercana, el prototipo local
-  se rellena con SSID/alias/seguridad; el usuario introduce la contraseña conocida.
-  CTAs Nearby: «Probar mi contraseña (solo local)» / «Probar en laboratorio (local)».
-- **Vault → Lab / Audit (LAB-06):** desde el detalle de una red guardada, CTA primario
-  «Probar en laboratorio (local)» precarga el prototipo desde alias/SSID/familia
-  (`labNetworkContextFromVault` → preset). Si la contraseña está **revelada** en ese
-  momento, se copia una sola vez al Lab (`LabPasswordSeedStore`, consume-on-apply).
-  CTA secundario «Auditar contraseña (solo local)» cuando hay secreto y la familia
-  admite demo shared-password; usa Vault diferido vía `savedNetworkId` (sin observation
-  live). Sigue siendo **solo local**.
+- **Producto real (Lab Mode OFF):** Nearby/Vault ofrecen «Probar contraseña en esta
+  red» sólo con match Exact a la conexión actual → `RealNetworkPasswordExecutionPort`
+  (adapter Android aún `NotImplemented`). **No** hay CTA «solo local» ni arranque del
+  Search Engine desde el flujo real.
+- **Nearby → Lab (LAB-05, Lab Mode ON):** al abrir Lab desde una red cercana, el
+  prototipo local se rellena con SSID/alias/seguridad; el usuario introduce la
+  contraseña conocida. CTA Lab: «Probar en laboratorio (local)».
+- **Vault → Lab (LAB-06, Lab Mode ON):** CTA «Probar en laboratorio (local)» precarga
+  el prototipo (`labNetworkContextFromVault`). Si la contraseña está **revelada**,
+  se copia una sola vez al Lab (`LabPasswordSeedStore`). El Search Engine /
+  `AutomaticPasswordAuditPlanner` permanecen en Lab; no son el CTA de producto real.
 - **FIX-09 explainability (Partial, manual pending):** en fase Ready, tarjeta con
   perfil PSK auth-aware (`searchPlanSummary` en `LabUiState`), resumen novice y
   etapas expandibles «Cómo busca» (strings ES/EN; sin IDs internos ni contraseña).

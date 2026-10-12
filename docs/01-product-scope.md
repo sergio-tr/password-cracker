@@ -4,18 +4,24 @@ Nombre visible: **WiFiSearcher** (package/applicationId históricos `wifiauditla
 
 ```text
 WiFiSearcher
-├── Real environment
-│   ├── Nearby
+├── Real environment (Lab Mode OFF = default product)
+│   ├── Nearby (scan real)
 │   ├── Vault
 │   ├── Security Assessment
-│   └── Local Password Audit
+│   └── Real password probe
+│         → RealNetworkPasswordExecutionPort
+│         → Android adapter (may be NotImplemented)
 │
-└── Lab Mode (optional, default OFF)
+└── Lab Mode ON (adds Lab; does not remove Real)
     ├── Synthetic Lab
-    ├── Network Prototype
-    ├── Benchmarks / calibration
-    └── Single Real Credential Validation (one-shot; never Search Engine → AP)
+    ├── Local Network Prototype
+    ├── Search Engine V2 → CandidateVerifier (local only)
+    ├── Automatic planners / workers / STOP / metrics
+    └── Benchmarks / calibration
 ```
+
+Contrato: el Search Engine local **no** se lanza desde el flujo de red real.
+«Probar mi contraseña (solo local)» ya no es el CTA de producto real.
 
 ## Objetivo
 
@@ -27,38 +33,26 @@ Aplicación Android didáctica de auditoría Wi-Fi que permite:
 - Identificar redes previamente guardadas (matching robusto, no por BSSID único).
 - Guardar redes conocidas con alias y ubicación descriptiva.
 - Gestionar de forma segura credenciales introducidas por el usuario (Vault, CRUD).
-- **Auditar la resistencia de una contraseña Wi-Fi conocida** (Quick Audit): el
-  Search Engine local mide cuánto tarda en encontrarla dentro de un presupuesto
-  acotado; el espacio de búsqueda auth-aware (WPA2/WPA3 PSK) usa etapas progresivas
-  con longitud mínima ≥ 8 y subconjuntos printable ASCII — no un exhaustivo 8–63
-  ni diccionarios de credenciales reales. La red real solo aporta contexto y
-  elegibilidad — nunca se autentica contra el AP.
-- Disponer de un **laboratorio sintético** para estudiar algoritmos de exploración
-  de espacios de búsqueda, con progreso en tiempo real, límites y cancelación.
+- **Probar una contraseña contra la red Wi‑Fi actualmente conectada** (producto real):
+  sólo con identidad Exact (BSSID), consentimiento y `RealNetworkPasswordExecutionPort`.
+  La implementación Android puede estar pendiente (`NotImplemented`); no usa el
+  Search Engine.
+- Con **Lab Mode ON**, disponer de un **laboratorio** (Synthetic / Prototype /
+  Search Engine V2 / planners / benchmarks / calibration) para estudiar espacios
+  de búsqueda locales, con progreso, límites y cancelación — sin mezclarlo con
+  el CTA de producto real.
 
-## Dos dominios, una frontera dura
+## Dos entornos, una frontera dura
 
-| Real Wi-Fi Assessment | Search Engine (local) |
+| REAL ENVIRONMENT | LAB ENVIRONMENT |
 | --- | --- |
-| Escanea redes reales | Verifica candidatos solo en memoria local |
-| Inspecciona metadatos de Android | Puede usar challenges sintéticos o contraseña conocida del usuario |
-| Identifica y evalúa seguridad | Ejecuta estrategias de búsqueda con límites y cancelación |
-| Guarda redes y credenciales | Recopila métricas; nunca envía candidatos al router |
+| Nearby / Vault / assessment | Synthetic Lab / Prototype / Search Engine V2 |
+| `RealNetworkPasswordExecutionPort` | `CandidateVerifier` local |
+| CTA «Probar contraseña en esta red» (Exact) | Planners, workers, STOP, métricas, calibration |
+| Adapter Android (puede ser NotImplemented) | Nunca autentica contra el AP desde el motor |
 
-**Prohibido**: conectar un generador de candidatos o un `LabSearchEngine` a
-autenticación Wi-Fi real. La arquitectura impide que el laboratorio dependa de
-APIs de conexión Android para verificar candidatos.
-
-## Known-password audit (producto)
-
-Flujo novice: red conectada elegible → Auditar contraseña → Vault o manual →
-Automático → INICIAR → métricas → DETENER o fin de presupuesto → informe.
-
-- El motor es **exclusivamente local** (`EncapsulatedPasswordVerifier`).
-- El planner es **ciego al target** (`AutomaticPasswordAuditPlanner`).
-- El informe **separa** configuración Wi‑Fi y resistencia de contraseña
-  (`WifiPasswordAuditResult`).
-- Historial de runs comparables = follow-up; no forma parte del alcance actual.
+**Prohibido**: conectar Search Engine V2 a `RealNetworkPasswordExecutionPort` o
+a autenticación Wi‑Fi real. Lab Mode OFF oculta Lab; no elimina el código.
 
 ## No-objetivos
 

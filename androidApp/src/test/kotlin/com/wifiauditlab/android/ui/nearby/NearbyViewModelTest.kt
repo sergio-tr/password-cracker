@@ -8,11 +8,11 @@ import com.wifiauditlab.assessment.application.RecordSavedNetworkSighting
 import com.wifiauditlab.assessment.application.RefreshNearbyNetworks
 import com.wifiauditlab.assessment.application.SaveNearbyNetwork
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkAlias
-import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
-import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibility
 import com.wifiauditlab.assessment.domain.connection.CurrentWifiConnection
 import com.wifiauditlab.assessment.domain.connection.NetworkConnectionMatch
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
+import com.wifiauditlab.assessment.domain.real.DefaultRealNetworkPasswordEligibilityChecker
+import com.wifiauditlab.assessment.domain.real.RealNetworkPasswordEligibility
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
@@ -176,7 +176,7 @@ class NearbyViewModelTest {
             ),
             RecordNearbySightings(RecordSavedNetworkSighting(repo)),
             provider,
-            DefaultPasswordAuditEligibilityChecker(provider),
+            DefaultRealNetworkPasswordEligibilityChecker(provider),
         )
     }
 
@@ -195,7 +195,7 @@ class NearbyViewModelTest {
         }
 
     @Test
-    fun connected_network_is_flagged_and_eligible_for_audit() =
+    fun connected_network_is_flagged_and_eligible_for_real_password_test() =
         runTest(dispatcher) {
             val obs = observation()
             val scanner = FakeScanner(WifiScanState.Results(listOf(obs)))
@@ -216,8 +216,8 @@ class NearbyViewModelTest {
 
             vm.select(item)
             advanceUntilIdle()
-            val eligibility = vm.detail.value?.auditEligibility
-            assertTrue(eligibility is PasswordAuditEligibility.EligibleConnectedNetwork)
+            val eligibility = vm.detail.value?.realPasswordEligibility
+            assertTrue(eligibility is RealNetworkPasswordEligibility.Executable)
             job.cancel()
         }
 

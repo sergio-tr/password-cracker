@@ -19,10 +19,9 @@ import com.wifiauditlab.assessment.application.UpdateSavedNetworkLocation
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkNotes
 import com.wifiauditlab.assessment.application.UpdateSavedNetworkSecret
 import com.wifiauditlab.assessment.domain.audit.AuthorizedLabNetworkStore
-import com.wifiauditlab.assessment.domain.audit.DefaultPasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.audit.InMemoryAuthorizedLabNetworkStore
-import com.wifiauditlab.assessment.domain.audit.PasswordAuditEligibilityChecker
 import com.wifiauditlab.assessment.domain.match.DefaultKnownNetworkMatcher
+import com.wifiauditlab.assessment.domain.real.DefaultRealNetworkPasswordEligibilityChecker
 import com.wifiauditlab.assessment.domain.security.SecurityAssessmentRegistry
 import com.wifiauditlab.assessment.domain.vault.NetworkSecret
 import com.wifiauditlab.assessment.domain.vault.NewSavedWifiNetwork
@@ -172,8 +171,6 @@ fun nearbyViewModel(
         object : CurrentWifiConnectionProvider {
             override suspend fun currentConnection() = null
         },
-    eligibilityChecker: PasswordAuditEligibilityChecker =
-        DefaultPasswordAuditEligibilityChecker(connectionProvider),
     labModePreferences: LabModePreferences = FakeLabModePreferences(false),
     labNetworkRegistry: AuthorizedLabNetworkStore = InMemoryAuthorizedLabNetworkStore(),
 ): NearbyViewModel =
@@ -188,7 +185,8 @@ fun nearbyViewModel(
         ),
         RecordNearbySightings(RecordSavedNetworkSighting(repo)),
         connectionProvider,
-        eligibilityChecker,
+        realPasswordEligibilityChecker =
+            DefaultRealNetworkPasswordEligibilityChecker(connectionProvider),
         labModePreferences = labModePreferences,
         labNetworkRegistry = labNetworkRegistry,
     )
@@ -198,6 +196,10 @@ fun vaultViewModel(
     vault: FakeSecretVault = FakeSecretVault(),
     labModePreferences: LabModePreferences = FakeLabModePreferences(false),
     labNetworkRegistry: AuthorizedLabNetworkStore = InMemoryAuthorizedLabNetworkStore(),
+    connectionProvider: CurrentWifiConnectionProvider =
+        object : CurrentWifiConnectionProvider {
+            override suspend fun currentConnection() = null
+        },
 ): VaultViewModel =
     VaultViewModel(
         ObserveSavedNetworks(repo),
@@ -212,4 +214,6 @@ fun vaultViewModel(
         RevealSavedNetworkSecret(repo, vault),
         labModePreferences = labModePreferences,
         labNetworkRegistry = labNetworkRegistry,
+        realPasswordEligibilityChecker =
+            DefaultRealNetworkPasswordEligibilityChecker(connectionProvider),
     )

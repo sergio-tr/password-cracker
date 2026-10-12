@@ -28,11 +28,13 @@ Leyenda: **Implemented** · **Partial** · **Deferred**.
 | Dominio lab + motor baseline | Lazy, límites, cancelación, métricas, `SearchLifecycle`. |
 | Planificador (5 estrategias) + scoring prob/cost | Sin priors de credenciales reales. |
 | UX de ejecución del lab | Preview, `DETENER` fijo (bottomBar), límites, resultado + métricas (UX-01). **LAB search-space:** letras Aa, rango min/max (tope suave 16), límites flexibles + hasta DETENER. |
-| Lab desde red cercana | **Partial** (UX-02 + FIX-03/04 + LAB-05): CTA local + contexto; prototipo **precargado** desde Nearby (SSID/seguridad); password manual; CI green; manual pendiente usuario. |
-| Lab / Audit desde Vault | **Partial** (LAB-06): CTA Lab primario (+ Audit si hay secreto PSK/WEP); contexto desde familia Vault; seed one-shot de contraseña **solo si está revelada**; sin auth a AP. |
+| Lab desde red cercana | **Partial** (Lab Mode ON): CTA Lab + contexto; prototipo precargado; Search Engine sólo en Lab. |
+| Lab desde Vault | **Partial** (Lab Mode ON): CTA Lab; seed one-shot si revelada; sin auth a AP. CTA real «Probar contraseña en esta red» si Exact. |
+| Quick Audit como CTA real | **Removed** del flujo Nearby/Vault real; motor/planner siguen en Lab. |
 | Modo guiado del Lab | **Partial** (FIX-04 + FIX-07/08/12): bucle Crear y probar → Iniciar → resultado; familia → perfil PSK/WEP auth-aware; Advanced LocalPrototype usa el mismo planner; PSK ≥ 8; OPEN/Enterprise sin CTA PSK; regresión en JVM + Compose; manual pendiente usuario. |
 | Detección de red conectada | **Implemented** (PR1): `CurrentWifiConnectionProvider` + badge «Conectado» en Nearby. |
-| Elegibilidad de auditoría de contraseña | **Implemented** (PR1): `PasswordAuditEligibilityChecker`; WPA/WPA2/WPA3 Personal; CTA «Auditar contraseña». |
+| Elegibilidad de auditoría de contraseña | **Superseded** en producto real por `RealNetworkPasswordEligibility` (Exact BSSID). Search Engine / planner permanecen en Lab. |
+| Real password probe (puerto + UI) | **Implemented** (manual): CTA → `startRealNetworkTest` → puerto → `AndroidRealNetworkPasswordExecutionAdapter` (`WifiNetworkSpecifier` / `requestNetwork`). Elegibilidad por **SSID** (BSSID opcional). Guía: `docs/15-manual-real-network-implementation.md`. Search Engine → Wi‑Fi = pendiente. |
 | Aislamiento del target conocido | **Implemented** (PR2): `EncapsulatedPasswordVerifier` + `LabChallenge.withEncapsulatedVerifier`; `SecretStrengthAnalyzer` separado del planner. |
 | Planner automático de auditoría | **Partial** (FIX-06…12): PSK/WEP auth-aware + explainability (FIX-09); Guided+Advanced LocalPrototype usan planner; Guided RandomHidden → `GenericProgressiveSearchPlanBuilder` (FIX-11); Advanced RandomHidden → optimizer; pesos = heurísticos. Manual UX pending. |
 | Quick Audit UI | **Implemented** (PR4): `PasswordAuditScreen`; Vault diferido / manual; duración 30 s/1 min/5 min; modo Automático; `ArrowBack`; avanzado colapsado. |
