@@ -222,9 +222,12 @@
     <string name="real_audit_tech_strategy">Strategy: %1$s</string>
     <string name="real_audit_tech_planner">Planner: %1$s</string>
     <string name="real_audit_tech_search_engine">Search Engine: %1$s</string>
-    <string name="real_audit_tech_external_verifier">External verifier: %1$s</string>
-    <string name="real_audit_tech_ready">Ready</string>
-    <string name="real_audit_tech_not_ready">Not ready</string>
+    <string name="real_audit_tech_external_verifier">External backend: %1$s</string>
+    <string name="real_audit_tech_ready">ready</string>
+    <string name="real_audit_tech_not_ready">not ready</string>
+    <string name="real_audit_tech_available">available</string>
+    <string name="real_audit_tech_unavailable">not available</string>
+    <string name="real_audit_tech_not_required">not required</string>
     <string name="real_audit_search_found">Found</string>
     <string name="real_audit_search_exhausted">Exhausted</string>
     <string name="real_audit_search_limit">Limit reached</string>

@@ -25,6 +25,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -124,7 +125,7 @@ fun RealWifiAuditScreen(
                 Card(
                     Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "real_audit_backend_unavailable" },
+                        .testTag("real_audit_backend_unavailable"),
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
@@ -241,7 +242,7 @@ private fun TechnicalDetailsCard(details: RealWifiAuditTechnicalDetails) {
             Text(
                 stringResource(
                     R.string.real_audit_tech_external_verifier,
-                    details.externalVerifierLabel,
+                    externalVerifierStatusLabel(details.externalVerifierLabel),
                 ),
             )
         }
@@ -310,6 +311,15 @@ private fun searchOutcomeLabel(outcome: RealWifiSearchOutcome): String =
         RealWifiSearchOutcome.Exhausted -> stringResource(R.string.real_audit_search_exhausted)
         RealWifiSearchOutcome.LimitReached -> stringResource(R.string.real_audit_search_limit)
         RealWifiSearchOutcome.Cancelled -> stringResource(R.string.real_audit_search_cancelled)
+    }
+
+@Composable
+private fun externalVerifierStatusLabel(raw: String): String =
+    when (raw) {
+        "Available" -> stringResource(R.string.real_audit_tech_available)
+        "Unavailable" -> stringResource(R.string.real_audit_tech_unavailable)
+        "NotRequired" -> stringResource(R.string.real_audit_tech_not_required)
+        else -> raw
     }
 
 private fun formatElapsed(millis: Long): String {
