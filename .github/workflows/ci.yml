@@ -51,7 +51,7 @@ jobs:
         run: ./gradlew test jvmTest --stacktrace
 
       - name: Assemble debug + compile androidTest
-        run: ./gradlew :androidApp:assembleDebug :androidApp:compileDebugAndroidTestKotlin --stacktrace
+        run: ./gradlew :androidApp:assembleStandardDebug :androidApp:assembleLabDebug :androidApp:compileStandardDebugAndroidTestKotlin --stacktrace
 
       - name: Upload JVM test reports
         if: failure()
@@ -107,7 +107,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Run connectedDebugAndroidTest
+      - name: Run connectedStandardDebugAndroidTest
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
@@ -120,7 +120,7 @@ jobs:
           script: |
             mkdir -p androidApp/build/ci
             date -u +%Y-%m-%dT%H:%M:%SZ > androidApp/build/ci/boot-ready.txt
-            ./gradlew :androidApp:connectedDebugAndroidTest --stacktrace
+            ./gradlew :androidApp:connectedStandardDebugAndroidTest --stacktrace
             date -u +%Y-%m-%dT%H:%M:%SZ > androidApp/build/ci/androidTest-finished.txt
             adb logcat -d > androidApp/build/ci/logcat-raw.txt || true
             sh .github/scripts/sanitize-logcat.sh androidApp/build/ci/logcat-raw.txt androidApp/build/ci/logcat-sanitized.txt || true

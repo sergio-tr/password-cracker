@@ -177,6 +177,7 @@ Vault:
 | **F2** | Un probe local-only (`WifiNetworkSpecifier`) + failure reasons API 34+; capability condicionada; credencial explícita | **DONE** |
 | **F3** | Registro lab Nearby/Vault; capability UX; sesión/STOP; evidence durable; backup rules; tests; checklist físico | **Implemented** + **Automated tested**; **Physical validated** pendiente |
 | **F4** | UX consolidation LOCAL vs LAB (tarjeta comparativa; LAB bajo avanzado/Lab Mode) | **Implemented** |
+| **SINGLE_REAL** | One-shot FixedLab (`SINGLE_REAL_CREDENTIAL_VALIDATION`); ver [ADR-005](./ADR-005-fixed-lab-one-shot-credential-validation.md) | **Implemented** (físico pendiente) |
 | **F5 (opcional, builds privilegio)** | Adaptador `READ_WIFI_CREDENTIAL` / imagen sistema — nunca en variante Play | Planned |
 
 ## Consecuencias

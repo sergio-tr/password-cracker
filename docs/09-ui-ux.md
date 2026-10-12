@@ -40,13 +40,16 @@ contexto (`LabNetworkContext`) sin autenticar contra el AP.
   - Avanzado / Lab Mode (OFF por defecto): **Validar en red de laboratorio**.
   - Capability, sesión y `DETENER` en lenguaje de producto (F3).
   - Nearby/Vault: registro lab visible (F3).
+- **Prueba Wi‑Fi real** (solo flavor `lab`): desde Laboratorio → opciones avanzadas;
+  AP fijo no editable; consentimiento por sesión; resultados tipados; sección
+  «Ver cómo funciona»; `DETENER` + cooldown. No Search Engine.
 - **Idioma (FIX-01, Partial)**: selector en Ajustes (Sistema / Español / English) vía AppCompat
   per-app language + recreate; strings migrados a `values`/`values-en` (Lab, Nearby, Vault,
   Onboarding, Permissions, Security, Settings). FIX-01 merged [#44](https://github.com/sergio-tr/password-cracker/pull/44), CI green.
   **Manual pending user** — no marcar Implemented.
 - **Navegación (FIX-02, Partial)**:
   - **Top level** (barra inferior: Cercanas, Guardadas, Laboratorio, Ajustes): sin `ArrowBack`.
-  - **Child** (`permissions`, `security_analysis`, `password_audit`): `ArrowBack` +
+  - **Child** (`permissions`, `security_analysis`, `password_audit`, `real_wifi_probe`): `ArrowBack` +
     CD `navigate_back` → `popBackStack` (audit limpia el target store). No hay botones
     de texto «Atrás».
   - **Copy novice (FIX-02)**: en Lab guiado y Quick Audit (superficies listas, no Avanzado

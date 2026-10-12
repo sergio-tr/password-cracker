@@ -65,6 +65,11 @@ data class AuthorizedApTestGateRequest(
     val labAuthorized: Boolean,
     val userConsentGranted: Boolean,
     val capability: ApAuthCapability,
+    /**
+     * Required for [VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION].
+     * When non-null, identity must match exactly (SSID+BSSID); registry is not used.
+     */
+    val fixedLabAccessPoint: FixedLabAccessPoint? = null,
 )
 
 sealed interface AuthorizedApTestGateResult {
@@ -89,10 +94,17 @@ enum class AuthorizedApTestDenial {
     ConsentRequired,
     UnsupportedFamily,
     PlatformCapabilityUnavailable,
+
+    /** SINGLE_REAL: FixedLabAccessPoint missing / feature not configured. */
+    FixedLabNotConfigured,
+
+    /** SINGLE_REAL: requested or current identity ≠ fixed lab SSID+BSSID. */
+    FixedLabTargetMismatch,
 }
 
 /**
- * Central fail-closed policy for [VerificationMode.LAB_NETWORK_VALIDATION].
+ * Central fail-closed policy for platform network-validation modes
+ * ([VerificationMode.LAB_NETWORK_VALIDATION], [VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION]).
  * [VerificationMode.LOCAL_AUDIT] is out of scope (always use local path).
  *
  * Plan name: LabValidationPolicy. ADR-004 name: AuthorizedApTestGate.
@@ -101,10 +113,19 @@ class AuthorizedApTestGate(
     private val connectionMatcher: NetworkConnectionMatcher = DefaultNetworkConnectionMatcher(),
 ) {
     fun evaluate(request: AuthorizedApTestGateRequest): AuthorizedApTestGateResult {
-        if (request.mode != VerificationMode.LAB_NETWORK_VALIDATION) {
+        if (!request.mode.isPlatformNetworkValidation()) {
             return AuthorizedApTestGateResult.Denied(listOf(AuthorizedApTestDenial.ModeNotLabValidation))
         }
 
+        return when (request.mode) {
+            VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION -> evaluateSingleReal(request)
+            VerificationMode.LAB_NETWORK_VALIDATION -> evaluateLabNetwork(request)
+            VerificationMode.LOCAL_AUDIT ->
+                AuthorizedApTestGateResult.Denied(listOf(AuthorizedApTestDenial.ModeNotLabValidation))
+        }
+    }
+
+    private fun evaluateLabNetwork(request: AuthorizedApTestGateRequest): AuthorizedApTestGateResult {
         val denials = mutableListOf<AuthorizedApTestDenial>()
 
         if (!request.labModeEnabled) {
@@ -147,6 +168,58 @@ class AuthorizedApTestGate(
                 NetworkConnectionMatch.InsufficientInformation ->
                     denials += AuthorizedApTestDenial.InsufficientConnectionInfo
             }
+        }
+
+        return if (denials.isEmpty()) {
+            AuthorizedApTestGateResult.Admitted
+        } else {
+            AuthorizedApTestGateResult.Denied(denials.distinct())
+        }
+    }
+
+    /**
+     * Fail-closed FixedLab allowlist: exact SSID+BSSID only (no Probable / registry).
+     */
+    private fun evaluateSingleReal(request: AuthorizedApTestGateRequest): AuthorizedApTestGateResult {
+        val denials = mutableListOf<AuthorizedApTestDenial>()
+        val fixed = request.fixedLabAccessPoint
+        if (fixed == null) {
+            denials += AuthorizedApTestDenial.FixedLabNotConfigured
+            return AuthorizedApTestGateResult.Denied(denials)
+        }
+
+        if (!request.labModeEnabled) {
+            denials += AuthorizedApTestDenial.LabModeDisabled
+        }
+        if (!fixed.securityFamily.supportsLabNetworkValidation() ||
+            !request.securityFamily.supportsLabNetworkValidation()
+        ) {
+            denials += AuthorizedApTestDenial.UnsupportedFamily
+        }
+        if (!request.userConsentGranted) {
+            denials += AuthorizedApTestDenial.ConsentRequired
+        }
+        when (request.capability) {
+            ApAuthCapability.Available -> Unit
+            is ApAuthCapability.Unavailable ->
+                denials += AuthorizedApTestDenial.PlatformCapabilityUnavailable
+        }
+
+        if (!fixed.matchesIdentity(request.requestedSsid.value, request.requestedBssid.value)) {
+            denials += AuthorizedApTestDenial.FixedLabTargetMismatch
+        }
+        if (fixed.securityFamily != request.securityFamily) {
+            denials += AuthorizedApTestDenial.FixedLabTargetMismatch
+        }
+
+        when (fixed.matchesConnection(request.connection)) {
+            FixedLabConnectionMatch.Matched -> Unit
+            FixedLabConnectionMatch.NotConnected ->
+                denials += AuthorizedApTestDenial.NotCurrentlyConnected
+            FixedLabConnectionMatch.TargetMismatch ->
+                denials += AuthorizedApTestDenial.FixedLabTargetMismatch
+            FixedLabConnectionMatch.InsufficientInformation ->
+                denials += AuthorizedApTestDenial.InsufficientConnectionInfo
         }
 
         return if (denials.isEmpty()) {

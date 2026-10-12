@@ -157,3 +157,33 @@ Leyenda de estado producto: **Implemented** · **Automated tested** · **Physical 
 | Tarjeta comparativa LOCAL vs LAB (operaciones distintas) | **Implemented** |
 | LAB bajo opciones avanzadas / Lab Mode (OFF por defecto) | **Implemented** |
 | Physical validated | N/A (solo UX); checklist F3 sigue pendiente |
+
+## SINGLE_REAL ? Prueba Wi?Fi real (2026-10-12)
+
+### AUTOMATED
+
+| Check | Result |
+| --- | --- |
+| FixedLab match + gate (`FixedLabAccessPointTest`, `SingleRealCredentialValidationTest`) | PASS (JVM) |
+| One-shot / concurrent / cancel / RequestUnavailable?wrong password | PASS (JVM, fake adapter) |
+| `RealWifiProbeViewModelTest` | PASS (JVM, fake adapter) |
+| Assemble `labDebug` + `standardDebug` | En CI |
+
+### PHYSICAL WALKTHROUGH
+
+**MANUAL NOT EXECUTED**
+
+1. Compilar flavor lab (`labDebug`) con `LAB_WIFI_SSID` / `LAB_WIFI_BSSID` en `local.properties`.
+2. Instalar en dispositivo API compatible (API 34+ recomendado).
+3. Conectar el teléfono al AP fijo configurado.
+4. Activar Lab Mode.
+5. Abrir Laboratorio ? opciones avanzadas ? **Prueba Wi?Fi real**.
+6. Introducir la contrase?a correcta.
+7. Confirmar consentimiento (?Confirmo que esta es mi red de pruebas?).
+8. Pulsar **PROBAR CONTRASE?A**.
+9. Registrar el resultado tipado que devuelve Android.
+10. Limpiar sesión (o esperar terminal).
+11. Introducir una contrase?a deliberadamente distinta.
+12. Ejecutar una nueva sesión manual.
+13. Registrar exactamente qué callback/result devuelve Android.
+14. No interpretar automáticamente un fallo genérico (`RequestUnavailable`) como password incorrecta.

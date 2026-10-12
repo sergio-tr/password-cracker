@@ -10,7 +10,7 @@ Workflow: `.github/workflows/ci.yml`
 | Job | Qué hace |
 | --- | --- |
 | `jvm` | `ktlintCheck` → `test`/`jvmTest` → `assembleDebug` + `compileDebugAndroidTestKotlin` |
-| `android-emulator` | Emulador KVM → `:androidApp:connectedDebugAndroidTest` (matriz API 29 + 35) |
+| `android-emulator` | Emulador KVM → `:androidApp:connectedStandardDebugAndroidTest` (matriz API 29 + 35); CI también ensambla `labDebug` |
 
 Justificación de APIs: `docs/ci-emulator.md`.
 
@@ -35,6 +35,7 @@ Artifacts (siempre / al fallar JVM): reports JUnit/HTML, logcat **sanitizado**
 | Recognition icons | — | Connected/Unknown icon-only + CD; no visible «Conectado»/«Desconocido» | — | — |
 | Branding WiFiSearcher | `AppBrandingTest` (strings.xml) | — | — | — |
 | CandidateVerifier seam | `CandidateVerificationBackendTest`, `LabModuleBoundaryTest` | — | — | — |
+| Prueba Wi‑Fi real (`SINGLE_REAL`) | Gate FixedLab + orchestrator one-shot + `RealWifiProbeViewModelTest` (fake adapter) | — (CI sin AP) | Compila `labDebug`; no depende de router | Walkthrough físico **MANUAL NOT EXECUTED** (`test-evidence`) |
 | Known-password domain | `AutomaticPasswordAuditPlannerTest`, `WifiPskProgressiveAuditPolicyTest`, `TargetIsolationTest`, `PasswordAuditResultComposerTest` | — | — | — |
 | Auth-aware PSK (FIX-06/07/08) | `LabViewModelTest` (PSK ≥ 8, OPEN/Enterprise), `PasswordAuditViewModelTest` (WPA3 plan) | `ProductRegressionComposeTest` (WPA2 start path, short PSK, WPA3 preset) | — | Flujo producto en dispositivo |
 

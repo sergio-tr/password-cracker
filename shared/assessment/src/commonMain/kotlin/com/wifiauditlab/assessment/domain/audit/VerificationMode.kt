@@ -16,4 +16,16 @@ enum class VerificationMode {
      * fail-closed [AuthorizedApTestGate] admits the session (F1+ execution).
      */
     LAB_NETWORK_VALIDATION,
+
+    /**
+     * Product name: Prueba Wi‑Fi real.
+     * One-shot explicit credential against a **FixedLabAccessPoint** (SSID+BSSID).
+     * Reuses the same adapter/orchestrator stack; never the Search Engine.
+     */
+    SINGLE_REAL_CREDENTIAL_VALIDATION,
 }
+
+/** Modes that may invoke [NetworkValidationAdapter] (never the local Search Engine). */
+fun VerificationMode.isPlatformNetworkValidation(): Boolean =
+    this == VerificationMode.LAB_NETWORK_VALIDATION ||
+        this == VerificationMode.SINGLE_REAL_CREDENTIAL_VALIDATION

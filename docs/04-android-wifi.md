@@ -49,6 +49,7 @@ el ViewModel bloquea el inicio.
 | `LOCAL_AUDIT` | Motor local (sin AP) — **Implemented** + **Automated tested** |
 | `LAB_NETWORK_VALIDATION` sesión | Orquestador + monitors + budget — **Implemented** (F1) |
 | Probe local-only F2 | `WifiNetworkSpecifier` + `requestNetwork` (sin INTERNET) + failure listener API 34+ — **Implemented** |
+| Prueba Wi‑Fi real (lab flavor) | Un `validateOnce` con SSID+BSSID exactos (`FixedLabAccessPoint` desde `LAB_WIFI_*`); sin patrones/wildcards; solo `labDebug` — **Implemented** (físico pendiente) |
 | Capability Available | API **34+** AND `isStaConcurrencyForLocalOnlyConnectionsSupported` AND permisos AND Wi‑Fi on |
 | Capability UX (F3) | Causas tipadas → strings de producto (`RequiresApi34`, `RequiresStaConcurrency`, `PermissionMissing`, `UnsupportedSecurityFamily`, …). Nunca «Unavailable» genérico. |
 | API 29–33 | `Unavailable(RequiresApi34)` — request posible pero sin failure reasons fiables |
