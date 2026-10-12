@@ -198,9 +198,9 @@ class NearbyComposeTest {
         )
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        val openWifi = activity.getString(R.string.audit_open_wifi_settings)
-        waitForText(openWifi)
-        composeTestRule.onNodeWithText(openWifi).performScrollTo().assertIsDisplayed()
+        val auditCta = activity.getString(R.string.real_audit_cta)
+        waitForText(auditCta)
+        composeTestRule.onNodeWithText(auditCta).performScrollTo().assertIsDisplayed()
         val openLab = activity.getString(R.string.nearby_open_lab)
         waitForText(openLab)
         composeTestRule.onNodeWithText(openLab).performScrollTo().assertIsDisplayed()
@@ -239,8 +239,8 @@ class NearbyComposeTest {
         setNearby(FakeWifiScanner(WifiScanState.Results(listOf(observation()))), repo)
         waitForText("Home")
         composeTestRule.onNodeWithText("Home").performClick()
-        // Wait for async eligibility/assessment so the sheet layout is stable before editing.
-        waitForText(activity.getString(R.string.audit_open_wifi_settings), timeoutMs = 10_000)
+        // Wait for detail sheet actions so the layout is stable before editing.
+        waitForText(activity.getString(R.string.real_audit_cta), timeoutMs = 10_000)
         val aliasLabel = activity.getString(R.string.nearby_label_alias)
         waitForText(aliasLabel)
         composeTestRule
